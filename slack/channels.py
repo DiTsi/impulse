@@ -5,8 +5,8 @@ from config import slack_token
 
 
 class SlackChannel(Channel):
-    def __init__(self, id_, name, message_template, threads):
-        super().__init__(id_, name, message_template, 'slack', threads)
+    def __init__(self, id_, name, message_template, actions):
+        super().__init__(id_, name, message_template, 'slack', actions)
 
 
 class SlackChannels:
@@ -16,13 +16,13 @@ class SlackChannels:
             c.id,
             c.name,
             c.message_template,
-            c.threads,
+            c.actions,
         ) for c in self.channels}
         self.channels_by_name = {c.name: SlackChannel(
             c.id,
             c.name,
             c.message_template,
-            c.threads,
+            c.actions,
         ) for c in self.channels}
 
     def get_by_id(self, id_):
@@ -61,7 +61,7 @@ def get_public_channels():
 def get_channels_list():
     all_bot_channels = get_public_channels() + get_private_channels()
     return SlackChannels(
-        [SlackChannel(c.get('id'), c.get('name'), c.get('message_template'), c.get('threads')) for c in all_bot_channels]
+        [SlackChannel(c.get('id'), c.get('name'), c.get('message_template'), c.get('actions')) for c in all_bot_channels]
     )
 
 

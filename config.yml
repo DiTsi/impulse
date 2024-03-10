@@ -1,18 +1,18 @@
 route:
-  thread: IGNORE
+  action: IGNORE
   routes:
   - matchers:
     - team="space"
-    thread: space_team
+    action: space_team
     routes:
     - matchers:
       - severity="critical"
-      thread: space_team_critical
+      action: space_team_critical
   - matchers:
     - team="infrastructure"
-    thread: infra
+    action: infra
 
-threads:
+actions:
   - name: space_team
     steps:
       - mention: space_squad
@@ -26,19 +26,19 @@ threads:
       - mention: channel
       - wait: 15m
       - webhook: call_stepan
-  - name: extra_thread
+  - name: extra_action
     steps:
       - mention: channel
 
 channels:
   - name: space
     message_template: slack
-    threads:
+    actions:
       - space_team
       - space_team_critical
   - name: infrastructure
     message_template: slack
-    threads:
+    actions:
       - infra
 
 mentions:

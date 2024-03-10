@@ -1,4 +1,4 @@
-class Thread:
+class Action:
     def __init__(self, name, steps):
         self.name = name
         self.steps = steps

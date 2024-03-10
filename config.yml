@@ -1,0 +1,61 @@
+route:
+  thread: IGNORE
+  routes:
+  - matchers:
+    - team="space"
+    thread: space_team
+    routes:
+    - matchers:
+      - severity="critical"
+      thread: space_team_critical
+  - matchers:
+    - team="infrastructure"
+    thread: infra
+
+threads:
+  - name: space_team
+    steps:
+      - mention: space_squad
+  - name: space_team_critical
+    steps:
+      - mention: space_squad
+      - wait: 15m
+      - mention: ceo
+  - name: infra
+    steps:
+      - mention: channel
+      - wait: 15m
+      - webhook: call_stepan
+  - name: extra_thread
+    steps:
+      - mention: channel
+
+channels:
+  - name: space
+    message_template: slack
+    threads:
+      - space_team
+      - space_team_critical
+  - name: infrastructure
+    message_template: slack
+    threads:
+      - infra
+
+mentions:
+  - name: space_squad
+    units: ["@Albert Einstein", "@Isaac Newton", "@Charles Darwin"]
+  - name: ceo
+    units: ["@Galileo Galilei"]
+  - name: channel
+    units: ["@channel"]
+
+webhooks:
+  - name: call_stepan
+    url: http://localhost:8080/call?number=+79141234566
+  - name: call_andrey
+    url: http://localhost:8080/call?number=+79141234567
+
+message_templates:
+  - name: slack
+    text: |
+      {{ groupLabels.alertname }}

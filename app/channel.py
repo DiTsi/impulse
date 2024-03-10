@@ -5,3 +5,6 @@ class Channel:
         self.message_template = message_template
         self.type = type_
         self.threads = threads
+
+    def __repr__(self):
+        return self.name

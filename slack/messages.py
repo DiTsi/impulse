@@ -3,7 +3,7 @@ import json
 import requests
 
 from config import slack_token
-from slack.channels import channels
+from slack.channels import existing_channels
 
 
 def send_slack_message(channel_name, message):
@@ -13,7 +13,7 @@ def send_slack_message(channel_name, message):
         'Authorization': f'Bearer {slack_token}'
     }
     payload = {
-        'channel': channels.get_by_name(channel_name).id,
+        'channel': existing_channels.get_by_name(channel_name).id,
         'text': message
     }
     try:

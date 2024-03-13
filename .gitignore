@@ -5,3 +5,7 @@ __pycache__
 
 venv
 env
+
+config_example.yml
+response.json
+response_example.json

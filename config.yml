@@ -3,6 +3,7 @@ route:
   routes:
   - matchers:
     - team="space"
+    - instance =~ "localhost.*"
     action: space_team
     routes:
     - matchers:

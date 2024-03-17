@@ -1,14 +1,18 @@
+import json
+
 from flask import request, jsonify, Flask
 
+from app.action import Action
+from app.channel import SlackChannel as Channel
+from app.incident import Incident
 from app.mention import Mention
 from app.message_template import MessageTemplate
-from app.action import Action
 from app.route import MainRoute
-from slack.channels import SlackChannel as Channel
 from config import settings
-
+from config import slack_verification_token
 
 app = Flask(__name__)
+incident_channels = dict()
 
 
 @app.route('/', methods=['POST'])
@@ -18,12 +22,19 @@ def receive_alert():
     return jsonify({'message': 'Alert received successfully'}), 200
 
 
-# @app.route('/', methods=['POST'])
-# def receive_alert():
-#     data = request.json
-#     print("Received alert:")
-#     print(data)
-#     return jsonify({'message': 'Alert received successfully'}), 200
+@app.route('/slack', methods=['POST'])
+def slack_button():
+    r = json.loads(request.form['payload'])
+    if r.get('token') != slack_verification_token:
+        print(f'Unauthorized!') #!
+        return {}, 401
+    channel = r.get('channel')
+    ch_name = channel.get('name')
+    user = r.get('user')
+    message_ts = r.get('message_ts')
+    inc = incident_channels.get(ch_name).get(message_ts)
+    inc.acknowledge(user.get('id'))
+    return {}, 200
 
 
 if __name__ == '__main__':
@@ -53,8 +64,28 @@ if __name__ == '__main__':
 
     # Verify all objects exists
     # verify all route actions exists in channel actions and only in one
-    #
 
+    action_channel = {}
+    for c_name, c_object in channels.items():
+        for a in c_object.actions:
+            action_channel[a] = c_name
 
-    incidents = []
+    with open('response.json', 'r') as file:
+        json_string = file.read()
+    json_string = json_string.replace('"', '\\"')
+    json_string = json_string.replace("'", '"')
+    alert = json.loads(json_string)
+    matched_action = route.get_action(alert)
+    if matched_action == 'IGNORE':
+        pass
+    action = actions.get(matched_action)
+    channel_name = action_channel.get(action.name)
+    template = message_templates.get(channels.get(channel_name).message_template)
+
+    # Incident(alert, )
+    if channel_name not in incident_channels.keys():
+        incident_channels[channel_name] = {}
+    i = Incident(alert, channel_name, template)
+    incident_channels[channel_name][i.ts] = i
+
     app.run(host='0.0.0.0', port=5000)

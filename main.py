@@ -2,10 +2,10 @@ import json
 
 from flask import request, jsonify, Flask
 
-from app.action import Action
+from app.chain import Chain
 from app.channel import SlackChannel as Channel
 from app.incident import Incident
-from app.mention import Mention
+from app.unit import Unit, UnitGroup
 from app.message_template import MessageTemplate
 from app.route import MainRoute
 from config import settings
@@ -40,46 +40,47 @@ def slack_button():
 if __name__ == '__main__':
 
     channels_list = settings.get('channels')
-    mentions = settings.get('mentions')
+    units_list = settings.get('units')
     message_templates_list = settings.get('message_templates')
     route_dict = settings.get('route')
-    actions_list = settings.get('actions')
+    chains_list = settings.get('chains')
 
     channels = {c.get('name'): Channel(
         c.get('id'),
         c.get('name'),
         c.get('message_template'),
-        c.get('actions'),
+        c.get('chains'),
     ) for c in channels_list}
-    mentions = {
-        m.get('name'): Mention(m.get('name'), m.get('units')) for m in mentions
-    }
+    units = {}
+    for u in units_list:
+        if 'actions' in u:
+            units[u.get('name')] = Unit(u.get('name'), u.get('actions'))
+    for u in units_list:
+        if 'units' in u:
+            units[u.get('name')] = UnitGroup(u.get('name'), [units[unitname] for unitname in u.get('units')])
     message_templates = {
         mt.get('name'): MessageTemplate(mt.get('name'), mt.get('text')) for mt in message_templates_list
     }
     route = MainRoute(route_dict.get('action'), route_dict.get('routes'))
-    actions = {
-        t.get('name'): Action(t.get('name'), t.get('steps')) for t in actions_list
+    chains = {
+        t.get('name'): Chain(t.get('name'), t.get('steps')) for t in chains_list
     }
 
-    # Verify all objects exists
-    # verify all route actions exists in channel actions and only in one
-
-    action_channel = {}
+    chain_channel = {}
     for c_name, c_object in channels.items():
-        for a in c_object.actions:
-            action_channel[a] = c_name
+        for a in c_object.chains:
+            chain_channel[a] = c_name
 
     with open('response.json', 'r') as file:
         json_string = file.read()
     json_string = json_string.replace('"', '\\"')
     json_string = json_string.replace("'", '"')
     alert = json.loads(json_string)
-    matched_action = route.get_action(alert)
-    if matched_action == 'IGNORE':
+    matched_chain = route.get_chain(alert)
+    if matched_chain == 'IGNORE':
         pass
-    action = actions.get(matched_action)
-    channel_name = action_channel.get(action.name)
+    chain = chains.get(matched_chain)
+    channel_name = chain_channel.get(chain.name)
     template = message_templates.get(channels.get(channel_name).message_template)
 
     # Incident(alert, )

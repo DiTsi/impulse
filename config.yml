@@ -7,62 +7,52 @@ autoresolve_acknowledged: False
 notify_when_unknown: True #!
 
 route:
-  action: IGNORE
+  chain: IGNORE
   routes:
   - matchers:
     - team="space"
     - instance =~ "localhost.*"
-    action: space_team
+    chain: space_team
     routes:
     - matchers:
       - severity="critical"
-      action: space_team_critical
+      chain: space_team_critical
   - matchers:
     - team="infrastructure"
-    action: infra
+    chain: infra
 
-actions:
+chains:
   - name: space_team
     steps:
-      - mention: space_squad
-  - name: space_team_critical
-    steps:
-      - mention: space_squad
-      - wait: 15m
-      - mention: ceo
-  - name: infra
-    steps:
-      - mention: channel
-      - wait: 15m
-      - webhook: call_stepan
-  - name: extra_action
-    steps:
-      - mention: channel
+      - {unit: Andrey, action: mention}
+      - {unit: Oleg, action: webhook}
+      - wait: 10m
+      - {unit: space_squad, action: webhook}
 
 channels:
   - name: space
     message_template: slack
-    actions:
+    chains:
       - space_team
       - space_team_critical
   - name: infrastructure
     message_template: slack
-    actions:
+    chains:
       - infra
 
-mentions:
+units:
+  - name: Oleg
+    actions:
+      mention: "@Oleg"
+      webhook: "https://webhook.com/+79266966298"
+  - name: Andrey
+    actions:
+      mention: "@Andrey"
+      webhook: "https://webhook.com/+79266966297"
   - name: space_squad
-    units: ["@Albert Einstein", "@Isaac Newton", "@Charles Darwin"]
-  - name: ceo
-    units: ["@Galileo Galilei"]
-  - name: channel
-    units: ["@channel"]
-
-webhooks:
-  - name: call_stepan
-    url: http://localhost:8080/call?number=+79141234566
-  - name: call_andrey
-    url: http://localhost:8080/call?number=+79141234567
+    units:
+      - Andrey
+      - Oleg
 
 message_templates:
   - name: slack

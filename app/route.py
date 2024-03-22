@@ -40,43 +40,43 @@ class Matcher:
 
 
 class MainRoute:
-    def __init__(self, action, routes_list):
-        self.action = action
+    def __init__(self, chain, routes_list):
+        self.chain = chain
         self.routes = []
         for r in routes_list:
             if r.get('routes') is None:
-                self.routes.append(Route(r.get('action'), [], r.get('matchers')))
+                self.routes.append(Route(r.get('chain'), [], r.get('matchers')))
             else:
-                self.routes.append(Route(r.get('action'), r.get('routes'), r.get('matchers')))
+                self.routes.append(Route(r.get('chain'), r.get('routes'), r.get('matchers')))
 
-    def get_action(self, alert_state):
+    def get_chain(self, alert_state):
         if len(self.routes) == 0:
-            return self.action
+            return self.chain
         else:
             for r in self.routes:
-                match, action = r.get_action(alert_state)
+                match, chain = r.get_chain(alert_state)
                 if match:
-                    return action
-            return self.action
+                    return chain
+            return self.chain
 
     def __repr__(self):
-        return self.action
+        return self.chain
 
 
 class Route(MainRoute):
-    def __init__(self, action, routes_list, matchers):
-        super().__init__(action, routes_list)
+    def __init__(self, chain, routes_list, matchers):
+        super().__init__(chain, routes_list)
         self.matchers = [Matcher(m) for m in matchers]
 
-    def get_action(self, alert_state):
+    def get_chain(self, alert_state):
         for m in self.matchers:
             if not m.matches(alert_state):
                 return False, None
         if len(self.routes) == 0:
-            return True, self.action
+            return True, self.chain
         else:
             for r in self.routes:
-                match, action = r.get_action(alert_state)
+                match, chain = r.get_chain(alert_state)
                 if match:
-                    return True, action
-            return True, self.action
+                    return True, chain
+            return True, self.chain

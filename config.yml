@@ -3,8 +3,10 @@ unknown_timeout: 1h
 resolved_timeout: 1h
 acknowledged_timeout: 24h
 
-autoresolve_acknowledged: False
 notify_when_unknown: True #!
+
+state:
+  incidents_directory: ./incidents
 
 route:
   chain: IGNORE

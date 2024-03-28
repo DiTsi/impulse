@@ -1,10 +1,11 @@
 import json
+import os
 
 from flask import request, jsonify, Flask
 
 from app.chain import Chain
 from app.channel import SlackChannel as Channel
-from app.incident import Incident
+from app.incident import Incident, Incidents
 from app.unit import Unit, UnitGroup
 from app.message_template import MessageTemplate
 from app.route import MainRoute
@@ -12,38 +13,80 @@ from config import settings
 from config import slack_verification_token
 
 app = Flask(__name__)
-incident_channels = dict()
+incidents = Incidents([])
 
 
 @app.route('/', methods=['POST'])
-def receive_alert():
-    data = request.json
-    print(data)
+def receive_alert(data=None):
+    if data is None:
+        data = request.json #!
+    incident = incidents.get(data)
+    if incident is not None:
+        incident.update(data)
+    else:
+        matched_chain = route.get_chain(data)
+        chain = chains.get(matched_chain)
+        channel_name = chain_channel.get(chain.name)
+        template = message_templates.get(channels.get(channel_name).message_template)
+        incidents.add(Incident(
+            alert=data,
+            channel=channel_name,
+            template=template,
+            chain=chain,
+        ))
+        pass
     return jsonify({'message': 'Alert received successfully'}), 200
 
 
 @app.route('/slack', methods=['POST'])
 def slack_button():
-    r = json.loads(request.form['payload'])
-    if r.get('token') != slack_verification_token:
+    payload = json.loads(request.form['payload'])
+    if payload.get('token') != slack_verification_token:
         print(f'Unauthorized!') #!
         return {}, 401
-    channel = r.get('channel')
-    ch_name = channel.get('name')
-    user = r.get('user')
-    message_ts = r.get('message_ts')
-    inc = incident_channels.get(ch_name).get(message_ts)
-    inc.acknowledge(user.get('id'))
-    return {}, 200
+    modified_message = payload.get('original_message')
+    if modified_message['attachments'][1]['actions'][0]['text'] == 'Acknowledge':
+        modified_message['attachments'][1]['actions'][0]['text'] = 'Unacknowledge'
+        modified_message['attachments'][1]['actions'][0]['style'] = 'primary'
+    else:
+        modified_message['attachments'][1]['actions'][0]['text'] = 'Acknowledge'
+        modified_message['attachments'][1]['actions'][0]['style'] = 'danger'
+    return modified_message, 200
+
+
+def prepare():
+    incidents_dir = settings.get('state').get('incidents_directory')
+    if not os.path.exists(incidents_dir):
+        os.makedirs(incidents_dir)
+
+    # check all the Incidents have actual channels and chains
+    # recreate if it was changed by rules
+    recreate_incidents()
+
+
+def recreate_incidents():
+    pass
+
+
+# def create_incident(alert, route):
+#     incident_chain = route.get_chain(alert)
+#     if incident_chain == 'IGNORE':
+#         return None
+#     incidents.add(Incident(alert, channel_name, incident_chain, template))
+#     i_id = group_labels_uuid(alert)
+#     incidents[i_id] = incident
+#     return incident
 
 
 if __name__ == '__main__':
+    prepare()
 
     channels_list = settings.get('channels')
     units_list = settings.get('units')
     message_templates_list = settings.get('message_templates')
     route_dict = settings.get('route')
     chains_list = settings.get('chains')
+    incidents_directory = settings.get('state').get('incidents_directory')
 
     channels = {c.get('name'): Channel(
         c.get('id'),
@@ -76,17 +119,8 @@ if __name__ == '__main__':
     json_string = json_string.replace('"', '\\"')
     json_string = json_string.replace("'", '"')
     alert = json.loads(json_string)
-    matched_chain = route.get_chain(alert)
-    if matched_chain == 'IGNORE':
-        pass
-    chain = chains.get(matched_chain)
-    channel_name = chain_channel.get(chain.name)
-    template = message_templates.get(channels.get(channel_name).message_template)
 
-    # Incident(alert, )
-    if channel_name not in incident_channels.keys():
-        incident_channels[channel_name] = {}
-    i = Incident(alert, channel_name, template)
-    incident_channels[channel_name][i.ts] = i
+    with app.app_context():
+        r = receive_alert(alert)
 
     app.run(host='0.0.0.0', port=5000)

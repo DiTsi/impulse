@@ -47,10 +47,13 @@ def slack_button():
     modified_message = payload.get('original_message')
     if modified_message['attachments'][1]['actions'][0]['text'] == 'Acknowledge':
         modified_message['attachments'][1]['actions'][0]['text'] = 'Unacknowledge'
-        modified_message['attachments'][1]['actions'][0]['style'] = 'primary'
+        modified_message['attachments'].append({
+            'color': modified_message['attachments'][1].get('color'),
+            'text': f"Acknowledged by <@{payload['user']['id']}>"
+        })
     else:
         modified_message['attachments'][1]['actions'][0]['text'] = 'Acknowledge'
-        modified_message['attachments'][1]['actions'][0]['style'] = 'danger'
+        del modified_message['attachments'][2]
     return modified_message, 200
 
 
@@ -66,16 +69,6 @@ def prepare():
 
 def recreate_incidents():
     pass
-
-
-# def create_incident(alert, route):
-#     incident_chain = route.get_chain(alert)
-#     if incident_chain == 'IGNORE':
-#         return None
-#     incidents.add(Incident(alert, channel_name, incident_chain, template))
-#     i_id = group_labels_uuid(alert)
-#     incidents[i_id] = incident
-#     return incident
 
 
 if __name__ == '__main__':

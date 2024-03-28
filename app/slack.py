@@ -24,7 +24,7 @@ def create_thread(channel_id, message, status):
         'attachments': [
             {
                 'color': status_colors.get(status),
-                'text': message,
+                'text': message
             },
             {
                 'color': status_colors.get(status),
@@ -34,46 +34,58 @@ def create_thread(channel_id, message, status):
                     {
                         "name": "acknowledge",
                         "text": "Acknowledge",
-                        "type": "button",
-                        "style": "danger",
-                    },
+                        "type": "button"
+                    }
                 ]
-            },
-        ],
-        # "blocks": [
-        #     {
-        #         "type": "section",
-        #         "text": {
-        #             "type": "mrkdwn",
-        #             "text": "Chew choo! @scott started a train to Deli Board at 11:30. Will you join?"
-        #         }
-        #     },
-        #     {
-        #         "type": "divider"
-        #     },
-        #     {
-        #         "type": "actions",
-        #         "elements": [
-        #             {
-        #                 "type": "button",
-        #                 "style": "primary",
-        #                 "text": {
-        #                     "type": "plain_text",
-        #                     "text": "Yes",
-        #                     "emoji": True
-        #                 }
-        #             },
-        #             {
-        #                 "type": "button",
-        #                 "text": {
-        #                     "type": "plain_text",
-        #                     "text": "No",
-        #                     "emoji": True
-        #                 }
-        #             }
-        #         ]
-        #     }
-        # ]
+            }
+        ]
+    }
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    return response.json().get('ts')
+
+
+def create_blocked_thread(channel_id, message, status): #! didn't work with "return modified_message, 200"
+    url = 'https://slack.com/api/chat.postMessage'
+    payload = {
+        'channel': channel_id,
+        'text': '',
+        "attachments": [{
+            "color": status_colors.get(status),
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": message
+                    }
+                },
+                {
+                    "type": "divider"
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Acknowledge",
+                                "emoji": True
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "mrkdwn",
+                            "text": "test context"
+                        }
+                    ]
+                }
+            ]
+        }]
     }
     response = requests.post(url, headers=headers, data=json.dumps(payload))
     return response.json().get('ts')
@@ -106,39 +118,6 @@ def update_thread(channel_id, ts, status, message, acknowledge=False, user_id=No
         'ts': ts,
     }
     requests.post(url, headers=headers, data=json.dumps(payload))
-
-
-# def acknowledge(channel_id, ts, message, status, user_id):
-#     url = 'https://slack.com/api/chat.update'
-#     payload = {
-#         'channel': channel_id,
-#         'text': '',
-#         'attachments': [
-#             {
-#                 'color': status_colors.get(status),
-#                 'text': message,
-#             },
-#             {
-#                 'color': status_colors.get(status),
-#                 'text': ,
-#                 "callback_id": "unacknowledge",
-#                 "actions": [
-#                     {
-#                         "name": "unacknowledge",
-#                         "text": "Unacknowledge",
-#                         "type": "button",
-#                         "style": "default",
-#                     },
-#                 ],
-#             },
-#         ],
-#         'ts': ts,
-#     }
-#     requests.post(url, headers=headers, data=json.dumps(payload))
-
-
-def unacknowledge():
-    pass
 
 
 def get_public_channels():

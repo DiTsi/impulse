@@ -5,7 +5,7 @@ from flask import request, jsonify, Flask
 
 from app.chain import Chain
 from app.channel import SlackChannel as Channel
-from app.incident import Incident, Incidents
+from app.incident import Incident, Incidents, load_incident
 from app.unit import Unit, UnitGroup
 from app.message_template import MessageTemplate
 from app.route import MainRoute
@@ -14,13 +14,37 @@ from config import slack_verification_token
 
 app = Flask(__name__)
 incidents = Incidents([])
+incidents_directory = settings.get('incidents_directory')
+
+
+def prepare():
+    incidents_dir = settings.get('incidents_directory')
+    if not os.path.exists(incidents_dir):
+        os.makedirs(incidents_dir)
+
+    # check all the Incidents have actual channels and chains
+    # recreate if it was changed by rules
+    recreate_incidents()
+
+
+def recreate_incidents():
+    global incidents
+    global incidents_directory
+
+    for path, directories, files in os.walk(incidents_directory):
+        for filename in files:
+            incident = load_incident(f'{incidents_directory}/{filename}')
+            incidents.add(incident)
 
 
 @app.route('/', methods=['POST'])
-def receive_alert(data=None):
-    if data is None:
-        data = request.json #!
-    incident = incidents.get(data)
+def receive_alert():
+    global incidents
+    global incidents_directory
+
+    data = request.json #!
+    e = incidents
+    incident = incidents.get(alert=data)
     if incident is not None:
         incident.update(data)
     else:
@@ -28,14 +52,18 @@ def receive_alert(data=None):
         chain = chains.get(matched_chain)
         channel_name = chain_channel.get(chain.name)
         template = message_templates.get(channels.get(channel_name).message_template)
-        incidents.add(Incident(
+        incident = Incident(
             alert=data,
             channel=channel_name,
-            template=template,
+            steps=None,
             chain=chain,
-        ))
-        pass
-    return jsonify({'message': 'Alert received successfully'}), 200
+            template=template,
+            ts=None
+        )
+        incidents.add(incident)
+        incident.dump(incidents_directory)
+        e = incidents
+    return data, 200
 
 
 @app.route('/slack', methods=['POST'])
@@ -57,20 +85,6 @@ def slack_button():
     return modified_message, 200
 
 
-def prepare():
-    incidents_dir = settings.get('state').get('incidents_directory')
-    if not os.path.exists(incidents_dir):
-        os.makedirs(incidents_dir)
-
-    # check all the Incidents have actual channels and chains
-    # recreate if it was changed by rules
-    recreate_incidents()
-
-
-def recreate_incidents():
-    pass
-
-
 if __name__ == '__main__':
     prepare()
 
@@ -79,7 +93,6 @@ if __name__ == '__main__':
     message_templates_list = settings.get('message_templates')
     route_dict = settings.get('route')
     chains_list = settings.get('chains')
-    incidents_directory = settings.get('state').get('incidents_directory')
 
     channels = {c.get('name'): Channel(
         c.get('id'),
@@ -107,13 +120,13 @@ if __name__ == '__main__':
         for a in c_object.chains:
             chain_channel[a] = c_name
 
-    with open('response.json', 'r') as file:
-        json_string = file.read()
-    json_string = json_string.replace('"', '\\"')
-    json_string = json_string.replace("'", '"')
-    alert = json.loads(json_string)
-
-    with app.app_context():
-        r = receive_alert(alert)
+    # TEST ALERT
+    # with open('response.json', 'r') as file:
+    #     json_string = file.read()
+    # json_string = json_string.replace('"', '\\"')
+    # json_string = json_string.replace("'", '"')
+    # alert = json.loads(json_string)
+    # with app.app_context():
+    #     r = receive_alert(alert)
 
     app.run(host='0.0.0.0', port=5000)

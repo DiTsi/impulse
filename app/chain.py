@@ -7,6 +7,10 @@ class Chain:
         self.steps = steps
 
     def serialize(self):
+        steps = self.generate_schedule()
+        return {'name': self.name, 'schedule': steps}
+
+    def generate_schedule(self):
         steps = []
         dt = datetime.utcnow()
         for s in self.steps:
@@ -19,8 +23,7 @@ class Chain:
             else:
                 delay = unix_sleep_to_timedelta(s.get('wait'))
                 dt = dt + delay
-
-        return {'name': self.name, 'steps': steps}
+        return steps
 
     def __repr__(self):
         return self.name

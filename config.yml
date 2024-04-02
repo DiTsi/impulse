@@ -1,16 +1,24 @@
-firing_timeout: 90m
-unknown_timeout: 1h
-resolved_timeout: 1h
-acknowledged_timeout: 24h
+incidents_directory: ./incidents  # Directory where Incidents will be stored
 
-notify_when_unknown: True #!
+firing_timeout: 90m  # After this time Incident status will change from "firing" to "unknown" if no new alerts appear
+unknown_timeout: 1h  # After this time Incident status will change from "unknown" to "resolved" if no new alerts appear
+resolved_timeout: 1h  # After this time Incident status will change from "resolved" to "closed" if no new alerts appear
 
-state:
-  incidents_directory: ./incidents
+drop_steps_older_than: 10m  # After this time chain steps will drop (incorrect behavior)
+
+# Admin notifications uses to notify Impulse administrators channel about emergency situations
+admin_notifications: True  # Enable Impulse notifications
+admin_notifications_channel: noth  # Channel for Impulse notifications
+admin_notifications_when_unknown: True  # Notify about Incident in "unknown" status
+admin_notifications_when_drop_steps: True  # Notify about dropped Incident chain steps
+
 
 route:
   chain: IGNORE
   routes:
+  - matchers:
+    - severity="warning"
+    chain: warning
   - matchers:
     - team="space"
     - instance =~ "localhost.*"
@@ -30,6 +38,13 @@ chains:
       - {unit: Oleg, action: webhook}
       - wait: 10m
       - {unit: space_squad, action: webhook}
+  - name: warning
+    steps:
+      - {unit: DiTsi, action: mention}
+      - wait: 1m
+      - {unit: DiTsi, action: mention}
+      - wait: 1m
+      - {unit: DiTsi, action: mention}
 
 channels:
   - name: space
@@ -41,6 +56,10 @@ channels:
     message_template: slack
     chains:
       - infra
+  - name: warning
+    message_template: slack
+    chains:
+      - warning
 
 units:
   - name: Oleg

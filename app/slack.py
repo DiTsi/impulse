@@ -125,8 +125,9 @@ def get_public_channels():
     try:
         response = requests.get(url, headers=headers)
         data = response.json()
-        channels = data.get('channels', [])
-        return channels
+        channels_list = data.get('channels', [])
+        channels_dict = {c.get('name'): c for c in channels_list}
+        return channels_dict
     except requests.exceptions.RequestException as e:
         print(f'Failed to retrieve channel list: {e}') #!
         return []

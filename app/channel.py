@@ -16,23 +16,37 @@ class SlackChannel(Channel):
 
 
 class SlackChannels:
-    def __init__(self, channels_list):
-        self.channels = channels_list
-        self.channels_by_id = {c.get('id'): SlackChannel(
-            c.get('id'),
-            c.get('name'),
-            c.get('message_template'),
-            c.get('chains'),
-        ) for c in channels_list}
-        self.channels_by_name = {c.get('name'): SlackChannel(
-            c.get('id'),
-            c.get('name'),
-            c.get('message_template'),
-            c.get('chains'),
-        ) for c in channels_list}
+    def __init__(self, public_channels, channels_dict):
+        self.channels_by_id = {}
+        self.channels_by_name = {}
 
-    def get_by_id(self, id_):
-        return self.channels_by_id.get(id_)
+        non_existing_channels = []
+        for channel_name in channels_dict.keys():
+            try:
+                self.channels_by_id[public_channels[channel_name]['id']] = SlackChannel(
+                    public_channels[channel_name]['id'],
+                    channel_name,
+                    channels_dict[channel_name]['message_template'],
+                    channels_dict[channel_name]['chains'],
+                )
+            except KeyError:
+                print(f'Channel \'{channel_name}\' from config.yml does not exist in Slack') #!
+                non_existing_channels.append(channel_name)
 
-    def get_by_name(self, name):
-        return self.channels_by_name.get(name)
+        for c in non_existing_channels:
+            del channels_dict[c]
+
+        for channel_name in channels_dict.keys():
+            self.channels_by_name[channel_name] = SlackChannel(
+                public_channels[channel_name]['id'],
+                channel_name,
+                channels_dict[channel_name]['message_template'],
+                channels_dict[channel_name]['chains'],
+            )
+
+    def get_by_chain(self, chain):
+        for name in self.channels_by_name.keys():
+            if chain in self.channels_by_name[name].chains:
+                return self.channels_by_name[name]
+        print(f'There is no channel containing chain \'{chain}\'') # error
+        return None

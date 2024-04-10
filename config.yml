@@ -32,13 +32,13 @@ route:
     chain: infra
 
 chains:
-  - name: space_team
+  space_team:
     steps:
       - {unit: Andrey, action: mention}
       - {unit: Oleg, action: webhook}
       - wait: 10m
       - {unit: space_squad, action: webhook}
-  - name: warning
+  warning:
     steps:
       - {unit: DiTsi, action: mention}
       - wait: 1m
@@ -47,36 +47,36 @@ chains:
       - {unit: DiTsi, action: mention}
 
 channels:
-  - name: space
+  space:
     message_template: slack
     chains:
       - space_team
       - space_team_critical
-  - name: infrastructure
+  infrastructure:
     message_template: slack
     chains:
       - infra
-  - name: warning
+  warning:
     message_template: slack
     chains:
       - warning
 
 units:
-  - name: Oleg
+  Oleg:
     actions:
       mention: "@Oleg"
       webhook: "https://webhook.com/+79266966298"
-  - name: Andrey
+  Andrey:
     actions:
       mention: "@Andrey"
       webhook: "https://webhook.com/+79266966297"
-  - name: space_squad
+  space_squad:
     units:
       - Andrey
       - Oleg
 
 message_templates:
-  - name: slack
+  slack:
     text: |
       {% set status = payload.get("status", "Unknown") -%}
       {% set annotations = payload.get("commonAnnotations", {}).copy() -%}

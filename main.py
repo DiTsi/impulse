@@ -1,11 +1,13 @@
+from datetime import datetime
 import json
 import os
 
-from flask import request, jsonify, Flask
+from flask import request, Flask
 
 from app.chain import Chain
-from app.channel import SlackChannel as Channel
-from app.incident import Incident, Incidents, load_incident
+from app.channel import SlackChannels
+from app.incident import Incident, Incidents
+from app.slack import get_public_channels, create_thread
 from app.unit import Unit, UnitGroup
 from app.message_template import MessageTemplate
 from app.route import MainRoute
@@ -33,8 +35,7 @@ def recreate_incidents():
 
     for path, directories, files in os.walk(incidents_directory):
         for filename in files:
-            incident = load_incident(f'{incidents_directory}/{filename}')
-            incidents.add(incident)
+            incidents.add(Incident.load(f'{incidents_directory}/{filename}'))
 
 
 @app.route('/', methods=['POST'])
@@ -42,28 +43,33 @@ def receive_alert():
     global incidents
     global incidents_directory
 
-    data = request.json #!
-    e = incidents
-    incident = incidents.get(alert=data)
+    alert_state = request.json #!
+    incident = incidents.get(alert=alert_state)
     if incident is not None:
-        incident.update(data)
+        # template = message_templates.get(channels.get().message_template)
+        channel = public_channels.channels_by_id(incident.channel_id)
+        incident.update(alert_state, channel.message_template.form_message(alert_state))
     else:
-        matched_chain = route.get_chain(data)
-        chain = chains.get(matched_chain)
-        channel_name = chain_channel.get(chain.name)
-        template = message_templates.get(channels.get(channel_name).message_template)
+        chain = route.get_chain(alert_state)
+        channel = public_channels.get_by_chain(chain)
+        template = message_templates.get(channel.message_template)
+        ts = create_thread(
+            channel_id=channel.id,
+            message=template.form_message(alert_state),
+            status=alert_state.get('status')
+        )
         incident = Incident(
-            alert=data,
-            channel=channel_name,
-            steps=None,
-            chain=chain,
-            template=template,
-            ts=None
+            alert=alert_state,
+            ts=ts,
+            channel_id=channel.id,
+            schedule=[{
+                'action': 'change_status',
+                'datetime': datetime.utcnow()
+            }].extend(chain.generate_schedules())
         )
         incidents.add(incident)
-        incident.dump(incidents_directory)
-        e = incidents
-    return data, 200
+        incident.dump(f'{incidents_directory}/{channel.name}_{ts}.yml')
+    return alert_state, 200
 
 
 @app.route('/slack', methods=['POST'])
@@ -88,37 +94,37 @@ def slack_button():
 if __name__ == '__main__':
     prepare()
 
-    channels_list = settings.get('channels')
-    units_list = settings.get('units')
-    message_templates_list = settings.get('message_templates')
+    channels_dict = settings.get('channels')
+    units_dict = settings.get('units')
+    message_templates_dict = settings.get('message_templates')
     route_dict = settings.get('route')
-    chains_list = settings.get('chains')
+    chains_dict = settings.get('chains')
 
-    channels = {c.get('name'): Channel(
-        c.get('id'),
-        c.get('name'),
-        c.get('message_template'),
-        c.get('chains'),
-    ) for c in channels_list}
+    public_channels = get_public_channels()
+    public_channels = SlackChannels(public_channels, channels_dict)
+
     units = {}
-    for u in units_list:
-        if 'actions' in u:
-            units[u.get('name')] = Unit(u.get('name'), u.get('actions'))
-    for u in units_list:
-        if 'units' in u:
-            units[u.get('name')] = UnitGroup(u.get('name'), [units[unitname] for unitname in u.get('units')])
+    for name in units_dict.keys():
+        if 'actions' in units_dict[name]:
+            units[name] = Unit(name, units_dict[name]['actions'])
+    for name in units_dict.keys():
+        if 'units' in units_dict[name]:
+            units[name] = UnitGroup(name, [units[subunit] for subunit in units_dict[name]['units']])
     message_templates = {
-        mt.get('name'): MessageTemplate(mt.get('name'), mt.get('text')) for mt in message_templates_list
+        name: MessageTemplate(
+            name,
+            message_templates_dict[name]['text']
+        ) for name in message_templates_dict.keys()
     }
     route = MainRoute(route_dict.get('action'), route_dict.get('routes'))
     chains = {
-        t.get('name'): Chain(t.get('name'), t.get('steps')) for t in chains_list
+        name: Chain(name, chains_dict[name]['steps']) for name in chains_dict.keys()
     }
 
-    chain_channel = {}
-    for c_name, c_object in channels.items():
-        for a in c_object.chains:
-            chain_channel[a] = c_name
+    # chain_channel = {}
+    # for c_name, c_object in channels.items():
+    #     for a in c_object.chains:
+    #         chain_channel[a] = c_name
 
     # TEST ALERT
     # with open('response.json', 'r') as file:

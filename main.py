@@ -7,12 +7,14 @@ from flask import request, Flask
 from app.chain import Chain
 from app.channel import SlackChannels
 from app.incident import Incident, Incidents
+from app.logger import logger
 from app.slack import get_public_channels, create_thread
 from app.unit import Unit, UnitGroup
 from app.message_template import MessageTemplate
 from app.route import MainRoute
 from config import settings
 from config import slack_verification_token
+
 
 app = Flask(__name__)
 incidents = Incidents([])
@@ -43,21 +45,27 @@ def receive_alert():
     global incidents
     global incidents_directory
 
-    alert_state = request.json #!
+    alert_state = request.json
+
     incident = incidents.get(alert=alert_state)
     if incident is not None:
-        # template = message_templates.get(channels.get().message_template)
-        channel = public_channels.channels_by_id(incident.channel_id)
-        incident.update(alert_state, channel.message_template.form_message(alert_state))
+        channel = public_channels.channels_by_id[incident.channel_id]
+        template = message_templates.get(channel.message_template)
+        if incident.last_state != alert_state:
+            logger.debug(f'Incident get new state')
+            incident.update(alert_state, template.form_message(alert_state))
+        else:
+            logger.debug(f'Incident get same state')
     else:
-        chain = route.get_chain(alert_state)
-        channel = public_channels.get_by_chain(chain)
+        chain_name = route.get_chain(alert_state)
+        channel = public_channels.get_by_chain(chain_name)
         template = message_templates.get(channel.message_template)
         ts = create_thread(
             channel_id=channel.id,
             message=template.form_message(alert_state),
             status=alert_state.get('status')
         )
+        chain = chains[chain_name]
         incident = Incident(
             alert=alert_state,
             ts=ts,
@@ -65,7 +73,10 @@ def receive_alert():
             schedule=[{
                 'action': 'change_status',
                 'datetime': datetime.utcnow()
-            }].extend(chain.generate_schedules())
+            }].extend(chain.generate_schedules()),
+            acknowledged=False,
+            acknowledged_by=None,
+            updated=datetime.utcnow(),
         )
         incidents.add(incident)
         incident.dump(f'{incidents_directory}/{channel.name}_{ts}.yml')
@@ -76,7 +87,7 @@ def receive_alert():
 def slack_button():
     payload = json.loads(request.form['payload'])
     if payload.get('token') != slack_verification_token:
-        print(f'Unauthorized!') #!
+        logger.error(f'Unauthorized request to \'/slack\'')
         return {}, 401
     modified_message = payload.get('original_message')
     if modified_message['attachments'][1]['actions'][0]['text'] == 'Acknowledge':
@@ -121,11 +132,6 @@ if __name__ == '__main__':
         name: Chain(name, chains_dict[name]['steps']) for name in chains_dict.keys()
     }
 
-    # chain_channel = {}
-    # for c_name, c_object in channels.items():
-    #     for a in c_object.chains:
-    #         chain_channel[a] = c_name
-
     # TEST ALERT
     # with open('response.json', 'r') as file:
     #     json_string = file.read()
@@ -135,4 +141,5 @@ if __name__ == '__main__':
     # with app.app_context():
     #     r = receive_alert(alert)
 
+    # flog.default_handler.setFormatter(CustomFormatter())
     app.run(host='0.0.0.0', port=5000)

@@ -2,6 +2,7 @@ import json
 
 import requests
 
+from app.logger import logger
 from config import slack_bot_user_oauth_token
 
 headers = {
@@ -129,5 +130,5 @@ def get_public_channels():
         channels_dict = {c.get('name'): c for c in channels_list}
         return channels_dict
     except requests.exceptions.RequestException as e:
-        print(f'Failed to retrieve channel list: {e}') #!
+        logger.error(f'Failed to retrieve channel list: {e}') #!
         return []

@@ -6,23 +6,31 @@ class Chain:
         self.name = name
         self.steps = steps
 
-    def serialize(self):
-        steps = self.generate_schedule()
-        return {'name': self.name, 'schedule': steps}
-
-    def generate_schedule(self):
+    def generate_schedules(self):
         steps = []
         dt = datetime.utcnow()
+        webhooks = []
+        mentions = []
         for s in self.steps:
             if 'unit' in s:
-                steps.append({
-                    'datetime': dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                    'unit': s.get('unit'),
-                    'action': s.get('action')
-                })
+                if s['action'] == 'mention':
+                    mentions.append(s.get('unit'))
+                elif s['action'] == 'webhook':
+                    webhooks.append(s.get('unit'))
             else:
+                if len(mentions) > 0:
+                    steps.append({'action': 'mention', 'units': mentions, 'datetime': dt, 'status': 'waiting'})
+                    mentions = []
+                if len(webhooks) > 0:
+                    steps.append({'action': 'webhook', 'units': webhooks, 'datetime': dt, 'status': 'waiting'})
+                    webhooks = []
+            if 'wait' in s:
                 delay = unix_sleep_to_timedelta(s.get('wait'))
                 dt = dt + delay
+        if len(mentions) > 0:
+            steps.append({'action': 'mention', 'units': mentions, 'datetime': dt, 'status': 'waiting'})
+        if len(webhooks) > 0:
+            steps.append({'action': 'webhook', 'units': webhooks, 'datetime': dt, 'status': 'waiting'})
         return steps
 
     def __repr__(self):

@@ -1,5 +1,7 @@
 import re
 
+from app.logger import logger
+
 
 class Matcher:
     re_type = re.compile('(?P<label>\w+)\s?(?P<type>=|!=|=~|!~)\s?"(?P<expr>.+)"')
@@ -7,7 +9,7 @@ class Matcher:
     def __init__(self, string):
         m = Matcher.re_type.match(string)
         if not m:
-            print(f'Cannot use matcher \"{string}\"')
+            logger.debug(f'Cannot use matcher \"{string}\"')
         self.type = m.group('type')
         self.label = m.group('label')
         self.expr = m.group('expr')

@@ -62,6 +62,9 @@ channels:
       - warning
 
 units:
+  DiTsi:
+    actions:
+      mention: "@Dmitry Tsybus"
   Oleg:
     actions:
       mention: "@Oleg"

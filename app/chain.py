@@ -1,40 +1,52 @@
 from datetime import datetime, timedelta
 
+from app.logger import logger
+
 
 class Chain:
     def __init__(self, name, steps):
         self.name = name
         self.steps = steps
 
-    def generate_schedules(self):
-        steps = []
-        dt = datetime.utcnow()
-        webhooks = []
-        mentions = []
-        for s in self.steps:
-            if 'unit' in s:
-                if s['action'] == 'mention':
-                    mentions.append(s.get('unit'))
-                elif s['action'] == 'webhook':
-                    webhooks.append(s.get('unit'))
-            else:
-                if len(mentions) > 0:
-                    steps.append({'action': 'mention', 'units': mentions, 'datetime': dt, 'status': 'waiting'})
-                    mentions = []
-                if len(webhooks) > 0:
-                    steps.append({'action': 'webhook', 'units': webhooks, 'datetime': dt, 'status': 'waiting'})
-                    webhooks = []
-            if 'wait' in s:
-                delay = unix_sleep_to_timedelta(s.get('wait'))
-                dt = dt + delay
-        if len(mentions) > 0:
-            steps.append({'action': 'mention', 'units': mentions, 'datetime': dt, 'status': 'waiting'})
-        if len(webhooks) > 0:
-            steps.append({'action': 'webhook', 'units': webhooks, 'datetime': dt, 'status': 'waiting'})
-        return steps
-
     def __repr__(self):
         return self.name
+
+
+class Schedule:
+    def __init__(self, datetime_, incident, unit, action):
+        self.datetime = datetime_
+        self.incident = incident
+        self.unit = unit
+        self.action = action  # change_status|mention|webhook
+
+    def run_action(self):
+        if self.action == 'webhook':
+            pass
+        elif self.action == 'mention':
+            pass
+        else: # change_status
+            pass
+
+
+def generate_queue(incident_uid, units, steps):
+    schedules = []
+    dt = datetime.utcnow()
+    for s in steps:
+        if 'unit' in s:
+            try:
+                unit = units[s.get('unit')]
+                schedules.append(Schedule(
+                    datetime_=dt,
+                    incident=incident_uid,
+                    unit=unit,
+                    action=s.get('action')
+                ))
+            except KeyError:
+                logger.warning(f'No unit {s.get("unit")} in \'units\' section. See config.yml')
+        else:
+            delay = unix_sleep_to_timedelta(s.get('wait'))
+            dt = dt + delay
+    return schedules
 
 
 def unix_sleep_to_timedelta(unix_sleep_time):

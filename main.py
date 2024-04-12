@@ -4,7 +4,7 @@ import os
 
 from flask import request, Flask
 
-from app.chain import Chain
+from app.chain import Chain, generate_queue, Schedule
 from app.channel import SlackChannels
 from app.incident import Incident, Incidents
 from app.logger import logger
@@ -48,15 +48,7 @@ def receive_alert():
     alert_state = request.json
 
     incident = incidents.get(alert=alert_state)
-    if incident is not None:
-        channel = public_channels.channels_by_id[incident.channel_id]
-        template = message_templates.get(channel.message_template)
-        if incident.last_state != alert_state:
-            logger.debug(f'Incident get new state')
-            incident.update(alert_state, template.form_message(alert_state))
-        else:
-            logger.debug(f'Incident get same state')
-    else:
+    if incident is None:
         chain_name = route.get_chain(alert_state)
         channel = public_channels.get_by_chain(chain_name)
         template = message_templates.get(channel.message_template)
@@ -65,21 +57,31 @@ def receive_alert():
             message=template.form_message(alert_state),
             status=alert_state.get('status')
         )
-        chain = chains[chain_name]
         incident = Incident(
             alert=alert_state,
             ts=ts,
             channel_id=channel.id,
-            schedule=[{
-                'action': 'change_status',
-                'datetime': datetime.utcnow()
-            }].extend(chain.generate_schedules()),
+            queue=[],
             acknowledged=False,
             acknowledged_by=None,
             updated=datetime.utcnow(),
         )
-        incidents.add(incident)
+
+        chain = chains[chain_name]
+        incident_uuid = incidents.add(incident)
+        queue = generate_queue(incident_uuid, units, chain.steps)
+        incident.add_queue(queue)
+
         incident.dump(f'{incidents_directory}/{channel.name}_{ts}.yml')
+    else:
+        channel = public_channels.channels_by_id[incident.channel_id]
+        template = message_templates.get(channel.message_template)
+        if incident.last_state != alert_state:
+            logger.debug(f'Incident get new state')
+            incident.update(alert_state, template.form_message(alert_state))
+            incident.dump(f'{incidents_directory}/{channel.name}_{incident.ts}.yml')
+        else:
+            logger.debug(f'Incident get same state')
     return alert_state, 200
 
 

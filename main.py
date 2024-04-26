@@ -5,11 +5,12 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from flask import request, Flask
 
-from app.chain import Chain, generate_queue, Schedule, unix_sleep_to_timedelta
+from app.chain import Chain
 from app.channel import SlackChannels
 from app.incident import Incident, Incidents
 from app.logger import logger
-from app.queue import Queue
+from app.queue import Queue, unix_sleep_to_timedelta, generate_queue
+from app.schedule import Action, Schedule
 from app.slack import get_public_channels, create_thread
 from app.unit import Unit, UnitGroup
 from app.message_template import MessageTemplate
@@ -19,15 +20,15 @@ from config import slack_verification_token
 
 
 app = Flask(__name__)
-app.logger.setLevel(logger.level)
+# app.logger.setLevel(logger.level)
 incidents = Incidents([])
 incidents_directory = settings.get('incidents_directory')
 
 
 def prepare():
-    incidents_dir = settings.get('incidents_directory')
-    if not os.path.exists(incidents_dir):
-        os.makedirs(incidents_dir)
+    global incidents_directory
+    if not os.path.exists(incidents_directory):
+        os.makedirs(incidents_directory)
 
     # check all the Incidents have actual channels and chains
     # recreate if it was changed by rules
@@ -76,11 +77,11 @@ def handle_new(alert_state):
     chain = chains[chain_name]
     uuid = incidents.add(incident)
     status = alert_state.get("status")
+
+    action = Action(uuid, 'change_status', 'unknown')
     incident_queue = [Schedule(
         datetime_=datetime.utcnow() + unix_sleep_to_timedelta(settings.get(f'{status}_timeout')),
-        incident_uuid=uuid,
-        unit=None,
-        action='change_status',
+        action=action,
         status=status
     )] + generate_queue(uuid, units, chain.steps)
 
@@ -172,15 +173,6 @@ if __name__ == '__main__':
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=handle_queue, trigger="interval", seconds=1)
     scheduler.start()
-
-    # TEST ALERT
-    # with open('response.json', 'r') as file:
-    #     json_string = file.read()
-    # json_string = json_string.replace('"', '\\"')
-    # json_string = json_string.replace("'", '"')
-    # alert = json.loads(json_string)
-    # with app.app_context():
-    #     r = receive_alert(alert)
 
     # flog.default_handler.setFormatter(CustomFormatter())
     app.run(host='0.0.0.0', port=5000)

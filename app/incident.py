@@ -4,8 +4,8 @@ from datetime import datetime
 
 import yaml
 
-from app.chain import unix_sleep_to_timedelta
 from app.logger import logger
+from app.queue import unix_sleep_to_timedelta
 from app.slack import update_thread
 from config import settings
 

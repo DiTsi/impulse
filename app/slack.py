@@ -6,7 +6,7 @@ from app.logger import logger
 from config import slack_bot_user_oauth_token
 
 headers = {
-    'Content-Type': 'application/json',  #! 'missing_charset'
+    'Content-Type': 'application/json',
     'Authorization': f'Bearer {slack_bot_user_oauth_token}',
 }
 status_colors = {

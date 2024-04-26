@@ -2,20 +2,19 @@ from app.logger import logger
 
 
 class Channel:
-    def __init__(self, id_, name, message_template, type_, chains):
+    def __init__(self, id_, name, message_template, type_):
         self.id = id_
         self.name = name
         self.message_template = message_template
         self.type = type_
-        self.chains = chains
 
     def __repr__(self):
         return self.name
 
 
 class SlackChannel(Channel):
-    def __init__(self, id_, name, message_template, chains):
-        super().__init__(id_, name, message_template, 'slack', chains)
+    def __init__(self, id_, name, message_template):
+        super().__init__(id_, name, message_template, 'slack')
 
 
 class SlackChannels:
@@ -29,8 +28,7 @@ class SlackChannels:
                 self.channels_by_id[public_channels[channel_name]['id']] = SlackChannel(
                     public_channels[channel_name]['id'],
                     channel_name,
-                    channels_dict[channel_name]['message_template'],
-                    channels_dict[channel_name]['chains'],
+                    channels_dict[channel_name]['message_template']
                 )
             except KeyError:
                 logger.debug(f'Channel \'{channel_name}\' from config.yml does not exist in Slack')
@@ -43,13 +41,5 @@ class SlackChannels:
             self.channels_by_name[channel_name] = SlackChannel(
                 public_channels[channel_name]['id'],
                 channel_name,
-                channels_dict[channel_name]['message_template'],
-                channels_dict[channel_name]['chains'],
+                channels_dict[channel_name]['message_template']
             )
-
-    def get_by_chain(self, chain_name):
-        for name in self.channels_by_name.keys():
-            if chain_name in self.channels_by_name[name].chains:
-                return self.channels_by_name[name]
-        logger.error(f'There is no channel containing chain \'{chain_name}\'')
-        return None

@@ -42,43 +42,44 @@ class Matcher:
 
 
 class MainRoute:
-    def __init__(self, chain, routes_list):
-        self.chain = chain
+    def __init__(self, channel, chain, routes_list):
+        self.channel = channel
+        self.chain = chain or None
         self.routes = []
         for r in routes_list:
             if r.get('routes') is None:
-                self.routes.append(Route(r.get('chain'), [], r.get('matchers')))
+                self.routes.append(Route(r.get('channel'), r.get('chain'), [], r.get('matchers')))
             else:
-                self.routes.append(Route(r.get('chain'), r.get('routes'), r.get('matchers')))
+                self.routes.append(Route(r.get('channel'), r.get('chain'), r.get('routes'), r.get('matchers')))
 
     def get_chain(self, alert_state):
         if len(self.routes) == 0:
-            return self.chain
+            return self.channel, self.chain
         else:
             for r in self.routes:
-                match, chain = r.get_chain(alert_state)
+                match, channel, chain = r.get_chain(alert_state)
                 if match:
-                    return chain
-            return self.chain
+                    return channel, chain
+            return self.channel, self.chain
 
     def __repr__(self):
         return self.chain
 
 
 class Route(MainRoute):
-    def __init__(self, chain, routes_list, matchers):
-        super().__init__(chain, routes_list)
+    def __init__(self, channel, chain, routes_list, matchers):
+        super().__init__(channel, chain, routes_list)
         self.matchers = [Matcher(m) for m in matchers]
 
     def get_chain(self, alert_state):
         for m in self.matchers:
             if not m.matches(alert_state):
-                return False, None
+                return False, None, None
         if len(self.routes) == 0:
-            return True, self.chain
+            return True, self.channel, self.chain
         else:
             for r in self.routes:
-                match, chain = r.get_chain(alert_state)
+                match, channel, chain = r.get_chain(alert_state)
                 if match:
-                    return True, chain
-            return True, self.chain
+                    return True, channel, chain
+            return True, self.channel, self.chain

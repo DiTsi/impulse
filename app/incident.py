@@ -4,24 +4,34 @@ from datetime import datetime
 
 import yaml
 
+from app.chain import unix_sleep_to_timedelta
 from app.logger import logger
 from app.slack import update_thread
 from config import settings
 
 
+next_status = {
+    'firing': 'unknown',
+    'unknown': 'resolved',
+    'resolved': 'closed'
+}
+
+
 class Incident:
-    def __init__(self, alert, ts, channel_id, queue, acknowledged, acknowledged_by, updated):
+    def __init__(self, alert, status, ts, channel_id, queue, acknowledged, acknowledged_by, message, updated):
         self.last_state = alert
         self.ts = ts
+        self.status = status
         self.channel_id = channel_id
-        self.update_status(alert.get('status')) #!
         self.queue = queue
         self.acknowledged = acknowledged
         self.acknowledged_by = acknowledged_by
         self.updated = updated
-        logger.debug(f'New Incident created')
+        self.message = message
+        logger.info(f'New Incident created:')
+        [logger.info(f'  {i}: {alert["groupLabels"][i]}') for i in alert['groupLabels'].keys()]
 
-    def add_queue(self, queue):
+    def set_queue(self, queue):
         self.queue = queue
 
     @classmethod
@@ -30,12 +40,14 @@ class Incident:
             content = yaml.load(f, Loader=yaml.CLoader)
             last_state = content.get('last_state')
             ts = content.get('ts')
+            status = content.get('status')
+            message = content.get('message')
             channel_id = content.get('channel_id')
             queue = content.get('queue')
             updated = content.get('updated')
             acknowledged = content.get('acknowledged')
             acknowledged_by = content.get('acknowledged_by')
-        return cls(last_state, ts, channel_id, queue, acknowledged, acknowledged_by, updated)
+        return cls(last_state, status, ts, channel_id, queue, acknowledged, acknowledged_by, message, updated)
 
     def dump(self, incident_file):
         with open(incident_file, 'w') as f:
@@ -43,7 +55,6 @@ class Incident:
 
     def update(self, alert, message):
         self.last_state = alert
-        self.update_status(alert.get('status'))
         self.updated = datetime.utcnow()
         update_thread(
             channel_id=self.channel_id,
@@ -60,17 +71,21 @@ class Incident:
             "queue": self.queue,
             "updated": self.updated,
             "acknowledged": self.acknowledged,
-            "ts": self.ts
+            "ts": self.ts,
+            "status": self.status,
+            "message": self.message
         }
 
-    def update_status(self, status):
-        if self.last_state.get('status') != status:
-            if status == 'firing':
-                self.queue[0]['datetime'] = datetime.utcnow() + settings.get('firing_timeout')
-            elif status == 'resolved':
-                self.queue[0]['datetime'] = datetime.utcnow() + settings.get('resolved_timeout')
-            elif status == 'unknown':
-                self.queue[0]['datetime'] = datetime.utcnow() + settings.get('unknown_timeout')
+    def run_action(self, schedule):
+        if schedule.action == 'change_status':
+            self.status = next_status[self.last_state['status']]
+            self.queue[0]['datetime'] = (
+                datetime.utcnow() + unix_sleep_to_timedelta(settings.get(f'{self.status}_timeout'))
+            )
+        elif schedule.action == 'webhook':
+            pass
+        elif schedule.action == 'mention':
+            pass
 
 
 class Incidents:

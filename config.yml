@@ -14,52 +14,48 @@ admin_notifications_when_drop_steps: True  # Notify about dropped Incident chain
 
 
 route:
-  chain: IGNORE
+  chain: warning
+  channel:
   routes:
   - matchers:
     - severity="warning"
     chain: warning
+    channel: warning
   - matchers:
     - team="space"
     - instance =~ "localhost.*"
     chain: space_team
+    channel: space
     routes:
     - matchers:
       - severity="critical"
       chain: space_team_critical
+      channel: space
   - matchers:
     - team="infrastructure"
     chain: infra
+    channel: infrastructure
 
 chains:
   space_team:
-    steps:
-      - {unit: Andrey, action: mention}
-      - {unit: Oleg, action: webhook}
-      - wait: 10m
-      - {unit: space_squad, action: webhook}
+  - {unit: Andrey, action: mention}
+  - {unit: Oleg, action: webhook}
+  - {wait: 10m}
+  - {unit: space_squad, action: webhook}
   warning:
-    steps:
-      - {unit: DiTsi, action: mention}
-      - wait: 1m
-      - {unit: DiTsi, action: mention}
-      - wait: 1m
-      - {unit: DiTsi, action: mention}
+  - {unit: DiTsi, action: mention}
+  - {wait: 1m}
+  - {unit: DiTsi, action: mention}
+  - {wait: 1m}
+  - {unit: DiTsi, action: mention}
 
 channels:
   space:
     message_template: slack
-    chains:
-      - space_team
-      - space_team_critical
   infrastructure:
     message_template: slack
-    chains:
-      - infra
   warning:
     message_template: slack
-    chains:
-      - warning
 
 units:
   DiTsi:

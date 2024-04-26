@@ -25,12 +25,12 @@ class CustomFormatter(logging.Formatter):
 
 
 def create_logger(name, level=logging.INFO):
-    logger = logging.getLogger(name)
+    lr = logging.getLogger(name)
     sh = logging.StreamHandler()
-    logger.setLevel(level)
+    lr.setLevel(level)
     sh.setFormatter(CustomFormatter())
-    logger.addHandler(sh)
-    return logger
+    lr.addHandler(sh)
+    return lr
 
 
 logger = create_logger('main_logger', logging.DEBUG)

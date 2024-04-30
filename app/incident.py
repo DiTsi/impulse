@@ -18,12 +18,12 @@ next_status = {
 
 
 class Incident:
-    def __init__(self, alert, status, ts, channel_id, queue, acknowledged, acknowledged_by, message, updated):
+    def __init__(self, alert, status, ts, channel_id, scheduler, acknowledged, acknowledged_by, message, updated):
         self.last_state = alert
         self.ts = ts
         self.status = status
         self.channel_id = channel_id
-        self.queue = queue
+        self.scheduler = scheduler
         self.acknowledged = acknowledged
         self.acknowledged_by = acknowledged_by
         self.updated = updated
@@ -31,8 +31,8 @@ class Incident:
         logger.info(f'New Incident created:')
         [logger.info(f'  {i}: {alert["groupLabels"][i]}') for i in alert['groupLabels'].keys()]
 
-    def set_queue(self, queue):
-        self.queue = queue
+    def set_queue(self, schedule_list):
+        self.scheduler = [q.dump() for q in schedule_list]
 
     @classmethod
     def load(cls, dump_file):
@@ -68,7 +68,7 @@ class Incident:
         return {
             "last_state": self.last_state,
             "channel_id": self.channel_id,
-            "queue": self.queue,
+            "queue": self.scheduler,
             "updated": self.updated,
             "acknowledged": self.acknowledged,
             "ts": self.ts,
@@ -76,16 +76,11 @@ class Incident:
             "message": self.message
         }
 
-    def run_action(self, schedule):
-        if schedule.action == 'change_status':
-            self.status = next_status[self.last_state['status']]
-            self.queue[0]['datetime'] = (
-                datetime.utcnow() + unix_sleep_to_timedelta(settings.get(f'{self.status}_timeout'))
-            )
-        elif schedule.action == 'webhook':
-            pass
-        elif schedule.action == 'mention':
-            pass
+    def update_status(self, status):
+        self.status = status
+        self.scheduler[0]['datetime'] = (
+            datetime.utcnow() + unix_sleep_to_timedelta(settings.get(f'{self.status}_timeout'))
+        )
 
 
 class Incidents:

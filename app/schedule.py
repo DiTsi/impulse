@@ -1,3 +1,8 @@
+from datetime import datetime
+
+from app.logger import logger
+from app.queue import unix_sleep_to_timedelta
+
 
 class Schedule:
     def __init__(self, datetime_, action, status):
@@ -40,3 +45,24 @@ class Action:
             'type': self.type,
             'to': self.to
         }
+
+
+def generate_queue(incident_uuid, units, steps):
+    schedules = []
+    dt = datetime.utcnow()
+    for s in steps:
+        if 'unit' in s:
+            try:
+                unit = units[s.get('unit')]
+                action = Action(incident_uuid, s['action'], unit.name)
+                schedules.append(Schedule(
+                    datetime_=dt,
+                    action=action,
+                    status='waiting'
+                ))
+            except KeyError:
+                logger.warning(f'No unit {s.get("unit")} in \'units\' section. See config.yml')
+        else:
+            delay = unix_sleep_to_timedelta(s.get('wait'))
+            dt = dt + delay
+    return schedules

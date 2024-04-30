@@ -132,3 +132,31 @@ def get_public_channels():
     except requests.exceptions.RequestException as e:
         logger.error(f'Failed to retrieve channel list: {e}') #!
         return []
+
+
+def get_user_info(nickname):
+    url = 'https://slack.com/api/users.list'
+    payload = {
+        'username': nickname
+    }
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    if response.status_code == 200:
+        data = response.json()
+        members = data.get('members')
+        for m in members:
+            if m.get('real_name') == nickname:
+                return m
+    else:
+        return None
+
+
+def post_thread(channel_id, ts, unit):
+    url = 'https://slack.com/api/chat.postMessage'
+    user_id = get_user_info(unit.actions['mention'])['id']
+
+    payload = {
+        'channel': channel_id,
+        'text': f'<@{user_id}>',
+        'thread_ts': ts
+    }
+    requests.post(url, headers=headers, data=json.dumps(payload))

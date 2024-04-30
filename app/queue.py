@@ -1,8 +1,5 @@
 from datetime import datetime, timedelta
 
-from app.logger import logger
-from app.schedule import Schedule, Action
-
 
 class Queue:
     def __init__(self):
@@ -10,26 +7,26 @@ class Queue:
         self.schedules = []
         self.last_slack_api_request = datetime.utcnow()
 
-    def put(self, dates, schedules):
-        i = len(self.dates) - 1
-        if i == -1:
-            self.dates = dates
-            self.schedules = schedules
-        else:
-            for j in range(len(dates) - 1, 0, -1):
-                date = dates[j]
-                schedule = schedules[j]
-                while True:
-                    if date > self.dates[i]:
-                        dates.insert(i + 1, date)
-                        schedules.insert(i + 1, schedule)
-                        break
-                    else:
-                        i -= 1
-                    if i == 0:
-                        dates.insert(0, date)
-                        schedules.insert(0, schedule)
-                        break
+    def put(self, schedules):
+        dates = [iq.datetime for iq in schedules]
+
+        if len(self.dates) == 0:
+            self.dates = dates[1:]
+            self.schedules = schedules[1:]
+            del dates[1:]
+            del schedules[1:]
+
+        i = len(self.dates)
+        for j in range(len(dates) - 1, -1, -1):
+            date = dates[j]
+            schedule = schedules[j]
+            while True:
+                if date > self.dates[i - 1] or i == 0:
+                    self.dates.insert(i, date)
+                    self.schedules.insert(i, schedule)
+                    break
+                else:
+                    i -= 1
 
     def delete(self, index):
         del self.dates[index]
@@ -39,28 +36,15 @@ class Queue:
         if not self.dates:
             return None
         if self.dates[0] < datetime.utcnow():
-            return self.schedules[0]
+            schedule = self.schedules[0]
+            self.delete(0)
+            return schedule
 
-
-def generate_queue(incident_uuid, units, steps):
-    schedules = []
-    dt = datetime.utcnow()
-    for s in steps:
-        if 'unit' in s:
-            try:
-                unit = units[s.get('unit')]
-                action = Action(incident_uuid, s['action'], unit)
-                schedules.append(Schedule(
-                    datetime_=dt,
-                    action=action,
-                    status='waiting'
-                ))
-            except KeyError:
-                logger.warning(f'No unit {s.get("unit")} in \'units\' section. See config.yml')
-        else:
-            delay = unix_sleep_to_timedelta(s.get('wait'))
-            dt = dt + delay
-    return schedules
+    def serialize(self):
+        l_ = list()
+        for i in range(len(self.dates)):
+            l_.append({'datetime': self.dates[i], 'schedule': self.schedules[i].dump()})
+        return l_
 
 
 def unix_sleep_to_timedelta(unix_sleep_time):

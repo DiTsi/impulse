@@ -60,14 +60,14 @@ channels:
 units:
   DiTsi:
     actions:
-      mention: "@Dmitry Tsybus"
+      mention: "Dmitry Tsybus"
   Oleg:
     actions:
-      mention: "@Oleg"
+      mention: "Oleg"
       webhook: "https://webhook.com/+79266966298"
   Andrey:
     actions:
-      mention: "@Andrey"
+      mention: "Andrey"
       webhook: "https://webhook.com/+79266966297"
   space_squad:
     units:

@@ -1,23 +1,22 @@
-from datetime import datetime
 import json
 import os
-from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask
 
-from app.chain import Chain
-from app.channel import SlackChannels
+from app.chain import generate_chains
+from app.channel import generate_channels
 from app.incident import Incident, Incidents
 from app.logger import logger
+from app.message_template import generate_message_templates
 from app.queue import Queue, unix_sleep_to_timedelta
+from app.route import generate_route
 from app.schedule import Action, Schedule, generate_queue
-from app.slack import get_public_channels, create_thread, post_thread
-from app.unit import Unit, UnitGroup
-from app.message_template import MessageTemplate
-from app.route import MainRoute
+from app.slack import get_public_channels, create_thread, post_thread, get_users
+from app.unit import generate_units
 from config import settings
 from config import slack_verification_token
-
 
 app = Flask(__name__)
 incidents = Incidents([])
@@ -37,9 +36,10 @@ def handle_queue():
     schedule = queue.handle_first()
     if schedule is not None:
         incident = incidents.by_uuid.get(schedule.action.id)
-        if schedule.action.type == 'mention':
+        if schedule.action.type == 'slack_mention':
             unit = units.get(schedule.action.to)
-            post_thread(incident.channel_id, incident.ts, unit)
+            text = unit.mention_text()
+            post_thread(incident.channel_id, incident.ts, text)
         elif schedule.action.type == 'webhook':
             pass
         elif schedule.action.type == 'change_status':
@@ -47,8 +47,8 @@ def handle_queue():
 
 
 def handle_new(alert_state):
-    channel_name, chain_name = route.get_chain(alert_state)
-    channel = public_channels.channels_by_name[channel_name]
+    channel_id, chain_name = route.get_route(alert_state)
+    channel = channels[channel_id]
     template = message_templates.get(channel.message_template)
     message = template.form_message(alert_state)
     ts = create_thread(
@@ -61,6 +61,7 @@ def handle_new(alert_state):
         status=alert_state['status'],
         ts=ts,
         channel_id=channel.id,
+        channel_type=channel.type,
         scheduler=[],
         acknowledged=False,
         acknowledged_by=None,
@@ -85,7 +86,7 @@ def handle_new(alert_state):
 
 
 def handle_existing(incident, alert_state):
-    channel = public_channels.channels_by_id[incident.channel_id]
+    channel = channels[incident.channel_id]
     template = message_templates.get(channel.message_template)
     if incident.last_state != alert_state:
         logger.debug(f'Incident get new state')
@@ -152,38 +153,23 @@ if __name__ == '__main__':
 
     # get existing channels info from Slack
     logger.debug(f'Get Slack channels using API')
-    public_channels = SlackChannels(get_public_channels(), channels_dict)
+    slack_channels = get_public_channels()
 
-    # create objects
-    units = {}
-    logger.debug(f'Creating Units')
-    for name in units_dict.keys():
-        if 'actions' in units_dict[name]:
-            units[name] = Unit(name, units_dict[name]['actions'])
+    # get existing channels info from Slack
+    logger.debug(f'Get Slack users using API')
+    slack_users = get_users()
 
-    logger.debug(f'Creating UnitGroups')
-    for name in units_dict.keys():
-        if 'units' in units_dict[name]:
-            units[name] = UnitGroup(name, [units[subunit] for subunit in units_dict[name]['units']])
+    # create objects from config
+    channels = generate_channels(channels_dict, slack_channels)
+    units = generate_units(units_dict, slack_users)
+    message_templates = generate_message_templates(message_templates_dict)
+    route = generate_route(route_dict, slack_channels)
+    chains = generate_chains(chains_dict)
 
-    logger.debug(f'Creating MessageTemplates')
-    message_templates = {
-        name: MessageTemplate(
-            name,
-            message_templates_dict[name]['text']
-        ) for name in message_templates_dict.keys()
-    }
-
-    logger.debug(f'Creating MainRoute')
-    route = MainRoute(route_dict['channel'], route_dict.get('chain'), route_dict.get('routes'))
-
-    logger.debug(f'Creating Chains')
-    chains = {
-        name: Chain(name, chains_dict[name]) for name in chains_dict.keys()
-    }
-
+    # create Queue object
     logger.debug(f'Creating Queue')
     queue = Queue()
+    logger.debug(f'Queue created')
 
     # run scheduler
     scheduler = BackgroundScheduler()

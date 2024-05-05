@@ -42,44 +42,71 @@ class Matcher:
 
 
 class MainRoute:
-    def __init__(self, channel, chain, routes_list):
-        self.channel = channel
+    def __init__(self, channel_id, chain, routes_list):
+        self.channel_id = channel_id
         self.chain = chain or None
         self.routes = []
         for r in routes_list:
             if r.get('routes') is None:
-                self.routes.append(Route(r.get('channel'), r.get('chain'), [], r.get('matchers')))
+                self.routes.append(Route(r.get('channel_id'), r.get('chain'), [], r.get('matchers')))
             else:
-                self.routes.append(Route(r.get('channel'), r.get('chain'), r.get('routes'), r.get('matchers')))
+                self.routes.append(Route(r.get('channel_id'), r.get('chain'), r.get('routes'), r.get('matchers')))
 
-    def get_chain(self, alert_state):
+    def get_route(self, alert_state):
         if len(self.routes) == 0:
-            return self.channel, self.chain
+            return self.channel_id, self.chain
         else:
             for r in self.routes:
-                match, channel, chain = r.get_chain(alert_state)
+                match, channel_id, chain = r.get_route(alert_state)
                 if match:
-                    return channel, chain
-            return self.channel, self.chain
+                    return channel_id, chain
+            return self.channel_id, self.chain
 
     def __repr__(self):
         return self.chain
 
 
 class Route(MainRoute):
-    def __init__(self, channel, chain, routes_list, matchers):
-        super().__init__(channel, chain, routes_list)
+    def __init__(self, channel_id, chain, routes_list, matchers):
+        super().__init__(channel_id, chain, routes_list)
         self.matchers = [Matcher(m) for m in matchers]
 
-    def get_chain(self, alert_state):
+    def get_route(self, alert_state):
         for m in self.matchers:
             if not m.matches(alert_state):
                 return False, None, None
         if len(self.routes) == 0:
-            return True, self.channel, self.chain
+            return True, self.channel_id, self.chain
         else:
             for r in self.routes:
-                match, channel, chain = r.get_chain(alert_state)
+                match, channel_id, chain = r.get_route(alert_state)
                 if match:
-                    return True, channel, chain
-            return True, self.channel, self.chain
+                    return True, channel_id, chain
+            return True, self.channel_id, self.chain
+
+
+def generate_route(route_dict, slack_channels):
+    def add_channel_ids(routes, slack_channels):
+        for r in routes:
+            ch = r['channel']
+            try:
+                r['channel_id'] = slack_channels[ch]['id']
+                if 'routes' in r:
+                    rs = r['routes']
+                    add_channel_ids(rs, slack_channels)
+            except KeyError:
+                logger.error(f'No channel \'{ch}\' in Slack')
+
+
+    logger.debug(f'Creating MainRoute')
+    main_channel_name = route_dict['channel']
+    main_channel_id = slack_channels[main_channel_name]['id']
+    main_chain = route_dict.get('chain')
+    routes = route_dict.get('routes')
+
+    # replace channel name with channel_id
+    add_channel_ids(routes, slack_channels)
+
+    route = MainRoute(main_channel_id, main_chain, routes)
+    logger.debug(f'MainRoute created')
+    return route

@@ -8,25 +8,35 @@ class Queue:
         self.last_slack_api_request = datetime.utcnow()
 
     def put(self, schedules):
+        def insert(start_index, date_, schedule_, dates_, schedules_):
+            if len(dates_) == 0:
+                dates_.append(date_)
+                schedules_.append(schedule_)
+                return 0
+
+            start = start_index if start_index != -1 else len(dates_) - 1
+
+            for i_ in range(start, -1, -1):
+                if date_ > dates_[i_]:
+                    dates_.insert(i_ + 1, date_)
+                    schedules_.insert(i_ + 1, schedule_)
+                    return i
+
+            dates_.insert(0, date_)
+            schedules_.insert(0, schedule_)
+            return 0
+
         dates = [iq.datetime for iq in schedules]
 
-        if len(self.dates) == 0:
-            self.dates = dates[1:]
-            self.schedules = schedules[1:]
-            del dates[1:]
-            del schedules[1:]
+        insert(-1, dates[0], schedules[0], self.dates, self.schedules)
+        del dates[0]
+        del schedules[0]
 
-        i = len(self.dates)
-        for j in range(len(dates) - 1, -1, -1):
-            date = dates[j]
-            schedule = schedules[j]
-            while True:
-                if date > self.dates[i - 1] or i == 0:
-                    self.dates.insert(i, date)
-                    self.schedules.insert(i, schedule)
-                    break
-                else:
-                    i -= 1
+        insert_i = -1
+        for i in range(len(dates) - 1, -1, -1):
+            insert_i = insert(insert_i, dates[i], schedules[i], self.dates, self.schedules)
+
+        pass
 
     def delete(self, index):
         del self.dates[index]

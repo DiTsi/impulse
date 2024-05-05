@@ -18,11 +18,12 @@ next_status = {
 
 
 class Incident:
-    def __init__(self, alert, status, ts, channel_id, scheduler, acknowledged, acknowledged_by, message, updated):
+    def __init__(self, alert, status, ts, channel_id, channel_type, scheduler, acknowledged, acknowledged_by, message, updated):
         self.last_state = alert
         self.ts = ts
         self.status = status
         self.channel_id = channel_id
+        self.channel_type = channel_type
         self.scheduler = scheduler
         self.acknowledged = acknowledged
         self.acknowledged_by = acknowledged_by
@@ -43,11 +44,12 @@ class Incident:
             status = content.get('status')
             message = content.get('message')
             channel_id = content.get('channel_id')
+            channel_type = content.get('channel_type')
             queue = content.get('queue')
             updated = content.get('updated')
             acknowledged = content.get('acknowledged')
             acknowledged_by = content.get('acknowledged_by')
-        return cls(last_state, status, ts, channel_id, queue, acknowledged, acknowledged_by, message, updated)
+        return cls(last_state, status, ts, channel_id, channel_type, queue, acknowledged, acknowledged_by, message, updated)
 
     def dump(self, incident_file):
         with open(incident_file, 'w') as f:
@@ -68,6 +70,7 @@ class Incident:
         return {
             "last_state": self.last_state,
             "channel_id": self.channel_id,
+            "channel_type": self.channel_type,
             "queue": self.scheduler,
             "updated": self.updated,
             "acknowledged": self.acknowledged,

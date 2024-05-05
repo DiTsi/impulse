@@ -9,37 +9,21 @@ class Channel:
         self.type = type_
 
     def __repr__(self):
-        return self.name
+        return f'{self.name} ({self.type})'
 
 
-class SlackChannel(Channel):
-    def __init__(self, id_, name, message_template):
-        super().__init__(id_, name, message_template, 'slack')
-
-
-class SlackChannels:
-    def __init__(self, public_channels, channels_dict):
-        self.channels_by_id = {}
-        self.channels_by_name = {}
-
-        non_existing_channels = []
-        for channel_name in channels_dict.keys():
+def generate_channels(channels_dict, slack_channels):
+    logger.debug(f'Creating Channels')
+    channels = {}
+    for channel in channels_dict.items():
+        channel_name = channel[0]
+        channel_type = channel[1]['type']
+        channel_template = channel[1]['message_template']
+        if channel_type == 'slack':
             try:
-                self.channels_by_id[public_channels[channel_name]['id']] = SlackChannel(
-                    public_channels[channel_name]['id'],
-                    channel_name,
-                    channels_dict[channel_name]['message_template']
-                )
+                channel_id = slack_channels[channel_name]['id']
+                channels[channel_id] = Channel(channel_id, channel_name, channel_template, channel_type)
             except KeyError:
-                logger.debug(f'Channel \'{channel_name}\' from config.yml does not exist in Slack')
-                non_existing_channels.append(channel_name)
-
-        for c in non_existing_channels:
-            del channels_dict[c]
-
-        for channel_name in channels_dict.keys():
-            self.channels_by_name[channel_name] = SlackChannel(
-                public_channels[channel_name]['id'],
-                channel_name,
-                channels_dict[channel_name]['message_template']
-            )
+                logger.warning(f'No public channel \'{channel_name}\' in Slack')
+    logger.debug(f'Channels created')
+    return channels

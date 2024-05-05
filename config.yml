@@ -15,7 +15,7 @@ admin_notifications_when_drop_steps: True  # Notify about dropped Incident chain
 
 route:
   chain: warning
-  channel:
+  channel: space
   routes:
   - matchers:
     - severity="warning"
@@ -38,40 +38,43 @@ route:
 
 chains:
   space_team:
-  - {unit: Andrey, action: mention}
-  - {unit: Oleg, action: webhook}
+  - {unit: Andrey, notify_type: slack_mention}
+  - {unit: Oleg, notify_type: webhook}
   - {wait: 10m}
-  - {unit: space_squad, action: webhook}
+  - {unit: space_squad, notify_type: webhook}
   warning:
-  - {unit: DiTsi, action: mention}
+  - {unit: space_squad, notify_type: slack_mention}
   - {wait: 1m}
-  - {unit: DiTsi, action: mention}
+  - {unit: DiTsi, notify_type: slack_mention}
   - {wait: 1m}
-  - {unit: DiTsi, action: mention}
+  - {unit: DiTsi, notify_type: slack_mention}
 
 channels:
   space:
     message_template: slack
-  infrastructure:
+    type: slack
+  infrastructure2:
     message_template: slack
+    type: slack
   warning:
     message_template: slack
+    type: slack
 
 units:
   DiTsi:
-    actions:
-      mention: "Dmitry Tsybus"
+    notify_types:
+      slack_mention: "Dmitry Tsybus" # Full name
   Oleg:
-    actions:
-      mention: "Oleg"
+    notify_types:
+      slack_mention: "Oleg"
       webhook: "https://webhook.com/+79266966298"
   Andrey:
-    actions:
-      mention: "Andrey"
+    notify_types:
+      slack_mention: "Andrey"
       webhook: "https://webhook.com/+79266966297"
   space_squad:
     units:
-      - Andrey
+      - DiTsi
       - Oleg
 
 message_templates:

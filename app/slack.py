@@ -134,29 +134,34 @@ def get_public_channels():
         return []
 
 
-def get_user_info(nickname):
+def get_users():
     url = 'https://slack.com/api/users.list'
-    payload = {
-        'username': nickname
-    }
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-    if response.status_code == 200:
-        data = response.json()
-        members = data.get('members')
-        for m in members:
-            if m.get('real_name') == nickname:
-                return m
-    else:
-        return None
+    response = requests.post(url, headers=headers)
+    members = response.json()['members']
+    return members
 
 
-def post_thread(channel_id, ts, unit):
+# def get_user_info(fullname):
+#     url = 'https://slack.com/api/users.list'
+#     payload = {
+#         'username': fullname
+#     }
+#     response = requests.post(url, headers=headers, data=json.dumps(payload))
+#     if response.status_code == 200:
+#         data = response.json()
+#         members = data.get('members')
+#         for m in members:
+#             if m.get('real_name') == fullname:
+#                 return m
+#     else:
+#         return None
+
+
+def post_thread(channel_id, ts, text):
     url = 'https://slack.com/api/chat.postMessage'
-    user_id = get_user_info(unit.actions['mention'])['id']
-
     payload = {
         'channel': channel_id,
-        'text': f'<@{user_id}>',
+        'text': text,
         'thread_ts': ts
     }
     requests.post(url, headers=headers, data=json.dumps(payload))

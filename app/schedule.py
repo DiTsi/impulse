@@ -54,7 +54,7 @@ def generate_queue(incident_uuid, units, steps):
         if 'unit' in s:
             try:
                 unit = units[s.get('unit')]
-                action = Action(incident_uuid, s['action'], unit.name)
+                action = Action(incident_uuid, s['notify_type'], unit.name)
                 schedules.append(Schedule(
                     datetime_=dt,
                     action=action,

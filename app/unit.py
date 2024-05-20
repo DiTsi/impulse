@@ -11,13 +11,13 @@ class Unit:
         return self.name
 
     def mention_text(self):
-        text = f'Notify unit *{self.name}*: <@{self.slack_id}>'
+        text = f'notify unit *{self.name}*: <@{self.slack_id}>'
         return text
 
 
-class UnitGroup(Unit):
+class UnitGroup:
     def __init__(self, name, units):
-        super().__init__(name, None)
+        self.name = name
         self.units = units
 
     def get_actions(self, action):
@@ -27,33 +27,38 @@ class UnitGroup(Unit):
             return [u.slack_mention for u in self.units]
 
     def mention_text(self):
-        text = f'Notify UnitGroup *{self.name}*. Units:'
+        text = f'notify unit_group *{self.name}*. Units:'
         for unit in self.units:
             text += f'\n<@{unit.slack_id}> '
         return text
 
 
 def generate_units(units_dict, slack_users):
-    def get_user_id_(users, user):
+    def get_user_id_(s_users, user):
         if user is None:
             return None
-        for u in users:
+        for u in s_users:
             if u.get('real_name') == user:
                 return u['id']
         logger.warning(f'User \'{user}\' not found in Slack users')
         return None
+
     logger.debug(f'Creating Units')
     units = {}
     for name in units_dict.keys():
-        if 'units' not in units_dict[name]:
-            slack_name = units_dict[name]['notify_types'].get('slack_mention')
-            slack_id = get_user_id_(slack_users, slack_name)
-            webhook = units_dict[name]['notify_types'].get('webhook')
-            units[name] = Unit(name, slack_id=slack_id, webhook=webhook)
-
-    logger.debug(f'Creating UnitGroups')
-    for name in units_dict.keys():
-        if 'units' in units_dict[name]:
-            units[name] = UnitGroup(name, [units[subunit] for subunit in units_dict[name]['units']])
-    logger.debug(f'Units created')
+        slack_name = units_dict[name]['notify_types'].get('slack_mention')
+        slack_id = get_user_id_(slack_users, slack_name)
+        webhook = units_dict[name]['notify_types'].get('webhook')
+        units[name] = Unit(name, slack_id=slack_id, webhook=webhook)
     return units
+
+
+def generate_unit_groups(unit_groups_dict, units):
+    logger.debug(f'Creating UnitGroups')
+    unit_groups = {}
+    for name in unit_groups_dict.keys():
+        unit_names = unit_groups_dict[name]['units']
+        unit_objects = [units.get(unit_name) for unit_name in unit_names]
+        unit_groups[name] = UnitGroup(name, unit_objects)
+    logger.debug(f'UnitGroups created')
+    return unit_groups

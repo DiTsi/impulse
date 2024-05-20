@@ -5,64 +5,72 @@ from app.queue import unix_sleep_to_timedelta
 
 
 class Schedule:
-    def __init__(self, datetime_, action, status):
+    def __init__(self, datetime_, id, type, notify_type, to, status, result):
         self.datetime = datetime_
-        self.action = action
+        self.id = id
+        self.type = type
+        self.notify_type = notify_type
+        self.to = to
         self.status = status  # 'waiting' | 'done'
+        self.result = result
 
     def dump(self):
         return {
             'datetime': self.datetime,
-            'action': self.action.dump(),
-            'status': self.status
+            'id': self.id,
+            'type': self.type,
+            'notify_type': self.notify_type,
+            'to': self.to,
+            'status': self.status,
+            'result': self.result
         }
 
     @classmethod
     def load(cls, dump):
-        return cls(dump['datetime'], Action.load(dump['action']), dump['status'])
+        return cls(
+            dump['datetime'],
+            dump['id'],
+            dump['type'],
+            dump['notify_type'],
+            dump['to'],
+            dump['status'],
+            dump['result']
+        )
 
 
-class Action:
-    def __init__(self, id_, type_, to):
-        self.id = id_
-        self.type = type_
-        self.to = to
-
-    def dump(self):
-        return {
-            'id': self.id,
-            'type': self.type,
-            'to': self.to
-        }
-
-    @classmethod
-    def load(cls, dump):
-        return cls(dump['id'], dump['type'], dump['to'])
-
-    def __repr__(self):
-        return {
-            'id': self.id,
-            'type': self.type,
-            'to': self.to
-        }
-
-
-def generate_queue(incident_uuid, units, steps):
+def generate_queue(incident_uuid, units, unit_groups, steps):
     schedules = []
     dt = datetime.utcnow()
     for s in steps:
-        if 'unit' in s:
+        if 'wait' in s:
+            delay = unix_sleep_to_timedelta(s.get('wait'))
+            dt = dt + delay
+        elif 'unit' in s:
             try:
                 unit = units[s.get('unit')]
-                action = Action(incident_uuid, s['notify_type'], unit.name)
                 schedules.append(Schedule(
                     datetime_=dt,
-                    action=action,
-                    status='waiting'
+                    id=incident_uuid,
+                    type='unit',
+                    notify_type=s['notify_type'],
+                    to=unit.name,
+                    status='waiting',
+                    result=None
                 ))
             except KeyError:
                 logger.warning(f'No unit {s.get("unit")} in \'units\' section. See config.yml')
-        else:
-            delay = unix_sleep_to_timedelta(s.get('wait'))
-            dt = dt + delay
+        elif 'unit_group' in s:
+            try:
+                unit_group = unit_groups[s.get('unit_group')]
+                schedules.append(Schedule(
+                    datetime_=dt,
+                    id=incident_uuid,
+                    type='unit_group',
+                    notify_type=s['notify_type'],
+                    to=unit_group.name,
+                    status='waiting',
+                    result=None
+                ))
+            except KeyError:
+                logger.warning(f'No unit_group {s.get("unit_group")} in \'unit_groups\' section. See config.yml')
     return schedules

@@ -41,9 +41,9 @@ chains:
   - {unit: Andrey, notify_type: slack_mention}
   - {unit: Oleg, notify_type: webhook}
   - {wait: 10m}
-  - {unit: space_squad, notify_type: webhook}
+  - {unit_group: space_squad, notify_type: webhook}
   warning:
-  - {unit: space_squad, notify_type: slack_mention}
+  - {unit_group: space_squad, notify_type: slack_mention}
   - {wait: 1m}
   - {unit: DiTsi, notify_type: slack_mention}
   - {wait: 1m}
@@ -72,6 +72,8 @@ units:
     notify_types:
       slack_mention: "Andrey"
       webhook: "https://webhook.com/+79266966297"
+
+unit_groups:
   space_squad:
     units:
       - DiTsi

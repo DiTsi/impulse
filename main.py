@@ -12,9 +12,9 @@ from app.logger import logger
 from app.message_template import generate_message_templates
 from app.queue import Queue, unix_sleep_to_timedelta
 from app.route import generate_route
-from app.schedule import Action, Schedule, generate_queue
+from app.schedule import Schedule, generate_queue
 from app.slack import get_public_channels, create_thread, post_thread, get_users
-from app.unit import generate_units
+from app.unit import generate_units, generate_unit_groups
 from config import settings
 from config import slack_verification_token
 
@@ -35,15 +35,15 @@ def recreate_incidents():
 def handle_queue():
     schedule = queue.handle_first()
     if schedule is not None:
-        incident = incidents.by_uuid.get(schedule.action.id)
-        if schedule.action.type == 'slack_mention':
-            unit = units.get(schedule.action.to)
+        incident = incidents.by_uuid.get(schedule.id)
+        if schedule.type == 'slack_mention':
+            unit = units.get(schedule.to)
             text = unit.mention_text()
             post_thread(incident.channel_id, incident.ts, text)
-        elif schedule.action.type == 'webhook':
+        elif schedule.type == 'webhook':
             pass
-        elif schedule.action.type == 'change_status':
-            incident.update_status(schedule.action.to)
+        elif schedule.type == 'change_status':
+            incident.update_status(schedule.to)
 
 
 def handle_new(alert_state):
@@ -73,12 +73,15 @@ def handle_new(alert_state):
     uuid = incidents.add(incident)
     status = alert_state.get("status")
 
-    action = Action(uuid, 'change_status', 'unknown')
     schedule_list = [Schedule(
         datetime_=datetime.utcnow() + unix_sleep_to_timedelta(settings.get(f'{status}_timeout')),
-        action=action,
-        status=status
-    )] + generate_queue(uuid, units, chain.steps)
+        id=uuid,
+        type='change_status',
+        notify_type=None,
+        to='unknown',
+        status=status,
+        result=None
+    )] + generate_queue(uuid, units, unit_groups, chain.steps)
 
     incident.set_queue(schedule_list)
     queue.put(schedule_list)
@@ -147,6 +150,7 @@ if __name__ == '__main__':
     # read config
     channels_dict = settings.get('channels')
     units_dict = settings.get('units')
+    unit_groups_dict = settings.get('unit_groups')
     message_templates_dict = settings.get('message_templates')
     route_dict = settings.get('route')
     chains_dict = settings.get('chains')
@@ -162,6 +166,7 @@ if __name__ == '__main__':
     # create objects from config
     channels = generate_channels(channels_dict, slack_channels)
     units = generate_units(units_dict, slack_users)
+    unit_groups = generate_unit_groups(unit_groups_dict, units)
     message_templates = generate_message_templates(message_templates_dict)
     route = generate_route(route_dict, slack_channels)
     chains = generate_chains(chains_dict)

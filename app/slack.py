@@ -84,10 +84,10 @@ def get_users():
         headers=headers
     )
     sleep(1)
-    json_ = response.json()
-    if not json_['ok']:
-        logger.error(f'Incorrect Slack response. Reason: {json_["reason"]}')
+    if not response.ok:
+        logger.error(f'Incorrect Slack response. Reason: {response.reason}')
         exit()
+    json_ = response.json()
     return json_['members']
 
 

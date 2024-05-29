@@ -53,9 +53,9 @@ application:
     - user_group: space_squad
     warning:
     - user_group: space_squad
-    - wait: 2s
+    - wait: 10s
     - user: DiTsi
-    - wait: 2m
+    - wait: 10s
     - webhook: Oleg
   user_groups:
     space_squad:

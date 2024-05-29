@@ -54,21 +54,16 @@ class SlackApplication(Application):
 
     def handler(self, payload, incidents, queue):
         incident, uuid = incidents.get_by_ts(ts=payload['message_ts'])
-        if payload['callback_id'] == 'acknowledge': #!
+
+        modified_message = payload.get('original_message') #!
+        if modified_message['attachments'][1]['actions'][0]['text'] == 'Acknowledge':
             incident.acknowledged = True
             incident.acknowledged_by = payload['user']['id']
-
-            # clear queue
             queue.delete_steps_by_id(uuid) #!
         else:
             incident.acknowledged = False
             incident.acknowledged_by = None
-
-            # extend queue
-            pass
-            # incident.set_chain(schedule_list)
-            # queue.put(schedule_list)
-
+            queue.recreate(uuid, incident.chain)
         modified_message = button_handler(payload)
         return modified_message, 200
 
@@ -82,7 +77,6 @@ class SlackApplication(Application):
 
 
 def generate_application(app_dict, channels_list):
-    # try:
     app_type = app_dict['type']
     if app_type == 'slack':
         application = SlackApplication(
@@ -92,7 +86,4 @@ def generate_application(app_dict, channels_list):
     else:
         logger.error(f'Application type \'{app_type}\' not supported\nExiting...')
         exit()
-    # except KeyError:
-    #     logger.error(f'Specify application type in config.yml\nExiting...')
-    #     exit()
     return application

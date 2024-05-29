@@ -36,6 +36,9 @@ route:
     chain: infra
     channel: infrastructure
 
+webhooks:
+  Oleg: https://home.ditsi.ru/
+
 application:
   type: slack
   verification_token: "{{ SLACK_VERIFICATION_TOKEN }}"
@@ -51,10 +54,10 @@ application:
     - user_group: space_squad
     warning:
     - user_group: space_squad
-    - wait: 1m
+    - wait: 5s
     - user: DiTsi
-    - wait: 1m
-    - user: DiTsi
+    - wait: 5s
+    - webhook: Oleg
   user_groups:
     space_squad:
       users:

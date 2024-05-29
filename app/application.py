@@ -1,9 +1,7 @@
-from time import sleep
-
 from app.chain import generate_chains
 from app.logger import logger
 from app.message_template import generate_message_templates
-from app.slack import get_public_channels, get_users, generate_users, generate_user_groups, button_handler
+from app.slack import get_public_channels, get_users, generate_users, generate_user_groups, button_handler, post_thread
 
 
 class Application:
@@ -21,8 +19,6 @@ class SlackApplication(Application):
         # create channels
         logger.debug(f'get Slack channels using API')
         public_channels = get_public_channels()
-        sleep(1)
-
         logger.debug(f'get channels IDs for channels in route')
         channels = dict()
         for ch in channels_list:
@@ -67,25 +63,34 @@ class SlackApplication(Application):
             incident.acknowledged_by = None
 
             # extend queue
-            incident.set_queue(schedule_list)
-            queue.put(schedule_list)
+            pass
+            # incident.set_chain(schedule_list)
+            # queue.put(schedule_list)
 
         modified_message = button_handler(payload)
         return modified_message, 200
 
+    def notify(self, channel_id, ts, type_, identifier):
+        if type_ == 'user':
+            unit = self.users[identifier]
+        else:
+            unit = self.user_groups[identifier]
+        response_code = post_thread(channel_id, ts, unit.mention_text())
+        return response_code
+
 
 def generate_application(app_dict, channels_list):
-    try:
-        app_type = app_dict['type']
-        if app_type == 'slack':
-            application = SlackApplication(
-                app_dict,
-                channels_list
-            )
-        else:
-            logger.error(f'Application type \'{app_type}\' not supported\nExiting...')
-            exit()
-    except KeyError:
-        logger.error(f'Specify application type in config.yml\nExiting...')
+    # try:
+    app_type = app_dict['type']
+    if app_type == 'slack':
+        application = SlackApplication(
+            app_dict,
+            channels_list
+        )
+    else:
+        logger.error(f'Application type \'{app_type}\' not supported\nExiting...')
         exit()
+    # except KeyError:
+    #     logger.error(f'Specify application type in config.yml\nExiting...')
+    #     exit()
     return application

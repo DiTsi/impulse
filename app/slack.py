@@ -1,4 +1,5 @@
 import json
+from time import sleep
 
 import requests
 
@@ -55,6 +56,7 @@ def get_public_channels():
             f'{url}/api/conversations.list',
             headers=headers
         )
+        sleep(1)
         data = response.json()
         channels_list = data.get('channels', [])
         channels_dict = {c.get('name'): c for c in channels_list}
@@ -69,8 +71,12 @@ def get_users():
         f'{url}/api/users.list',
         headers=headers
     )
-    members = response.json()['members']
-    return members
+    sleep(1)
+    json_ = response.json()
+    if not json_['ok']:
+        logger.error(f'Incorrect Slack response. Reason: {json_["reason"]}')
+        exit()
+    return json_['members']
 
 
 def create_thread(channel_id, message, status):
@@ -205,11 +211,12 @@ def post_thread(channel_id, ts, text):
         'text': text,
         'thread_ts': ts
     }
-    requests.post(
+    r = requests.post(
         f'{url}/api/chat.postMessage',
         headers=headers,
         data=json.dumps(payload)
     )
+    return r.status_code
 
 
 def generate_users(users_dict, slack_users):

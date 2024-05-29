@@ -1,83 +1,80 @@
 from datetime import datetime, timedelta
 
-from app.slack import post_thread
-
 
 class Queue:
+    TYPES = {
+        0: 'update_status',
+        1: 'chain_step',
+        2: 'webhook'
+    }
+
     def __init__(self):
         self.dates = []
-        self.schedules = []
-        self.last_slack_api_request = datetime.utcnow()
+        self.types = []
+        self.incident_uuids = []
+        self.identifiers = []
 
-    def put(self, schedules):
-        def insert(start_index, date_, schedule_, dates_, schedules_):
-            if len(dates_) == 0:
-                dates_.append(date_)
-                schedules_.append(schedule_)
-                return 0
-
-            start = start_index if start_index != -1 else len(dates_) - 1
-
-            for i_ in range(start, -1, -1):
-                if date_ > dates_[i_]:
-                    dates_.insert(i_ + 1, date_)
-                    schedules_.insert(i_ + 1, schedule_)
-                    return i_
-
-            dates_.insert(0, date_)
-            schedules_.insert(0, schedule_)
-            return 0
-
-        dates = [iq.datetime for iq in schedules]
-
-        insert(-1, dates[0], schedules[0], self.dates, self.schedules)
-        del dates[0]
-        del schedules[0]
-
-        insert_i = -1
-        for i in range(len(dates) - 1, -1, -1):
-            insert_i = insert(insert_i, dates[i], schedules[i], self.dates, self.schedules)
+    def put(self, datetime_, type_, incident_uuid, identifier=None):
+        for i in range(len(self.dates)):
+            if datetime_ < self.dates[i]:
+                self.dates.insert(i, datetime_)
+                self.types.insert(i, type_)
+                self.incident_uuids.insert(i, incident_uuid)
+                self.identifiers.insert(i, identifier)
+                return
+        self.dates.append(datetime_)
+        self.types.append(type_)
+        self.incident_uuids.append(incident_uuid)
+        self.identifiers.append(identifier)
 
     def delete(self, index):
         del self.dates[index]
-        del self.schedules[index]
+        del self.types[index]
+        del self.incident_uuids[index]
+        del self.identifiers[index]
 
     def delete_by_id(self, uuid):
         ids_to_delete = list()
-        for i in range(len(self.dates) - 1, -1, -1):
-            schedule = self.schedules[i]
-            if schedule.id == uuid and schedule.type != 'change_status':
+        for i in range(len(self.dates)):
+            if self.types[i] != 'change_status' and self.incident_uuids[i] == uuid:
                 ids_to_delete.append(i)
-        [self.delete(i) for i in ids_to_delete]
+        for i in ids_to_delete:
+            self.delete(i)
 
-    def handle_first(self):
-        if not self.dates:
-            return None
+    def handle(self):
         if self.dates[0] < datetime.utcnow():
-            schedule = self.schedules[0]
+            type_ = self.types[0]
+            incident_uuid = self.incident_uuids[0]
+            identifier = self.identifiers[0]
             self.delete(0)
-            return schedule
 
-    def handle_queue(self, incidents, users, user_groups):
-        schedule = self.handle_first()
-        if schedule is not None:
-            incident = incidents.by_uuid.get(schedule.id)
-            if schedule.type == 'user':
-                user = users.get(schedule.to)
-                post_thread(incident.channel_id, incident.ts, user.mention_text())
-            if schedule.type == 'user_group':
-                user_group = user_groups.get(schedule.to)
-                post_thread(incident.channel_id, incident.ts, user_group.mention_text())
-            elif schedule.type == 'webhook':
-                pass
-            elif schedule.type == 'change_status':
-                incident.update_status(schedule.to)
+            return type_, incident_uuid, identifier
+        return None, None, None
 
     def serialize(self):
-        l_ = list()
+        result = list()
         for i in range(len(self.dates)):
-            l_.append({'datetime': self.dates[i], 'schedule': self.schedules[i].dump()})
-        return l_
+            if self.types[i] == 0:
+                result.append({
+                    'datetime': self.dates[i],
+                    'type': Queue.TYPES[self.types[i]],
+                    'incident_uuid': self.incident_uuids[i]
+                })
+            elif self.types[i] == 1:
+                result.append({
+                    'datetime': self.dates[i],
+                    'type': Queue.TYPES[self.types[i]],
+                    'incident_uuid': self.incident_uuids[i],
+                    'step_number': self.identifiers[i]
+                })
+            else:
+                result.append({
+                    'datetime': self.dates[i],
+                    'type': Queue.TYPES[self.types[i]],
+                    'incident_uuid': self.incident_uuids[i],
+                    'webhook': self.identifiers[i]
+                })
+        return result
 
 
 def unix_sleep_to_timedelta(unix_sleep_time):

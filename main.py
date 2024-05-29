@@ -5,7 +5,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask
 
 from app.application import generate_application
-from app.incident import Incidents, recreate_incidents, handle_alert
+from app.incident import Incidents, recreate_incidents, handle_alert, queue_handle
 from app.logger import logger
 from app.queue import Queue
 from app.route import generate_route
@@ -50,6 +50,7 @@ if __name__ == '__main__':
 
     route_dict = settings.get('route')
     app_dict = settings.get('application')
+    webhooks_dict = settings.get('webhooks')
 
     route = generate_route(route_dict)
     application = generate_application(
@@ -65,10 +66,10 @@ if __name__ == '__main__':
     # run scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(
-        func=queue.handle_queue,
+        func=queue_handle,
         trigger="interval",
         seconds=1.5,
-        args=[incidents, application.users, application.user_groups]
+        args=[incidents, queue, application, webhooks_dict]
     )
     scheduler.start()
 

@@ -1,7 +1,8 @@
 from app.chain import generate_chains
 from app.logger import logger
 from app.message_template import generate_message_templates
-from app.slack import get_public_channels, get_users, generate_users, generate_user_groups, button_handler, post_thread
+from app.slack import get_public_channels, get_users, generate_users, generate_user_groups, button_handler, post_thread, \
+    generate_admin_group
 
 
 class Application:
@@ -35,6 +36,7 @@ class SlackApplication(Application):
         existing_users = get_users() #!
         users = generate_users(app_config['users'], existing_users)
         user_groups = generate_user_groups(app_config['user_groups'], users)
+        user_groups['__impulse_admins__'] = generate_admin_group(app_config['admin_users'], users)
 
         # create channels
         channels = dict()
@@ -57,7 +59,7 @@ class SlackApplication(Application):
             incident.acknowledged_by = payload['user']['id']
 
             # clear queue
-            queue.delete_by_id(uuid) #!
+            queue.delete_steps_by_id(uuid) #!
         else:
             incident.acknowledged = False
             incident.acknowledged_by = None

@@ -36,10 +36,30 @@ class Queue:
     def delete_by_id(self, uuid):
         ids_to_delete = list()
         for i in range(len(self.dates)):
+            if self.incident_uuids[i] == uuid:
+                ids_to_delete.append(i)
+        for i in ids_to_delete:
+            self.delete(i)
+
+    def delete_steps_by_id(self, uuid):
+        ids_to_delete = list()
+        for i in range(len(self.dates)):
             if self.types[i] != 'change_status' and self.incident_uuids[i] == uuid:
                 ids_to_delete.append(i)
         for i in ids_to_delete:
             self.delete(i)
+
+    def recreate(self, uuid, chain):
+        for i in range(len(chain)):
+            s = chain[i]
+            self.put(s['datetime'], 1, uuid, i)
+
+    def update(self, uuid_, datetime_):
+        for i in range(len(self.dates)):
+            incident_uuid = self.incident_uuids[i]
+            type_ = self.types[i]
+            if incident_uuid == uuid_ and type_ == 0:
+                self.dates[i] = datetime_
 
     def handle(self):
         if self.dates[0] < datetime.utcnow():

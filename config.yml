@@ -1,8 +1,7 @@
 incidents_directory: ./incidents  # Directory where Incidents will be stored
 
-firing_timeout: 90m  # After this time Incident status will change from "firing" to "unknown" if no new alerts appear
-unknown_timeout: 1h  # After this time Incident status will change from "unknown" to "resolved" if no new alerts appear
-resolved_timeout: 1h  # After this time Incident status will change from "resolved" to "closed" if no new alerts appear
+firing_timeout: 1m  # After this time Incident status will change from "firing" to "unknown" if no new alerts appear
+resolved_timeout: 1m  # After this time Incident status will change from "resolved" to "closed" if no new alerts appear
 
 drop_steps_older_than: 10m  # After this time chain steps will drop (incorrect behavior)
 
@@ -43,7 +42,7 @@ application:
   type: slack
   verification_token: "{{ SLACK_VERIFICATION_TOKEN }}"
   bot_user_oauth_token: "{{ SLACK_BOT_USER_OAUTH_TOKEN }}"
-  administrators: # users which will be notified when warnings and errors occurs
+  admin_users: # users which will be notified when warnings and errors occurs
     - DiTsi
   chains:
     space_team:
@@ -54,9 +53,9 @@ application:
     - user_group: space_squad
     warning:
     - user_group: space_squad
-    - wait: 5s
+    - wait: 2s
     - user: DiTsi
-    - wait: 5s
+    - wait: 2m
     - webhook: Oleg
   user_groups:
     space_squad:

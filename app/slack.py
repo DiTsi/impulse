@@ -50,6 +50,18 @@ class UserGroup:
         return text
 
 
+class AdminGroup:
+    def __init__(self, users):
+        self.users = users
+
+    def unknown_text(self):
+        text = (f'Incident status changed to *unknown*. Check *Alertmanager*\'s '
+                f'`repeat_interval` option is less than IMPulse option `firing_timeout`') #! add link to documentation
+        for user in self.users:
+            text += f'\n<@{user.slack_id}> '
+        return text
+
+
 def get_public_channels():
     try:
         response = requests.get(
@@ -247,3 +259,12 @@ def generate_user_groups(user_groups_dict, users):
         user_groups[name] = UserGroup(name, user_objects)
     logger.debug(f'UserGroups created')
     return user_groups
+
+
+def generate_admin_group(admin_users, users):
+    logger.debug(f'Creating Admin users') #!
+    user_objects = []
+    for admin in admin_users:
+        user_objects.append(users.get(admin))
+    logger.debug(f'UserGroups created') #!
+    return AdminGroup(user_objects)

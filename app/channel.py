@@ -12,13 +12,13 @@ class Channel:
         return f'{self.name} ({self.type})'
 
 
-def generate_channels(channels_dict, slack_channels):
+def generate_channels(route_dict, slack_channels):
     logger.debug(f'Creating Channels')
     channels = {}
-    for channel in channels_dict.items():
+    for channel in route_dict.items():
         channel_name = channel[0]
-        channel_type = channel[1]['type']
-        channel_template = channel[1]['message_template']
+        # channel_type = channel[1]['type']
+        # channel_template = channel[1]['message_template']
         if channel_type == 'slack':
             try:
                 channel_id = slack_channels[channel_name]['id']

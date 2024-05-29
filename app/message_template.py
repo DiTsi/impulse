@@ -4,25 +4,19 @@ from app.logger import logger
 
 
 class MessageTemplate:
-    def __init__(self, name, text):
-        self.name = name
-        self.text = text
-
-    def __repr__(self):
-        return self.name
+    def __init__(self, template):
+        self.template = template
 
     def form_message(self, alert_state):
-        template = Template(self.text)
+        template = Template(self.template)
         return template.render(payload=alert_state)
 
 
-def generate_message_templates(message_templates_dict):
-    logger.debug(f'Creating MessageTemplates')
-    message_templates = {
-        name: MessageTemplate(
-            name,
-            message_templates_dict[name]['text']
-        ) for name in message_templates_dict.keys()
-    }
-    logger.debug(f'MessageTemplates created')
-    return message_templates
+def generate_message_templates(message_template_dict):
+    logger.debug(f'Creating MessageTemplate')
+
+    message_template = MessageTemplate(
+        message_template_dict
+    )
+    logger.debug(f'MessageTemplate created')
+    return message_template

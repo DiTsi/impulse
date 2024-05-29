@@ -42,33 +42,45 @@ class Matcher:
 
 
 class MainRoute:
-    def __init__(self, channel_id, chain, routes_list):
-        self.channel_id = channel_id
+    def __init__(self, channel, chain, routes_list):
+        self.channel = channel
         self.chain = chain or None
         self.routes = []
         for r in routes_list:
             if r.get('routes') is None:
-                self.routes.append(Route(r.get('channel_id'), r.get('chain'), [], r.get('matchers')))
+                route = Route(r.get('channel'), r.get('chain'), [], r.get('matchers'))
+                self.routes.append(route)
             else:
-                self.routes.append(Route(r.get('channel_id'), r.get('chain'), r.get('routes'), r.get('matchers')))
+                route = Route(r.get('channel'), r.get('chain'), r.get('routes'), r.get('matchers'))
+                self.routes.append(route)
 
     def get_route(self, alert_state):
         if len(self.routes) == 0:
-            return self.channel_id, self.chain
+            return self.channel, self.chain
         else:
             for r in self.routes:
-                match, channel_id, chain = r.get_route(alert_state)
+                match, channel, chain = r.get_route(alert_state)
                 if match:
-                    return channel_id, chain
-            return self.channel_id, self.chain
+                    return channel, chain
+            return self.channel, self.chain
+
+    def get_uniq_channels(self):
+        channels = list()
+        channels.append(self.channel)
+        for r in self.routes:
+            if len(r.routes) == 0:
+                channels.append(r.channel)
+            else:
+                channels = r.get_channels(channels)
+        return set(channels)
 
     def __repr__(self):
         return self.chain
 
 
 class Route(MainRoute):
-    def __init__(self, channel_id, chain, routes_list, matchers):
-        super().__init__(channel_id, chain, routes_list)
+    def __init__(self, channel, chain, routes_list, matchers):
+        super().__init__(channel, chain, routes_list)
         self.matchers = [Matcher(m) for m in matchers]
 
     def get_route(self, alert_state):
@@ -76,37 +88,29 @@ class Route(MainRoute):
             if not m.matches(alert_state):
                 return False, None, None
         if len(self.routes) == 0:
-            return True, self.channel_id, self.chain
+            return True, self.channel, self.chain
         else:
             for r in self.routes:
-                match, channel_id, chain = r.get_route(alert_state)
+                match, channel, chain = r.get_route(alert_state)
                 if match:
-                    return True, channel_id, chain
-            return True, self.channel_id, self.chain
+                    return True, channel, chain
+            return True, self.channel, self.chain
+
+    def get_channels(self, channels):
+        channels.append(self.channel)
+        if len(self.routes) != 0:
+            for r in self.routes:
+                channels = r.get_channels(channels)
+                pass
+        return channels
 
 
-def generate_route(route_dict, slack_channels):
-    def add_channel_ids(routes, slack_channels):
-        for r in routes:
-            ch = r['channel']
-            try:
-                r['channel_id'] = slack_channels[ch]['id']
-                if 'routes' in r:
-                    rs = r['routes']
-                    add_channel_ids(rs, slack_channels)
-            except KeyError:
-                logger.error(f'No channel \'{ch}\' in Slack')
-
-
+def generate_route(route_dict):
     logger.debug(f'Creating MainRoute')
     main_channel_name = route_dict['channel']
-    main_channel_id = slack_channels[main_channel_name]['id']
     main_chain = route_dict.get('chain')
     routes = route_dict.get('routes')
 
-    # replace channel name with channel_id
-    add_channel_ids(routes, slack_channels)
-
-    route = MainRoute(main_channel_id, main_chain, routes)
+    route = MainRoute(main_channel_name, main_chain, routes)
     logger.debug(f'MainRoute created')
     return route

@@ -38,39 +38,39 @@ class Schedule:
         )
 
 
-def generate_queue(incident_uuid, units, unit_groups, steps):
+def generate_queue(incident_uuid, users, user_groups, steps):
     schedules = []
     dt = datetime.utcnow()
     for s in steps:
-        if 'wait' in s:
+        if 'wait' in s.keys():
             delay = unix_sleep_to_timedelta(s.get('wait'))
             dt = dt + delay
-        elif 'unit' in s:
+        elif 'user' in s.keys():
             try:
-                unit = units[s.get('unit')]
+                user = users[s.get('user')]
                 schedules.append(Schedule(
                     datetime_=dt,
                     id=incident_uuid,
-                    type='unit',
-                    notify_type=s['notify_type'],
-                    to=unit.name,
+                    type='user',
+                    notify_type='slack',
+                    to=user.name,
                     status='waiting',
                     result=None
                 ))
             except KeyError:
-                logger.warning(f'No unit {s.get("unit")} in \'units\' section. See config.yml')
-        elif 'unit_group' in s:
+                logger.warning(f'No user {s.get("user")} in \'application.users\' section. See config.yml')
+        elif 'user_group' in s.keys():
             try:
-                unit_group = unit_groups[s.get('unit_group')]
+                unit_group = user_groups[s.get('user_group')]
                 schedules.append(Schedule(
                     datetime_=dt,
                     id=incident_uuid,
-                    type='unit_group',
-                    notify_type=s['notify_type'],
+                    type='user_group',
+                    notify_type='slack',
                     to=unit_group.name,
                     status='waiting',
                     result=None
                 ))
             except KeyError:
-                logger.warning(f'No unit_group {s.get("unit_group")} in \'unit_groups\' section. See config.yml')
+                logger.warning(f'No user_group {s.get("user_group")} in \'application.user_groups\' section. See config.yml')
     return schedules

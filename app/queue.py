@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+from app.slack import post_thread
+
 
 class Queue:
     def __init__(self):
@@ -20,7 +22,7 @@ class Queue:
                 if date_ > dates_[i_]:
                     dates_.insert(i_ + 1, date_)
                     schedules_.insert(i_ + 1, schedule_)
-                    return i
+                    return i_
 
             dates_.insert(0, date_)
             schedules_.insert(0, schedule_)
@@ -36,11 +38,17 @@ class Queue:
         for i in range(len(dates) - 1, -1, -1):
             insert_i = insert(insert_i, dates[i], schedules[i], self.dates, self.schedules)
 
-        pass
-
     def delete(self, index):
         del self.dates[index]
         del self.schedules[index]
+
+    def delete_by_id(self, uuid):
+        ids_to_delete = list()
+        for i in range(len(self.dates) - 1, -1, -1):
+            schedule = self.schedules[i]
+            if schedule.id == uuid and schedule.type != 'change_status':
+                ids_to_delete.append(i)
+        [self.delete(i) for i in ids_to_delete]
 
     def handle_first(self):
         if not self.dates:
@@ -49,6 +57,21 @@ class Queue:
             schedule = self.schedules[0]
             self.delete(0)
             return schedule
+
+    def handle_queue(self, incidents, users, user_groups):
+        schedule = self.handle_first()
+        if schedule is not None:
+            incident = incidents.by_uuid.get(schedule.id)
+            if schedule.type == 'user':
+                user = users.get(schedule.to)
+                post_thread(incident.channel_id, incident.ts, user.mention_text())
+            if schedule.type == 'user_group':
+                user_group = user_groups.get(schedule.to)
+                post_thread(incident.channel_id, incident.ts, user_group.mention_text())
+            elif schedule.type == 'webhook':
+                pass
+            elif schedule.type == 'change_status':
+                incident.update_status(schedule.to)
 
     def serialize(self):
         l_ = list()

@@ -3,22 +3,77 @@ import json
 import requests
 
 from app.logger import logger
-from config import slack_bot_user_oauth_token
+from config import slack_bot_user_oauth_token, slack_verification_token
 
-headers = {
-    'Content-Type': 'application/json',
-    'Authorization': f'Bearer {slack_bot_user_oauth_token}',
-}
 status_colors = {
     'firing': '#f61f1f',
     'unknown': '#c1a300',
     'resolved': '#56c15e',
     'closed': '#969696',
 }
+headers = {
+    'Content-Type': 'application/json',
+    'Authorization': f'Bearer {slack_bot_user_oauth_token}',
+}
+url = 'https://slack.com'
+
+
+class User:
+    def __init__(self, name, slack_id=None):
+        self.name = name
+        self.slack_id = slack_id
+
+    def __repr__(self):
+        return self.name
+
+    def mention_text(self):
+        text = f'notify user *{self.name}*: <@{self.slack_id}>'
+        return text
+
+
+class UserGroup:
+    def __init__(self, name, users):
+        self.name = name
+        self.users = users
+
+    # def get_actions(self, action):
+    #     if action == 'webhook':
+    #         return [u.webhook for u in self.users]
+    #     elif action == 'mention':
+    #         return [u.slack_mention for u in self.users]
+
+    def mention_text(self):
+        text = f'notify user_group *{self.name}*. Users:'
+        for user in self.users:
+            text += f'\n<@{user.slack_id}> '
+        return text
+
+
+def get_public_channels():
+    try:
+        response = requests.get(
+            f'{url}/api/conversations.list',
+            headers=headers
+        )
+        data = response.json()
+        channels_list = data.get('channels', [])
+        channels_dict = {c.get('name'): c for c in channels_list}
+        return channels_dict
+    except requests.exceptions.RequestException as e:
+        logger.error(f'Failed to retrieve channel list: {e}')  # !
+        return []
+
+
+def get_users():
+    response = requests.post(
+        f'{url}/api/users.list',
+        headers=headers
+    )
+    members = response.json()['members']
+    return members
 
 
 def create_thread(channel_id, message, status):
-    url = 'https://slack.com/api/chat.postMessage'
     payload = {
         'channel': channel_id,
         'text': '',
@@ -41,12 +96,28 @@ def create_thread(channel_id, message, status):
             }
         ]
     }
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response = requests.post(f'{url}/api/chat.postMessage', headers=headers, data=json.dumps(payload))
     return response.json().get('ts')
 
 
+def button_handler(payload):
+    if payload.get('token') != slack_verification_token:
+        logger.error(f'Unauthorized request to \'/slack\'')
+        return {}, 401
+    modified_message = payload.get('original_message')
+    if modified_message['attachments'][1]['actions'][0]['text'] == 'Acknowledge':
+        modified_message['attachments'][1]['actions'][0]['text'] = 'Unacknowledge'
+        modified_message['attachments'].append({
+            'color': modified_message['attachments'][1].get('color'),
+            'text': f"Acknowledged by <@{payload['user']['id']}>"
+        })
+    else:
+        modified_message['attachments'][1]['actions'][0]['text'] = 'Acknowledge'
+        del modified_message['attachments'][2]
+    return modified_message
+
+
 def create_blocked_thread(channel_id, message, status): #! didn't work with "return modified_message, 200"
-    url = 'https://slack.com/api/chat.postMessage'
     payload = {
         'channel': channel_id,
         'text': '',
@@ -88,12 +159,15 @@ def create_blocked_thread(channel_id, message, status): #! didn't work with "ret
             ]
         }]
     }
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response = requests.post(
+        f'{url}/api/chat.postMessage',
+        headers=headers,
+        data=json.dumps(payload)
+    )
     return response.json().get('ts')
 
 
 def update_thread(channel_id, ts, status, message, acknowledge=False, user_id=None):
-    url = 'https://slack.com/api/chat.update'
     payload = {
         'channel': channel_id,
         'text': '',
@@ -118,50 +192,51 @@ def update_thread(channel_id, ts, status, message, acknowledge=False, user_id=No
         ],
         'ts': ts,
     }
-    requests.post(url, headers=headers, data=json.dumps(payload))
-
-
-def get_public_channels():
-    url = 'https://slack.com/api/conversations.list'
-    try:
-        response = requests.get(url, headers=headers)
-        data = response.json()
-        channels_list = data.get('channels', [])
-        channels_dict = {c.get('name'): c for c in channels_list}
-        return channels_dict
-    except requests.exceptions.RequestException as e:
-        logger.error(f'Failed to retrieve channel list: {e}') #!
-        return []
-
-
-def get_users():
-    url = 'https://slack.com/api/users.list'
-    response = requests.post(url, headers=headers)
-    members = response.json()['members']
-    return members
-
-
-# def get_user_info(fullname):
-#     url = 'https://slack.com/api/users.list'
-#     payload = {
-#         'username': fullname
-#     }
-#     response = requests.post(url, headers=headers, data=json.dumps(payload))
-#     if response.status_code == 200:
-#         data = response.json()
-#         members = data.get('members')
-#         for m in members:
-#             if m.get('real_name') == fullname:
-#                 return m
-#     else:
-#         return None
+    requests.post(
+        f'{url}/api/chat.update',
+        headers=headers,
+        data=json.dumps(payload)
+    )
 
 
 def post_thread(channel_id, ts, text):
-    url = 'https://slack.com/api/chat.postMessage'
     payload = {
         'channel': channel_id,
         'text': text,
         'thread_ts': ts
     }
-    requests.post(url, headers=headers, data=json.dumps(payload))
+    requests.post(
+        f'{url}/api/chat.postMessage',
+        headers=headers,
+        data=json.dumps(payload)
+    )
+
+
+def generate_users(users_dict, slack_users):
+    def get_user_id_(s_users, user):
+        if user is None:
+            return None
+        for u in s_users:
+            if u.get('real_name') == user:
+                return u['id']
+        logger.warning(f'User \'{user}\' not found in Slack')
+        return None
+
+    logger.debug(f'Creating Users')
+    users = {}
+    for name in users_dict.keys():
+        slack_name = users_dict[name]['full_name']
+        slack_id = get_user_id_(slack_users, slack_name)
+        users[name] = User(name, slack_id=slack_id)
+    return users
+
+
+def generate_user_groups(user_groups_dict, users):
+    logger.debug(f'Creating UserGroups')
+    user_groups = {}
+    for name in user_groups_dict.keys():
+        user_names = user_groups_dict[name]['users']
+        user_objects = [users.get(user_name) for user_name in user_names]
+        user_groups[name] = UserGroup(name, user_objects)
+    logger.debug(f'UserGroups created')
+    return user_groups

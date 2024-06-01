@@ -1,8 +1,8 @@
-from app.slack.chain import generate_chains
 from app.logger import logger
-from app.slack.message_template import generate_message_templates
 from app.slack import (get_public_channels, get_users, generate_users, generate_user_groups, button_handler,
                        post_thread, generate_admin_group)
+from app.slack.chain import generate_chains
+from app.slack.message_template import generate_message_templates
 
 
 class SlackApplication:
@@ -16,7 +16,7 @@ class SlackApplication:
             try:
                 channels[ch] = public_channels[ch]
             except KeyError:
-                logger.warning(f'No public channel \'{ch}\' in Slack')
+                logger.warning(f'no public channel \'{ch}\' in Slack')
 
         # create chains
         chains = generate_chains(app_config['chains'])
@@ -34,7 +34,7 @@ class SlackApplication:
             try:
                 channels[ch] = public_channels[ch]
             except KeyError:
-                logger.warning(f'No public channel \'{ch}\' in Slack')
+                logger.warning(f'no public channel \'{ch}\' in Slack')
 
         # create message_template
         message_template_dict = app_config['message_template']

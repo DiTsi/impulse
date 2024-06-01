@@ -1,13 +1,5 @@
-firing_timeout: 1m  # After this time Incident status will change from "firing" to "unknown" if no new alerts appear
-resolved_timeout: 1m  # After this time Incident status will change from "resolved" to "closed" if no new alerts appear
-
-drop_steps_older_than: 10m  # After this time chain steps will drop (incorrect behavior)
-
-# Admin notifications uses to notify IMPulse administrators channel about emergency situations
-admin_notifications: True  # Enable IMPulse notifications
-admin_notifications_channel: noth  # Channel for IMPulse notifications
-admin_notifications_when_unknown: True  # Notify about Incident in "unknown" status
-admin_notifications_when_drop_steps: True  # Notify about dropped Incident chain steps
+firing_timeout: 30s  # After this time Incident status will change from "firing" to "unknown" if no new alerts appear
+resolved_timeout: 10s  # After this time Incident status will change from "resolved" to "closed" if no new alerts appear
 
 
 route:

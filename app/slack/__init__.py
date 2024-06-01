@@ -28,7 +28,7 @@ class User:
         return self.name
 
     def mention_text(self):
-        text = f'notify user *{self.name}*: <@{self.slack_id}>'
+        text = f'user *{self.name}*: <@{self.slack_id}>'
         return text
 
 
@@ -44,9 +44,9 @@ class UserGroup:
     #         return [u.slack_mention for u in self.users]
 
     def mention_text(self):
-        text = f'notify user_group *{self.name}*. Users:'
+        text = f'user_group *{self.name}*: '
         for user in self.users:
-            text += f'\n<@{user.slack_id}> '
+            text += f'<@{user.slack_id}> '
         return text
 
 
@@ -54,11 +54,14 @@ class AdminGroup:
     def __init__(self, users):
         self.users = users
 
-    def unknown_text(self):
-        text = (f'Incident status changed to *unknown*. Check *Alertmanager*\'s '
-                f'`repeat_interval` option is less than IMPulse option `firing_timeout`') #! add link to documentation
+    def unknown_status_text(self):
+        text = (f'admin_users: ')
         for user in self.users:
-            text += f'\n<@{user.slack_id}> '
+            text += f'<@{user.slack_id}> '
+        text += (
+            f'\n>status changed to *unknown*'
+            f'\n>Check Alertmanager\'s `repeat_interval` option is less than IMPulse option `firing_timeout`'
+        ) #! add link to documentation
         return text
 
 
@@ -241,7 +244,7 @@ def generate_users(users_dict, slack_users):
         logger.warning(f'User \'{user}\' not found in Slack')
         return None
 
-    logger.debug(f'Creating Users')
+    logger.debug(f'creating users')
     users = {}
     for name in users_dict.keys():
         slack_name = users_dict[name]['full_name']
@@ -251,20 +254,20 @@ def generate_users(users_dict, slack_users):
 
 
 def generate_user_groups(user_groups_dict, users):
-    logger.debug(f'Creating UserGroups')
+    logger.debug(f'creating user_groups')
     user_groups = {}
     for name in user_groups_dict.keys():
         user_names = user_groups_dict[name]['users']
         user_objects = [users.get(user_name) for user_name in user_names]
         user_groups[name] = UserGroup(name, user_objects)
-    logger.debug(f'UserGroups created')
+    logger.debug(f'user_groups created')
     return user_groups
 
 
 def generate_admin_group(admin_users, users):
-    logger.debug(f'Creating Admin users') #!
+    logger.debug(f'creating admin_users') #!
     user_objects = []
     for admin in admin_users:
         user_objects.append(users.get(admin))
-    logger.debug(f'UserGroups created') #!
+    logger.debug(f'admin_users created') #!
     return AdminGroup(user_objects)

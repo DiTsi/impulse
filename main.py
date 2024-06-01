@@ -1,15 +1,14 @@
 import json
-import os
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask
 
-from app.slack.application import generate_application
 from app.incident import Incidents, recreate_incidents, handle_alert, queue_handle
 from app.logger import logger
 from app.queue import Queue
 from app.route import generate_route
-from config import settings, data_path
+from app.slack.application import generate_application
+from config import settings
 
 app = Flask(__name__)
 incidents = Incidents([])
@@ -39,13 +38,7 @@ def get_incidents():
 
 
 if __name__ == '__main__':
-    if not os.path.exists(data_path):
-        logger.debug(f'Creating incidents_directory')
-        os.makedirs(data_path)
-        logger.debug(f'Created incidents_directory')
-    else:
-        logger.debug(f'Recreate incidents from disk')
-        incidents = recreate_incidents()
+    incidents = recreate_incidents()
 
     route_dict = settings.get('route')
     app_dict = settings.get('application')

@@ -5,6 +5,7 @@ from app.logger import logger
 
 slack_bot_user_oauth_token = os.environ.get('SLACK_BOT_USER_OAUTH_TOKEN')
 slack_verification_token = os.environ.get('SLACK_VERIFICATION_TOKEN')
+data_path = os.environ.get('DATA_PATH', default='./data')
 
 
 with open('config.yml', 'r') as file:

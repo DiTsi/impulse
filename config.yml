@@ -1,5 +1,3 @@
-incidents_directory: ./incidents  # Directory where Incidents will be stored
-
 firing_timeout: 1m  # After this time Incident status will change from "firing" to "unknown" if no new alerts appear
 resolved_timeout: 1m  # After this time Incident status will change from "resolved" to "closed" if no new alerts appear
 
@@ -35,8 +33,10 @@ route:
     chain: infra
     channel: infrastructure
 
+
 webhooks:
   Oleg: https://home.ditsi.ru/
+
 
 application:
   type: slack

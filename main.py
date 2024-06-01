@@ -4,16 +4,15 @@ import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask
 
-from app.application import generate_application
+from app.slack.application import generate_application
 from app.incident import Incidents, recreate_incidents, handle_alert, queue_handle
 from app.logger import logger
 from app.queue import Queue
 from app.route import generate_route
-from config import settings
+from config import settings, data_path
 
 app = Flask(__name__)
 incidents = Incidents([])
-incidents_directory = settings.get('incidents_directory')
 
 
 @app.route('/queue', methods=['GET'])
@@ -40,9 +39,9 @@ def get_incidents():
 
 
 if __name__ == '__main__':
-    if not os.path.exists(incidents_directory):
+    if not os.path.exists(data_path):
         logger.debug(f'Creating incidents_directory')
-        os.makedirs(incidents_directory)
+        os.makedirs(data_path)
         logger.debug(f'Created incidents_directory')
     else:
         logger.debug(f'Recreate incidents from disk')

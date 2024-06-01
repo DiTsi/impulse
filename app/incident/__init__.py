@@ -9,7 +9,7 @@ import yaml
 from app.logger import logger
 from app.queue import unix_sleep_to_timedelta
 from app.slack import create_thread, update_thread, post_thread
-from config import settings
+from config import settings, data_path
 
 next_status = {
     'firing': 'unknown',
@@ -33,7 +33,7 @@ class Incident:
         logger.info(f'New Incident created:')
         [logger.info(f'  {i}: {alert["groupLabels"][i]}') for i in alert['groupLabels'].keys()]
 
-    def recreate_chain(self, chain):
+    def generate_chain(self, chain):
         index = 0
         dt = datetime.utcnow()
         for s in chain.steps:
@@ -143,10 +143,6 @@ class Incidents:
         r = {str(k): self.by_uuid[k].serialize() for k in self.by_uuid.keys()}
         return r
 
-    def delete(self, alert):
-        uuid_ = gen_uuid(alert.get('groupLabels'))
-        del self.by_uuid[uuid_]
-
 
 def queue_handle(incidents, queue, application, webhooks):
     if len(queue.dates) == 0:
@@ -180,7 +176,7 @@ def gen_uuid(data):
 
 def recreate_incidents():
     incidents = Incidents([])
-    incidents_directory = settings.get('incidents_directory')
+    incidents_directory = "data/incidents"
     for path, directories, files in os.walk(incidents_directory):
         for filename in files:
             incidents.add(Incident.load(f'{incidents_directory}/{filename}'))
@@ -206,9 +202,9 @@ def create_new(application, route, incidents, queue, alert_state):
     uuid_ = incidents.add(incident)
     queue.put(status_update_datetime, 0, uuid_)
 
-    queue_chain = incident.recreate_chain(chain)
+    queue_chain = incident.generate_chain(chain)
     queue.recreate(uuid_, queue_chain)
-    # incident.dump(f'{incidents_directory}/{channel.name}_{ts}.yml')
+    # incident.dump(f'{data_path}/incidents/{channel.name}_{ts}.yml')
 
 
 def handle_existing(uuid_, incident, queue, alert_state):
@@ -217,12 +213,12 @@ def handle_existing(uuid_, incident, queue, alert_state):
         logger.debug(f'Incident get new state')
         if new_status == 'firing' and incident.status == 'resolved':
             queue.delete_by_id(uuid_)
-            incident.recreate_chain()
+            incident._chain()
         elif new_status == 'resolved':
             queue.delete_by_id(uuid_)
             status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(settings.get(f'{new_status}_timeout'))
             queue.put(status_update_datetime, 0, uuid_)
-        # incident.dump(f'{incidents_directory}/{channel.name}_{incident.ts}.yml')
+        incident.dump(f'{data_path}/incidents/{channel.name}_{incident.ts}.yml')
     else:
         logger.debug(f'Incident get same state')
         incident.update_status(alert_state['status'])

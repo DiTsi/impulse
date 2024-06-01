@@ -1,21 +1,11 @@
-from app.chain import generate_chains
+from app.slack.chain import generate_chains
 from app.logger import logger
-from app.message_template import generate_message_templates
-from app.slack import get_public_channels, get_users, generate_users, generate_user_groups, button_handler, post_thread, \
-    generate_admin_group
+from app.slack.message_template import generate_message_templates
+from app.slack import (get_public_channels, get_users, generate_users, generate_user_groups, button_handler,
+                       post_thread, generate_admin_group)
 
 
-class Application:
-    def __init__(self, type_, chains, users, user_groups, channels, message_template):
-        self.type = type_
-        self.users = users
-        self.user_groups = user_groups
-        self.chains = chains
-        self.channels = channels
-        self.message_template = message_template
-
-
-class SlackApplication(Application):
+class SlackApplication:
     def __init__(self, app_config, channels_list):
         # create channels
         logger.debug(f'get Slack channels using API')
@@ -50,7 +40,11 @@ class SlackApplication(Application):
         message_template_dict = app_config['message_template']
         message_template = generate_message_templates(message_template_dict)
 
-        super().__init__('slack', chains, users, user_groups, channels, message_template)
+        self.users = users
+        self.user_groups = user_groups
+        self.chains = chains
+        self.channels = channels
+        self.message_template = message_template
 
     def handler(self, payload, incidents, queue):
         incident, uuid = incidents.get_by_ts(ts=payload['message_ts'])

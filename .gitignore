@@ -6,6 +6,7 @@ __pycache__
 venv
 env
 
+data
 incidents
 config_example.yml
 response.json

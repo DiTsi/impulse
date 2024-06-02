@@ -27,5 +27,7 @@ docker run -p 5000:5000 -v ./data:/data -e SLACK_BOT_USER_OAUTH_TOKEN=<slack_bot
 | Variable | Description | Default |
 |-|-|-|
 | DATA_PATH | Path to DATA directory | ./data |
+| CONFIG_PATH | Path to CONFIG directory | ./config |
 | SLACK_BOT_USER_OAUTH_TOKEN | Slack Bot | |
 | SLACK_VERIFICATION_TOKEN | Slack Bot | |
+| DEBUG_SLACK_MENTION | Disable mention real | False |

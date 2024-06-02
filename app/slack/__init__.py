@@ -4,7 +4,7 @@ from time import sleep
 import requests
 
 from app.logger import logger
-from config import slack_bot_user_oauth_token, slack_verification_token
+from config import slack_bot_user_oauth_token, slack_verification_token, debug_slack_mention
 
 status_colors = {
     'firing': '#f61f1f',
@@ -28,7 +28,9 @@ class User:
         return self.name
 
     def mention_text(self):
-        text = f'user *{self.name}*: <@{self.slack_id}>'
+        text = f'user *{self.name}*'
+        if debug_slack_mention == 'False':
+            text += f': <@{self.slack_id}>'
         return text
 
 
@@ -44,9 +46,11 @@ class UserGroup:
     #         return [u.slack_mention for u in self.users]
 
     def mention_text(self):
-        text = f'user_group *{self.name}*: '
-        for user in self.users:
-            text += f'<@{user.slack_id}> '
+        text = f'user_group *{self.name}*'
+        if debug_slack_mention == 'False':
+            text += f': '
+            for user in self.users:
+                text += f'<@{user.slack_id}> '
         return text
 
 
@@ -56,8 +60,12 @@ class AdminGroup:
 
     def unknown_status_text(self):
         text = (f'admin_users: ')
-        for user in self.users:
-            text += f'<@{user.slack_id}> '
+        if debug_slack_mention == 'False':
+            for user in self.users:
+                text += f'<@{user.slack_id}> '
+        else:
+            for user in self.users:
+                text += f'{user.name} '
         text += (
             f'\n>status changed to *unknown*'
             f'\n>Check Alertmanager\'s `repeat_interval` option is less than IMPulse option `firing_timeout`'
@@ -236,8 +244,6 @@ def post_thread(channel_id, ts, text):
 
 def generate_users(users_dict, slack_users):
     def get_user_id_(s_users, user):
-        if user is None:
-            return None
         for u in s_users:
             if u.get('real_name') == user:
                 return u['id']

@@ -7,4 +7,7 @@ EXPOSE 5000
 
 ENV DATA_PATH=/data
 
+VOLUME /data
+VOLUME /config
+
 CMD ["python", "main.py"]

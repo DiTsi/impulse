@@ -3,7 +3,8 @@ import json
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask
 
-from app.incident import Incidents, recreate_incidents, handle_alert, queue_handle
+from app import queue_handle, handle_alert, slack_handler
+from app.incident import Incidents, recreate_incidents
 from app.logger import logger
 from app.queue import Queue
 from app.route import generate_route
@@ -29,7 +30,7 @@ def receive_alert():
 @app.route('/slack', methods=['POST'])
 def handler():
     payload = json.loads(request.form['payload'])
-    return application.handler(payload, incidents, queue)
+    return slack_handler(payload, incidents, queue)
 
 
 @app.route('/incidents', methods=['GET'])

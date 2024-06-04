@@ -3,21 +3,21 @@ import os
 import uuid
 from datetime import datetime
 
-import requests
 import yaml
 
 from app.logger import logger
 from app.queue import unix_sleep_to_timedelta
-from app.slack import create_thread, update_thread, post_thread
-from config import settings, data_path
-
-next_status = {
-    'firing': 'unknown',
-    'resolved': 'closed'
-}
+from app.slack import update_thread
+from config import settings, incidents_path
 
 
 class Incident:
+    next_status = {
+        'firing': 'unknown',
+        'unknown': 'closed',
+        'resolved': 'closed'
+    }
+
     def __init__(self, alert, status, ts, channel_id, chain, acknowledged, acknowledged_by, message, updated,
                  status_update_datetime):
         self.last_state = alert
@@ -30,8 +30,6 @@ class Incident:
         self.updated = updated
         self.message = message
         self.status_update_datetime = status_update_datetime
-        logger.info(f'new Incident created:')
-        [logger.info(f'  {i}: {alert["groupLabels"][i]}') for i in alert['groupLabels'].keys()]
 
     def generate_chain(self, chain):
         index = 0
@@ -51,9 +49,26 @@ class Incident:
             index, {'datetime': datetime_, 'type': type_, 'identifier': identifier, 'done': False, 'result': None}
         )
 
+    def acknowledge(self, user_id):
+        self.acknowledged = True
+        self.acknowledged_by = user_id
+
+    def unacknowledge(self):
+        self.acknowledged = False
+        self.acknowledged_by = None
+
     def chain_update(self, index, done, result):
         self.chain[index]['done'] = done
         self.chain[index]['result'] = result
+
+    def set_next_status(self):
+        new_status = Incident.next_status[self.status]
+        self.update_status(new_status)
+        update_thread(
+            self.channel_id, self.ts, new_status, self.message,
+            acknowledge=self.acknowledged, user_id=self.acknowledged_by
+        )
+        return new_status
 
     @classmethod
     def load(cls, dump_file):
@@ -109,11 +124,12 @@ class Incident:
         self.status = status
         self.updated = now
 
-    def update(self, alert_state):
+    def update(self, alert_state, uuid_):
         status = alert_state['status']
         self.update_status(status)
         if alert_state != self.last_state:
             update_thread(self.channel_id, self.ts, self.status, self.message, self.acknowledged, self.acknowledged_by)
+        self.dump(f'{incidents_path}/{uuid_}.yml')
 
 
 class Incidents:
@@ -139,40 +155,13 @@ class Incidents:
     def del_by_uuid(self, uuid_):
         del self.by_uuid[uuid_]
 
+    def del_by_ts(self, ts):
+        _, uuid_ = self.get_by_ts(ts) #!
+        self.del_by_uuid(uuid_)
+
     def serialize(self):
         r = {str(k): self.by_uuid[k].serialize() for k in self.by_uuid.keys()}
         return r
-
-
-def queue_handle(incidents, queue, application, webhooks):
-    if len(queue.dates) == 0:
-        return
-    type_, incident_uuid, identifier = queue.handle()
-    if type_ is not None:
-        incident = incidents.by_uuid[incident_uuid]
-        if type_ == 0:
-            new_status = next_status[incident.status]
-            incident.update_status(new_status)
-            update_thread(
-                incident.channel_id, incident.ts, new_status, incident.message,
-                acknowledge=incident.acknowledged, user_id=incident.acknowledged_by
-            )
-            if new_status == 'unknown':
-                post_thread(
-                    incident.channel_id, incident.ts, application.user_groups['__impulse_admins__'].unknown_status_text()
-                )
-            if new_status == 'closed':
-                _, uuid_ = incidents.get_by_ts(incident.ts) #!
-                incidents.del_by_uuid(uuid_)
-        elif type_ == 1:
-            step = incident.chain[identifier]
-            if step['type'] != 'webhook':
-                r_code = application.notify(incident.channel_id, incident.ts, step['type'], step['identifier'])
-                incident.chain_update(identifier, done=True, result=r_code)
-            else:
-                url = webhooks[step['identifier']]
-                r = requests.post(f'{url}')
-                incident.chain_update(identifier, done=True, result=r.status_code)
 
 
 def gen_uuid(data):
@@ -180,71 +169,15 @@ def gen_uuid(data):
 
 
 def recreate_incidents():
-    if not os.path.exists(data_path):
+    if not os.path.exists(incidents_path):
         logger.debug(f'creating incidents_directory')
-        os.makedirs(data_path)
+        os.makedirs(incidents_path)
         logger.debug(f'created incidents_directory')
     else:
         logger.debug(f'load incidents from disk')
 
     incidents = Incidents([])
-    incidents_directory = "data/incidents"
-    for path, directories, files in os.walk(incidents_directory):
+    for path, directories, files in os.walk(incidents_path):
         for filename in files:
-            incidents.add(Incident.load(f'{incidents_directory}/{filename}'))
+            incidents.add(Incident.load(f'{incidents_path}/{filename}'))
     return incidents
-
-
-def create_new(application, route, incidents, queue, alert_state):
-    channel, chain_name = route.get_route(alert_state)
-
-    channel = application.channels[channel]
-    template = application.message_template
-    message = template.form_message(alert_state)
-    ts = create_thread(channel_id=channel['id'], message=message, status=alert_state['status'])
-    status = alert_state['status']
-
-    updated_datetime = datetime.utcnow()
-    status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(settings.get(f'{status}_timeout'))
-    chain = application.chains[chain_name]
-    incident = Incident(
-        alert=alert_state, status=status, ts=ts, channel_id=channel['id'], chain=[], acknowledged=False,
-        acknowledged_by=None, updated=updated_datetime, message=message, status_update_datetime=status_update_datetime
-    )
-    uuid_ = incidents.add(incident)
-    queue.put(status_update_datetime, 0, uuid_)
-
-    queue_chain = incident.generate_chain(chain)
-    queue.recreate(uuid_, queue_chain)
-    # incident.dump(f'{data_path}/incidents/{channel.name}_{ts}.yml')
-
-
-def handle_existing(uuid_, incident, queue, alert_state):
-    new_status = alert_state['status']
-    if incident.status != new_status:
-        logger.debug(f'incident get new state')
-        if new_status == 'firing' and incident.status == 'resolved':
-            queue.delete_by_id(uuid_)
-            # incident._chain()
-        elif new_status == 'resolved':
-            queue.delete_by_id(uuid_)
-            status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(settings.get(f'{new_status}_timeout'))
-            queue.put(status_update_datetime, 0, uuid_)
-        # incident.dump(f'{data_path}/incidents/{incident.channel_id}_{incident.ts}.yml')
-    else:
-        logger.debug(f'incident get same state')
-        update_thread(
-            incident.channel_id, incident.ts, new_status, incident.message,
-            acknowledge=incident.acknowledged, user_id=incident.acknowledged_by
-        )
-        incident.update_status(alert_state['status'])
-        queue.update(uuid_, incident.status_update_datetime)
-    incident.update(alert_state)
-
-
-def handle_alert(application, route_, incidents, queue, alert_state):
-    incident, uuid = incidents.get(alert=alert_state)
-    if incident is None:
-        create_new(application, route_, incidents, queue, alert_state)
-    else:
-        handle_existing(uuid, incident, queue, alert_state)

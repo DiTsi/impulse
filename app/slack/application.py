@@ -1,8 +1,9 @@
 from app.logger import logger
-from app.slack import (get_public_channels, get_users, generate_users, generate_user_groups, button_handler,
-                       post_thread, generate_admin_group)
+from app.slack import (get_public_channels,
+                       post_thread)
 from app.slack.chain import generate_chains
 from app.slack.message_template import generate_message_templates
+from app.slack.user import get_users, generate_users, generate_user_groups, generate_admin_group
 
 
 class SlackApplication:
@@ -45,21 +46,6 @@ class SlackApplication:
         self.chains = chains
         self.channels = channels
         self.message_template = message_template
-
-    def handler(self, payload, incidents, queue):
-        incident, uuid = incidents.get_by_ts(ts=payload['message_ts'])
-
-        modified_message = payload.get('original_message') #!
-        if modified_message['attachments'][1]['actions'][0]['text'] == 'Acknowledge':
-            incident.acknowledged = True
-            incident.acknowledged_by = payload['user']['id']
-            queue.delete_steps_by_id(uuid) #!
-        else:
-            incident.acknowledged = False
-            incident.acknowledged_by = None
-            queue.recreate(uuid, incident.chain)
-        modified_message = button_handler(payload)
-        return modified_message, 200
 
     def notify(self, channel_id, ts, type_, identifier):
         if type_ == 'user':

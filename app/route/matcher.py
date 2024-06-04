@@ -1,8 +1,10 @@
 import re
 
+from app.logger import logger
+
 
 class Matcher:
-    re_type = re.compile('(?P<label>\w+)\s?(?P<type>=|!=|=~|!~)\s?"(?P<expr>.+)"')
+    re_type = re.compile(r'(?P<label>\w+)\s?(?P<type>=|!=|=~|!~)\s?"(?P<expr>.+)"')
 
     def __init__(self, string):
         m = Matcher.re_type.match(string)

@@ -8,6 +8,6 @@ def generate_route(route_dict):
     main_chain = route_dict.get('chain')
     routes = route_dict.get('routes')
 
-    route = MainRoute(main_channel_name, main_chain, routes)
+    route_ = MainRoute(main_channel_name, main_chain, routes)
     logger.debug(f'MainRoute created')
-    return route
+    return route_

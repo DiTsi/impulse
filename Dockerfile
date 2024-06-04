@@ -6,6 +6,7 @@ COPY . .
 EXPOSE 5000
 
 ENV DATA_PATH=/data
+ENV CONFIG_PATH=/config
 
 VOLUME /data
 VOLUME /config

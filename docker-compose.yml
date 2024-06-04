@@ -6,6 +6,8 @@ services:
       SLACK_BOT_USER_OAUTH_TOKEN: <slack_bot_user_oauth_token>
       SLACK_VERIFICATION_TOKEN: <slack_verification_token>
       DEBUG_SLACK_MENTION: "True"
+      CONFIG_PATH: "/config"
+      DATA_PATH: "/data"
     volumes:
     - ./data:/data
     - ./config:/config

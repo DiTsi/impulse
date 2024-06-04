@@ -8,7 +8,7 @@ env
 
 data
 incidents
-impulse.yml
+./impulse.yml
 response.json
 response_example.json
 ngrok.sh

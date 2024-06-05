@@ -42,6 +42,12 @@ class Incident:
             else:
                 self.chain_put(index=index, datetime_=dt, type_=type_, identifier=value)
                 index += 1
+
+    def get_chain(self):
+        chain = []
+        for c in self.chain:
+            if not c['done']:
+                chain.append(c)
         return self.chain
 
     def chain_put(self, index, datetime_, type_, identifier):
@@ -141,7 +147,7 @@ class Incidents:
         incident = self.by_uuid.get(uuid_)
         return incident, uuid_
 
-    def get_by_ts(self, ts): #!
+    def get_by_ts(self, ts):  # !
         for k, v in self.by_uuid.items():
             if v.ts == ts:
                 return v, k
@@ -154,10 +160,7 @@ class Incidents:
 
     def del_by_uuid(self, uuid_):
         del self.by_uuid[uuid_]
-
-    def del_by_ts(self, ts):
-        _, uuid_ = self.get_by_ts(ts) #!
-        self.del_by_uuid(uuid_)
+        os.remove(f'{incidents_path}/{uuid_}.yml')
 
     def serialize(self):
         r = {str(k): self.by_uuid[k].serialize() for k in self.by_uuid.keys()}
@@ -166,18 +169,3 @@ class Incidents:
 
 def gen_uuid(data):
     return uuid.uuid5(uuid.NAMESPACE_OID, json.dumps(data))
-
-
-def recreate_incidents():
-    if not os.path.exists(incidents_path):
-        logger.debug(f'creating incidents_directory')
-        os.makedirs(incidents_path)
-        logger.debug(f'created incidents_directory')
-    else:
-        logger.debug(f'load incidents from disk')
-
-    incidents = Incidents([])
-    for path, directories, files in os.walk(incidents_path):
-        for filename in files:
-            incidents.add(Incident.load(f'{incidents_path}/{filename}'))
-    return incidents

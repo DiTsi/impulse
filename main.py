@@ -3,10 +3,8 @@ import json
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask
 
-from app import queue_handle, handle_alert, slack_handler
-from app.incident import Incidents, recreate_incidents
-from app.logger import logger
-from app.queue import Queue
+from app import queue_handle, handle_alert, slack_handler, recreate_queue, recreate_incidents
+from app.incident import Incidents
 from app.route import generate_route
 from app.slack.application import generate_application
 from config import settings
@@ -40,6 +38,7 @@ def get_incidents():
 
 if __name__ == '__main__':
     incidents = recreate_incidents()
+    queue = recreate_queue(incidents)
 
     route_dict = settings.get('route')
     app_dict = settings.get('application')
@@ -51,17 +50,12 @@ if __name__ == '__main__':
         channels_list=route.get_uniq_channels()
     )
 
-    # create Queue object
-    logger.debug(f'Creating Queue')
-    queue = Queue()
-    logger.debug(f'Queue created')
-
     # run scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(
         func=queue_handle,
         trigger="interval",
-        seconds=1.5,
+        seconds=1.1,
         args=[incidents, queue, application, webhooks_dict]
     )
     scheduler.start()

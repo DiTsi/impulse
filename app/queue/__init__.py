@@ -56,10 +56,10 @@ class Queue:
             self.delete(i)
         self.lock = False
 
-    def recreate(self, uuid, chain):
+    def append(self, uuid, incident_chain):
         self.lock = True
-        for i in range(len(chain)):
-            s = chain[i]
+        for i in range(len(incident_chain)):
+            s = incident_chain[i]
             if not s['done']:
                 self.put(s['datetime'], 1, uuid, i)
         self.lock = False

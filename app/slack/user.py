@@ -21,7 +21,7 @@ class User:
         return self.name
 
     def mention_text(self):
-        text = f'user *{self.name}*'
+        text = f'notify user *{self.name}*'
         if debug_slack_mention == 'False':
             text += f': <@{self.slack_id}>'
         return text
@@ -39,7 +39,7 @@ class UserGroup:
     #         return [u.slack_mention for u in self.users]
 
     def mention_text(self):
-        text = f'user_group *{self.name}*'
+        text = f'notify user_group *{self.name}*'
         if debug_slack_mention == 'False':
             text += f': '
             for user in self.users:
@@ -52,7 +52,8 @@ class AdminGroup:
         self.users = users
 
     def unknown_status_text(self):
-        text = (f'admin_users: ')
+        text = f'status updated: *unknown*'
+        text += f'\n>notify admin_users: '
         if debug_slack_mention == 'False':
             for user in self.users:
                 text += f'<@{user.slack_id}> '
@@ -60,7 +61,6 @@ class AdminGroup:
             for user in self.users:
                 text += f'{user.name} '
         text += (
-            f'\n>status changed to *unknown*'
             f'\n>Check Alertmanager\'s `repeat_interval` option is less than IMPulse option `firing_timeout`'
         ) #! add link to documentation
         return text

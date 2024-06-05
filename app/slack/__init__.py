@@ -148,7 +148,7 @@ def update_thread(channel_id, ts, status, message, acknowledge=False, user_id=No
                         "name": "unacknowledge" if acknowledge else 'acknowledge',
                         "text": "Unacknowledge" if acknowledge else 'Acknowledge',
                         "type": "button",
-                        "style": "default" if acknowledge else 'danger',
+                        "style": "default",
                     },
                 ],
             },

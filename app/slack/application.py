@@ -1,8 +1,8 @@
 from app.logger import logger
 from app.slack import (get_public_channels,
-                       post_thread)
+                       post_thread, update_thread)
 from app.slack.chain import generate_chains
-from app.slack.message_template import generate_message_templates
+from app.slack.message_template import generate_message_template
 from app.slack.user import get_users, generate_users, generate_user_groups, generate_admin_group
 
 
@@ -39,7 +39,7 @@ class SlackApplication:
 
         # create message_template
         message_template_dict = app_config['message_template']
-        message_template = generate_message_templates(message_template_dict)
+        message_template = generate_message_template(message_template_dict)
 
         self.users = users
         self.user_groups = user_groups
@@ -54,6 +54,16 @@ class SlackApplication:
             unit = self.user_groups[identifier]
         response_code = post_thread(channel_id, ts, unit.mention_text())
         return response_code
+
+    def update(self, channel_id, ts, incident_status, alert_state, updated_status, acknowledge, user_id):
+        text = self.message_template.form_message(alert_state)
+        update_thread(channel_id, ts, incident_status, text, acknowledge, user_id)
+        if updated_status:
+            text = f'status updated: *{incident_status}*'
+        if incident_status == 'unknown':
+            text += f'\n{self.user_groups["__impulse_admins__"].unknown_status_text()}'
+        if incident_status != 'closed':
+            post_thread(channel_id, ts, text)
 
 
 def generate_application(app_dict, channels_list):

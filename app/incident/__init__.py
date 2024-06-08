@@ -63,18 +63,14 @@ class Incident:
         self.acknowledged = False
         self.acknowledged_by = None
 
-    def chain_update(self, index, done, result):
+    def chain_update(self, uuid_, index, done, result):
         self.chain[index]['done'] = done
         self.chain[index]['result'] = result
+        self.dump(f'{incidents_path}/{uuid_}.yml')
 
     def set_next_status(self):
         new_status = Incident.next_status[self.status]
-        self.update_status(new_status)
-        update_thread(
-            self.channel_id, self.ts, new_status, self.message,
-            acknowledge=self.acknowledged, user_id=self.acknowledged_by
-        )
-        return new_status
+        return self.update_status(new_status)
 
     @classmethod
     def load(cls, dump_file):
@@ -123,19 +119,33 @@ class Incident:
 
     def update_status(self, status):
         now = datetime.utcnow()
-        if status == 'unknown' or status == 'closed':
-            self.status_update_datetime = None
-        else:
+        if status != 'closed':
             self.status_update_datetime = now + unix_sleep_to_timedelta(settings.get(f'{status}_timeout'))
-        self.status = status
+        else:
+            self.status_update_datetime = None
         self.updated = now
+        if self.status != status:
+            self.status = status
+            return True
+        else:
+            return False
 
     def update(self, alert_state, uuid_):
-        status = alert_state['status']
-        self.update_status(status)
+        """
+        :return: update_state, update_status
+        """
         if alert_state != self.last_state:
-            update_thread(self.channel_id, self.ts, self.status, self.message, self.acknowledged, self.acknowledged_by)
-        self.dump(f'{incidents_path}/{uuid_}.yml')
+            status = alert_state['status']
+            updated = self.update_status(status)
+            self.dump(f'{incidents_path}/{uuid_}.yml')
+            if updated:
+                logger.debug(f'Incident \'{uuid_}\' updated with new status \'{status}\'')
+                return True, True
+            else:
+                logger.debug(f'Incident \'{uuid_}\' updated with same status \'{status}\'')
+                return True, False
+        else:
+            return False, False
 
 
 class Incidents:
@@ -161,6 +171,7 @@ class Incidents:
     def del_by_uuid(self, uuid_):
         del self.by_uuid[uuid_]
         os.remove(f'{incidents_path}/{uuid_}.yml')
+        logger.info(f'Incident \'{uuid_}\' closed')
 
     def serialize(self):
         r = {str(k): self.by_uuid[k].serialize() for k in self.by_uuid.keys()}

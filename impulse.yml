@@ -1,5 +1,6 @@
 firing_timeout: 30s  # After this time Incident status will change from "firing" to "unknown" if no new alerts appear
-resolved_timeout: 10s  # After this time Incident status will change from "resolved" to "closed" if no new alerts appear
+unknown_timeout: 50m  # After this time Incident status will change from "resolved" to "closed" if no new alerts appear
+resolved_timeout: 30s  # After this time Incident status will change from "resolved" to "closed" if no new alerts appear
 
 
 route:
@@ -32,8 +33,6 @@ webhooks:
 
 application:
   type: slack
-  verification_token: "{{ SLACK_VERIFICATION_TOKEN }}"
-  bot_user_oauth_token: "{{ SLACK_BOT_USER_OAUTH_TOKEN }}"
   admin_users: # users which will be notified when warnings and errors occurs
     - DiTsi
   chains:
@@ -45,10 +44,10 @@ application:
     - user_group: space_squad
     warning:
     - user_group: space_squad
-    - wait: 10s
+    - wait: 30s
     - user: DiTsi
-    - wait: 10s
-    - webhook: Oleg
+#    - wait: 10s
+#    - webhook: Oleg
   user_groups:
     space_squad:
       users:

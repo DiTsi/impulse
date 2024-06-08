@@ -52,8 +52,7 @@ class AdminGroup:
         self.users = users
 
     def unknown_status_text(self):
-        text = f'status updated: *unknown*'
-        text += f'\n>notify admin_users: '
+        text = f'>notify admin_users: '
         if debug_slack_mention == 'False':
             for user in self.users:
                 text += f'<@{user.slack_id}> '
@@ -61,7 +60,7 @@ class AdminGroup:
             for user in self.users:
                 text += f'{user.name} '
         text += (
-            f'\n>Check Alertmanager\'s `repeat_interval` option is less than IMPulse option `firing_timeout`'
+            f'\n>_Check Alertmanager\'s `repeat_interval` option is less than IMPulse option `firing_timeout`_'
         ) #! add link to documentation
         return text
 

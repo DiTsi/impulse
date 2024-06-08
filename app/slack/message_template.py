@@ -12,7 +12,7 @@ class MessageTemplate:
         return template.render(payload=alert_state)
 
 
-def generate_message_templates(message_template_dict):
+def generate_message_template(message_template_dict):
     logger.debug(f'Creating MessageTemplate')
 
     message_template = MessageTemplate(

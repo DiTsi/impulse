@@ -64,13 +64,19 @@ class Queue:
                 self.put(s['datetime'], 1, uuid, i)
         self.lock = False
 
-    def update(self, uuid_, datetime_):
+    def update(self, uuid_, incident_status_change, status):
         self.lock = True
-        for i in range(len(self.dates)):
-            incident_uuid = self.incident_uuids[i]
-            type_ = self.types[i]
-            if incident_uuid == uuid_ and type_ == 0:
-                self.dates[i] = datetime_
+        if uuid_ not in self.incident_uuids:
+            self.put(incident_status_change, 0, uuid_)
+        else:
+            for i in range(len(self.dates)):
+                incident_uuid = self.incident_uuids[i]
+                type_ = self.types[i]
+                if incident_uuid == uuid_ and type_ == 0:
+                    self.dates[i] = incident_status_change
+                    break
+        if status == 'resolved':
+            self.delete_steps_by_id(uuid_)
         self.lock = False
 
     def handle(self):
@@ -111,6 +117,8 @@ class Queue:
 
 
 def unix_sleep_to_timedelta(unix_sleep_time):
+    if unix_sleep_time is None:
+        pass
     value = int(unix_sleep_time[:-1])
     unit = unix_sleep_time[-1]
     unit_map = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days'}

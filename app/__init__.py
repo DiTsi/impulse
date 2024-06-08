@@ -7,7 +7,7 @@ from app.incident import Incident, Incidents
 from app.logger import logger
 from app.queue import unix_sleep_to_timedelta, Queue
 from app.slack import update_thread, create_thread, button_handler
-from config import settings, incidents_path
+from config import settings, incidents_path, slack_verification_token
 
 
 def queue_handle(incidents, queue_, application, webhooks):
@@ -38,7 +38,7 @@ def queue_handle_status_update(incidents, uuid, queue, application):
     updated = incident_.set_next_status()
     application.update(
         incident_.channel_id, incident_.ts, incident_.status, incident_.last_state, updated,
-        incident_.acknowledge, incident_.acknowledged_by
+        incident_.chain_enabled, incident_.status_enabled
     )
     if incident_.status == 'closed':
         incidents.del_by_uuid(uuid)
@@ -60,8 +60,8 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
     status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(settings.get(f'{status}_timeout'))
     chain = application.chains[chain_name]
     incident_ = Incident(
-        alert=alert_state, status=status, ts=ts, channel_id=channel['id'], chain=[], acknowledged=False,
-        acknowledged_by=None, updated=updated_datetime, message=message, status_update_datetime=status_update_datetime
+        alert=alert_state, status=status, ts=ts, channel_id=channel['id'], chain=[], chain_enabled=True,
+        status_enabled=True, updated=updated_datetime, message=message, status_update_datetime=status_update_datetime
     )
     uuid_ = incidents.add(incident_)
 
@@ -83,7 +83,7 @@ def alert_handle_update(uuid_, incident_, queue_, alert_state, application):
     if is_state_updated:
         application.update(
             incident_.channel_id, incident_.ts, alert_state['status'], alert_state, is_status_updated,
-            incident_.acknowledge, incident_.acknowledged_by
+            incident_.chain_enabled, incident_.status_enabled
         )
 
     # update queue
@@ -99,16 +99,28 @@ def alert_handle(application, route_, incidents, queue_, alert_state):
 
 
 def slack_handler(payload, incidents, queue_):
-    incident_, uuid = incidents.get_by_ts(ts=payload['message_ts'])
+    if payload.get('token') != slack_verification_token:
+        logger.error(f'Unauthorized request to \'/slack\'')
+        return {}, 401
 
-    modified_message = payload.get('original_message') #!
-    if modified_message['attachments'][1]['actions'][0]['text'] == 'Acknowledge':
-        incident_.acknowledge(payload['user']['id'])
-        queue_.delete_steps_by_id(uuid) #!
-    else:
-        incident_.unacknowledge()
-        queue_.append(uuid, incident_.chain)
-    modified_message = button_handler(payload)
+    incident_, uuid = incidents.get_by_ts(ts=payload['message_ts'])
+    original_message = payload.get('original_message')
+    actions = payload.get('actions')
+
+    for action in actions:
+        if action['name'] == 'chain':
+            if incident_.chain_enabled:
+                incident_.chain_enabled = False
+                queue_.delete_steps_by_id(uuid)
+            else:
+                incident_.chain_enabled = True
+                queue_.append(uuid, incident_.chain)
+        elif action['name'] == 'status':
+            if incident_.status_enabled:
+                incident_.status_enabled = False
+            else:
+                incident_.status_enabled = True
+    modified_message = button_handler(original_message, incident_.chain_enabled, incident_.status_enabled)
     return modified_message, 200
 
 

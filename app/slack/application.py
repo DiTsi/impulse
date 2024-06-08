@@ -55,15 +55,15 @@ class SlackApplication:
         response_code = post_thread(channel_id, ts, unit.mention_text())
         return response_code
 
-    def update(self, channel_id, ts, incident_status, alert_state, updated_status, acknowledge, user_id):
+    def update(self, channel_id, ts, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
         text = self.message_template.form_message(alert_state)
-        update_thread(channel_id, ts, incident_status, text, acknowledge, user_id)
-        if updated_status:
+        update_thread(channel_id, ts, incident_status, text, chain_enabled, status_enabled)
+        if updated_status and status_enabled:
             text = f'status updated: *{incident_status}*'
-        if incident_status == 'unknown':
-            text += f'\n{self.user_groups["__impulse_admins__"].unknown_status_text()}'
-        if incident_status != 'closed':
-            post_thread(channel_id, ts, text)
+            if incident_status == 'unknown':
+                text += f'\n{self.user_groups["__impulse_admins__"].unknown_status_text()}'
+            if incident_status != 'closed':
+                post_thread(channel_id, ts, text)
 
 
 def generate_application(app_dict, channels_list):

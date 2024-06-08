@@ -18,15 +18,15 @@ class Incident:
         'resolved': 'closed'
     }
 
-    def __init__(self, alert, status, ts, channel_id, chain, acknowledged, acknowledged_by, message, updated,
+    def __init__(self, alert, status, ts, channel_id, chain, chain_enabled, status_enabled, message, updated,
                  status_update_datetime):
         self.last_state = alert
         self.ts = ts
         self.status = status
         self.channel_id = channel_id
         self.chain = chain
-        self.acknowledged = acknowledged
-        self.acknowledged_by = acknowledged_by
+        self.chain_enabled = chain_enabled
+        self.status_enabled = status_enabled
         self.updated = updated
         self.message = message
         self.status_update_datetime = status_update_datetime
@@ -55,14 +55,6 @@ class Incident:
             index, {'datetime': datetime_, 'type': type_, 'identifier': identifier, 'done': False, 'result': None}
         )
 
-    def acknowledge(self, user_id):
-        self.acknowledged = True
-        self.acknowledged_by = user_id
-
-    def unacknowledge(self):
-        self.acknowledged = False
-        self.acknowledged_by = None
-
     def chain_update(self, uuid_, index, done, result):
         self.chain[index]['done'] = done
         self.chain[index]['result'] = result
@@ -83,10 +75,10 @@ class Incident:
             channel_id = content.get('channel_id')
             chain = content.get('chain')
             updated = content.get('updated')
-            acknowledged = content.get('acknowledged')
-            acknowledged_by = content.get('acknowledged_by')
+            chain_enabled = content.get('chain_enabled')
+            status_enabled = content.get('status_enabled')
             status_update_datetime = content.get('status_update_datetime')
-        return cls(last_state, status, ts, channel_id, chain, acknowledged, acknowledged_by, message,
+        return cls(last_state, status, ts, channel_id, chain, chain_enabled, status_enabled, message,
                    updated, status_update_datetime)
 
     def dump(self, incident_file):
@@ -97,10 +89,10 @@ class Incident:
         self.last_state = alert
         self.updated = datetime.utcnow()
         update_thread(
-            channel_id=self.channel_id,
-            ts=self.ts,
-            status=alert.get('status'),
-            message=message
+            self.channel_id,
+            self.ts,
+            alert.get('status'),
+            message
         )
         logger.debug(f'incident updated')
 
@@ -110,7 +102,8 @@ class Incident:
             "channel_id": self.channel_id,
             "chain": self.chain,
             "updated": self.updated,
-            "acknowledged": self.acknowledged,
+            "chain_enabled": self.chain_enabled,
+            "status_enabled": self.status_enabled,
             "ts": self.ts,
             "status": self.status,
             "message": self.message,

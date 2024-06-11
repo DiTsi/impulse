@@ -5,7 +5,7 @@ import requests
 
 from app.logger import logger
 from app.slack.user import User, UserGroup
-from config import slack_bot_user_oauth_token, slack_verification_token
+from config import slack_bot_user_oauth_token
 
 status_colors = {
     'firing': '#f61f1f',
@@ -21,22 +21,22 @@ url = 'https://slack.com'
 buttons = {
     'chain': {
         'enabled': {
-            'text': '▶ Chain',
+            'text': '◼ Chain',
             'style': 'primary'
         },
         'disabled': {
-            'text': '◼ Chain',
-            'style': 'danger'
+            'text': '▶ Chain',
+            'style': 'normal'  # danger
         }
     },
     'status': {
         'enabled': {
-            'text': '▶ Status',
+            'text': '◼ Status',
             'style': 'primary'
         },
         'disabled': {
-            'text': '◼ Status',
-            'style': 'danger'
+            'text': '▶ Status',
+            'style': 'normal'  # danger
         }
     }
 }
@@ -48,7 +48,7 @@ def get_public_channels():
             f'{url}/api/conversations.list',
             headers=headers
         )
-        sleep(1)
+        sleep(1.5)
         data = response.json()
         channels_list = data.get('channels', [])
         channels_dict = {c.get('name'): c for c in channels_list}
@@ -56,6 +56,17 @@ def get_public_channels():
     except requests.exceptions.RequestException as e:
         logger.error(f'Failed to retrieve channel list: {e}')  # !
         return []
+
+
+def admin_message(channel_id, message):
+    payload = {
+        'channel': channel_id,
+        'text': message,
+        'unfurl_links': False,
+        'unfurl_media': False
+    }
+    response = requests.post(f'{url}/api/chat.postMessage', headers=headers, data=json.dumps(payload))
+    return response.json().get('ts')
 
 
 def create_thread(channel_id, message, status):

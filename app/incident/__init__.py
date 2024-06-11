@@ -127,9 +127,9 @@ class Incident:
         """
         :return: update_state, update_status
         """
-        if alert_state != self.last_state:
-            status = alert_state['status']
-            updated = self.update_status(status)
+        status = alert_state['status']
+        updated = self.update_status(status)
+        if alert_state != self.last_state or updated:
             self.dump(f'{incidents_path}/{uuid_}.yml')
             if updated:
                 logger.debug(f'Incident \'{uuid_}\' updated with new status \'{status}\'')

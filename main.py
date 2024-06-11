@@ -7,6 +7,7 @@ from app import queue_handle, alert_handle, slack_handler, recreate_queue, recre
 from app.incident import Incidents
 from app.route import generate_route
 from app.slack.application import generate_application
+from app.webhook import generate_webhooks
 from config import settings
 
 app = Flask(__name__)
@@ -49,6 +50,7 @@ if __name__ == '__main__':
         app_dict,
         channels_list=route.get_uniq_channels()
     )
+    webhooks = generate_webhooks(webhooks_dict)
 
     # run scheduler
     scheduler = BackgroundScheduler()
@@ -56,7 +58,7 @@ if __name__ == '__main__':
         func=queue_handle,
         trigger="interval",
         seconds=1.1,
-        args=[incidents, queue, application, webhooks_dict]
+        args=[incidents, queue, application, webhooks]
     )
     scheduler.start()
 

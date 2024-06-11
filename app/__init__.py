@@ -1,8 +1,6 @@
 import os
 from datetime import datetime
 
-import requests
-
 from app.incident import Incident, Incidents
 from app.logger import logger
 from app.queue import unix_sleep_to_timedelta, Queue
@@ -28,9 +26,8 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
         r_code = application.notify(incident_.channel_id, incident_.ts, step['type'], step['identifier'])
         incident_.chain_update(uuid_, identifier, done=True, result=r_code)
     else:
-        url = webhooks[step['identifier']]
-        r = requests.post(f'{url}')
-        incident_.chain_update(uuid_, identifier, done=True, result=r.status_code)
+        response_code = webhooks[step['identifier']].push()
+        incident_.chain_update(uuid_, identifier, done=True, result=response_code)
 
 
 def queue_handle_status_update(incidents, uuid, queue, application):
@@ -111,7 +108,7 @@ def slack_handler(payload, incidents, queue_):
         if action['name'] == 'chain':
             if incident_.chain_enabled:
                 incident_.chain_enabled = False
-                queue_.delete_steps_by_id(uuid)
+                queue_.delete_by_id(uuid, delete_steps=True, delete_status=False)
             else:
                 incident_.chain_enabled = True
                 queue_.append(uuid, incident_.chain)

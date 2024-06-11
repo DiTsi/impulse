@@ -1,6 +1,6 @@
 from app.logger import logger
 from app.slack import (get_public_channels,
-                       post_thread, update_thread)
+                       post_thread, update_thread, admin_message)
 from app.slack.chain import generate_chains
 from app.slack.message_template import generate_message_template
 from app.slack.user import get_users, generate_users, generate_user_groups, generate_admin_group
@@ -41,6 +41,7 @@ class SlackApplication:
         message_template_dict = app_config['message_template']
         message_template = generate_message_template(message_template_dict)
 
+        self.admin_channel_id = public_channels[app_config['admin_channel']]['id']
         self.users = users
         self.user_groups = user_groups
         self.chains = chains
@@ -60,10 +61,13 @@ class SlackApplication:
         update_thread(channel_id, ts, incident_status, text, chain_enabled, status_enabled)
         if updated_status and status_enabled:
             text = f'status updated: *{incident_status}*'
-            if incident_status == 'unknown':
-                text += f'\n{self.user_groups["__impulse_admins__"].unknown_status_text()}'
             if incident_status != 'closed':
                 post_thread(channel_id, ts, text)
+            if incident_status == 'unknown':
+                ts_to_link = f'p{ts.replace(".", "")}'
+                text = (f'<https://slack.com/archives/{channel_id}/{ts_to_link}|Incident> status set to *unknown*')
+                text += f'\n>_Check Alertmanager\'s `repeat_interval` option is less than IMPulse option `firing_timeout`_'
+                admin_message(self.admin_channel_id, text)
 
 
 def generate_application(app_dict, channels_list):

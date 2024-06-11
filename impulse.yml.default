@@ -27,11 +27,18 @@ route:
 
 
 webhooks:
-  Oleg: https://home.ditsi.ru/
+  Oleg:
+    url: "https://api.twilio.com/2010-04-01/Accounts/{{ env['TWILIO_ACCOUNT_SID'] }}/Calls.json"
+    data:
+      To: '+998904758596'
+      From: "{{ env['TWILIO_NUMBER'] }}"
+      Url: http://example.com/twiml.xml
+    user: "{{ env['TWILIO_ACCOUNT_SID'] }}:{{ env['TWILIO_AUTH_TOKEN'] }}"
 
 
 application:
   type: slack
+  admin_channel: default
   admin_users: # users which will be notified when warnings and errors occurs
     - DiTsi
   chains:

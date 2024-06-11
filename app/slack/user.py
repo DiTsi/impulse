@@ -51,18 +51,18 @@ class AdminGroup:
     def __init__(self, users):
         self.users = users
 
-    def unknown_status_text(self):
-        text = f'>notify admin_users: '
-        if debug_slack_mention == 'False':
-            for user in self.users:
-                text += f'<@{user.slack_id}> '
-        else:
-            for user in self.users:
-                text += f'{user.name} '
-        text += (
-            f'\n>_Check Alertmanager\'s `repeat_interval` option is less than IMPulse option `firing_timeout`_'
-        ) #! add link to documentation
-        return text
+    # def unknown_status_text(self):
+    #     text = f'>notify admin_users: '
+    #     if debug_slack_mention == 'False':
+    #         for user in self.users:
+    #             text += f'<@{user.slack_id}> '
+    #     else:
+    #         for user in self.users:
+    #             text += f'{user.name} '
+    #     text += (
+    #         f'\n>_Check Alertmanager\'s `repeat_interval` option is less than IMPulse option `firing_timeout`_'
+    #     ) #! add link to documentation
+    #     return text
 
 
 def get_users():

@@ -36,22 +36,15 @@ class Queue:
         del self.identifiers[index]
         self.lock = False
 
-    def delete_by_id(self, uuid):
+    def delete_by_id(self, uuid, delete_steps=True, delete_status=True):
         self.lock = True
         ids_to_delete = list()
         for i in range(len(self.dates)):
             if self.incident_uuids[i] == uuid:
-                ids_to_delete.append(i)
-        for i in ids_to_delete:
-            self.delete(i)
-        self.lock = False
-
-    def delete_steps_by_id(self, uuid):
-        self.lock = True
-        ids_to_delete = list()
-        for i in reversed(range(len(self.dates))):
-            if self.types[i] != 0 and self.incident_uuids[i] == uuid:
-                ids_to_delete.append(i)
+                if delete_steps and self.types[i] == 1:
+                    ids_to_delete.append(i)
+                if delete_status and self.types[i] == 0:
+                    ids_to_delete.append(i)
         for i in ids_to_delete:
             self.delete(i)
         self.lock = False
@@ -69,14 +62,10 @@ class Queue:
         if uuid_ not in self.incident_uuids:
             self.put(incident_status_change, 0, uuid_)
         else:
-            for i in range(len(self.dates)):
-                incident_uuid = self.incident_uuids[i]
-                type_ = self.types[i]
-                if incident_uuid == uuid_ and type_ == 0:
-                    self.dates[i] = incident_status_change
-                    break
+            self.delete_by_id(uuid_, delete_steps=False, delete_status=True)
+            self.put(incident_status_change, 0, uuid_)
         if status == 'resolved':
-            self.delete_steps_by_id(uuid_)
+            self.delete_by_id(uuid_, delete_steps=True, delete_status=False)
         self.lock = False
 
     def handle(self):

@@ -47,26 +47,22 @@ class SlackApplication:
         self.message_template = message_template
 
     def notify(self, incident, type_, identifier):
-        channel_id = incident.get('channel_id')
-        ts = incident.get('ts')
         if type_ == 'user':
             unit = self.users[identifier]
         else:
             unit = self.user_groups[identifier]
-        response_code = post_thread(channel_id, ts, unit.mention_text())
+        response_code = post_thread(incident.channel_id, incident.ts, unit.mention_text())
         return response_code
 
     def update(self, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
-        channel_id = incident.get('channel_id')
-        ts = incident.get('ts')
         text = self.message_template.form_message(alert_state)
-        update_thread(channel_id, ts, incident_status, text, chain_enabled, status_enabled)
+        update_thread(incident.channel_id, incident.ts, incident_status, text, chain_enabled, status_enabled)
         if updated_status and status_enabled:
             text = f'status updated: *{incident_status}*'
             if incident_status != 'closed':
-                post_thread(channel_id, ts, text)
+                post_thread(incident.channel_id, incident.ts, text)
             if incident_status == 'unknown':
-                text = (f'<https://slack.com/archives/{channel_id}/{incident.link}|Incident> status set to *unknown*')
+                text = (f'<https://slack.com/archives/{incident.channel_id}/{incident.link}|Incident> status set to *unknown*')
                 text += f'\n>_Check *Alertmanager\'s* `repeat_interval` option is less than *IMPulse* option `firing_timeout`_'
                 admin_message(self.admin_channel_id, text)
 

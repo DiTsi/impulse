@@ -5,9 +5,8 @@ class MainRoute:
     def __init__(self, channel, chain=None, routes_list=None):
         self.channel = channel
         self.chain = chain
-        if routes_list is None:
-            self.routes = []
-        else:
+        self.routes = list()
+        if routes_list:
             for r in routes_list:
                 if r.get('routes') is None:
                     route = Route(r.get('channel'), r.get('chain'), [], r.get('matchers'))

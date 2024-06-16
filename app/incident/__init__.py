@@ -8,7 +8,7 @@ import yaml
 from app.logger import logger
 from app.queue import unix_sleep_to_timedelta
 from app.slack import update_thread
-from config import settings, incidents_path
+from config import incidents_path, timeouts
 
 
 class Incident:
@@ -18,30 +18,32 @@ class Incident:
         'resolved': 'closed'
     }
 
-    def __init__(self, alert, status, ts, channel_id, chain, chain_enabled, status_enabled, message, updated,
+    def __init__(self, alert, status, ts, channel_id, chain, chain_enabled, status_enabled, updated,
                  status_update_datetime):
         self.last_state = alert
         self.ts = ts
+        self.link = f'https://slack.com/archives/{channel_id}/p{ts.replace(".", "")}'
+        'https://ditsiworkspace.slack.com/archives/C06NJALBX71/p1718536764226329'
         self.status = status
         self.channel_id = channel_id
         self.chain = chain
         self.chain_enabled = chain_enabled
         self.status_enabled = status_enabled
         self.updated = updated
-        self.message = message
         self.status_update_datetime = status_update_datetime
 
-    def generate_chain(self, chain):
-        index = 0
-        dt = datetime.utcnow()
-        for s in chain.steps:
-            type_ = list(s.keys())[0]
-            value = list(s.values())[0]
-            if type_ == 'wait':
-                dt = dt + unix_sleep_to_timedelta(value)
-            else:
-                self.chain_put(index=index, datetime_=dt, type_=type_, identifier=value)
-                index += 1
+    def generate_chain(self, chain=None):
+        if chain:
+            index = 0
+            dt = datetime.utcnow()
+            for s in chain.steps:
+                type_ = list(s.keys())[0]
+                value = list(s.values())[0]
+                if type_ == 'wait':
+                    dt = dt + unix_sleep_to_timedelta(value)
+                else:
+                    self.chain_put(index=index, datetime_=dt, type_=type_, identifier=value)
+                    index += 1
 
     def get_chain(self):
         chain = []
@@ -71,19 +73,29 @@ class Incident:
             last_state = content.get('last_state')
             ts = content.get('ts')
             status = content.get('status')
-            message = content.get('message')
             channel_id = content.get('channel_id')
             chain = content.get('chain')
             updated = content.get('updated')
             chain_enabled = content.get('chain_enabled')
             status_enabled = content.get('status_enabled')
             status_update_datetime = content.get('status_update_datetime')
-        return cls(last_state, status, ts, channel_id, chain, chain_enabled, status_enabled, message,
+        return cls(last_state, status, ts, channel_id, chain, chain_enabled, status_enabled,
                    updated, status_update_datetime)
 
     def dump(self, incident_file):
         with open(incident_file, 'w') as f:
-            yaml.dump(self.serialize(), f, default_flow_style=False)
+            d = {
+                "chain_enabled": self.chain_enabled,
+                "chain": self.chain,
+                "channel_id": self.channel_id,
+                "last_state": self.last_state,
+                "status_enabled": self.status_enabled,
+                "status_update_datetime": self.status_update_datetime,
+                "status": self.status,
+                "ts": self.ts,
+                "updated": self.updated,
+            }
+            yaml.dump(d, f, default_flow_style=False)
 
     def update_thread(self, alert, message):
         self.last_state = alert
@@ -98,22 +110,22 @@ class Incident:
 
     def serialize(self):
         return {
-            "last_state": self.last_state,
-            "channel_id": self.channel_id,
-            "chain": self.chain,
-            "updated": self.updated,
             "chain_enabled": self.chain_enabled,
+            "chain": self.chain,
+            "channel_id": self.channel_id,
+            "last_state": self.last_state,
+            "link": self.link,
             "status_enabled": self.status_enabled,
-            "ts": self.ts,
+            "status_update_datetime": self.status_update_datetime,
             "status": self.status,
-            "message": self.message,
-            "status_update_datetime": self.status_update_datetime
+            "ts": self.ts,
+            "updated": self.updated,
         }
 
     def update_status(self, status):
         now = datetime.utcnow()
         if status != 'closed':
-            self.status_update_datetime = now + unix_sleep_to_timedelta(settings.get(f'{status}_timeout'))
+            self.status_update_datetime = now + unix_sleep_to_timedelta(timeouts.get(status))
         else:
             self.status_update_datetime = None
         self.updated = now

@@ -32,12 +32,6 @@ class UserGroup:
         self.name = name
         self.users = users
 
-    # def get_actions(self, action):
-    #     if action == 'webhook':
-    #         return [u.webhook for u in self.users]
-    #     elif action == 'mention':
-    #         return [u.slack_mention for u in self.users]
-
     def mention_text(self):
         text = f'notify user_group *{self.name}*'
         if debug_slack_mention == 'False':
@@ -45,24 +39,6 @@ class UserGroup:
             for user in self.users:
                 text += f'<@{user.slack_id}> '
         return text
-
-
-class AdminGroup:
-    def __init__(self, users):
-        self.users = users
-
-    # def unknown_status_text(self):
-    #     text = f'>notify admin_users: '
-    #     if debug_slack_mention == 'False':
-    #         for user in self.users:
-    #             text += f'<@{user.slack_id}> '
-    #     else:
-    #         for user in self.users:
-    #             text += f'{user.name} '
-    #     text += (
-    #         f'\n>_Check Alertmanager\'s `repeat_interval` option is less than IMPulse option `firing_timeout`_'
-    #     ) #! add link to documentation
-    #     return text
 
 
 def get_users():
@@ -78,7 +54,7 @@ def get_users():
     return json_['members']
 
 
-def generate_users(users_dict, slack_users):
+def generate_users(users_dict=None):
     def get_user_id_(s_users, user):
         for u in s_users:
             if u.get('real_name') == user:
@@ -86,30 +62,29 @@ def generate_users(users_dict, slack_users):
         logger.warning(f'User \'{user}\' not found in Slack')
         return None
 
-    logger.debug(f'creating users')
-    users = {}
-    for name in users_dict.keys():
-        slack_name = users_dict[name]['full_name']
-        slack_id = get_user_id_(slack_users, slack_name)
-        users[name] = User(name, slack_id=slack_id)
-    return users
+    users = dict()
+    if users_dict:
+        logger.debug(f'creating users')
+        slack_users = get_users()
+        for name in users_dict.keys():
+            slack_name = users_dict[name]['full_name']
+            slack_id = get_user_id_(slack_users, slack_name)
+            users[name] = User(name, slack_id=slack_id)
+        return users
+    else:
+        logger.debug(f'no users defined in impulse.yml')
+        return users
 
 
-def generate_user_groups(user_groups_dict, users):
-    logger.debug(f'creating user_groups')
-    user_groups = {}
-    for name in user_groups_dict.keys():
-        user_names = user_groups_dict[name]['users']
-        user_objects = [users.get(user_name) for user_name in user_names]
-        user_groups[name] = UserGroup(name, user_objects)
-    logger.debug(f'user_groups created')
+def generate_user_groups(user_groups_dict=None, users=None):
+    user_groups = dict()
+    if user_groups_dict:
+        logger.debug(f'creating user_groups')
+        for name in user_groups_dict.keys():
+            user_names = user_groups_dict[name]['users']
+            user_objects = [users.get(user_name) for user_name in user_names]
+            user_groups[name] = UserGroup(name, user_objects)
+        logger.debug(f'user_groups created')
+    else:
+        logger.debug(f'No user_groups defined in impulse.yml. Continue with empty user_groups')
     return user_groups
-
-
-def generate_admin_group(admin_users, users):
-    logger.debug(f'creating admin_users') #!
-    user_objects = []
-    for admin in admin_users:
-        user_objects.append(users.get(admin))
-    logger.debug(f'admin_users created') #!
-    return AdminGroup(user_objects)

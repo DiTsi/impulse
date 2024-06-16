@@ -29,12 +29,13 @@ class Webhook:
         return tmplt.render(env=os.environ)
 
 
-def generate_webhooks(webhooks_dict):
+def generate_webhooks(webhooks_dict=None):
     webhooks = dict()
-    for name in webhooks_dict.keys():
-        webhook_dict = webhooks_dict[name]
-        url = webhook_dict.get('url')
-        data = webhook_dict.get('data')
-        user = webhook_dict.get('user')
-        webhooks[name] = Webhook(url, data, user)
+    if webhooks_dict:
+        for name in webhooks_dict.keys():
+            webhook_dict = webhooks_dict[name]
+            url = webhook_dict.get('url')
+            data = webhook_dict.get('data')
+            user = webhook_dict.get('user')
+            webhooks[name] = Webhook(url, data, user)
     return webhooks

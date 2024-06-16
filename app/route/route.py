@@ -2,17 +2,19 @@ from app.route.matcher import Matcher
 
 
 class MainRoute:
-    def __init__(self, channel, chain, routes_list):
+    def __init__(self, channel, chain=None, routes_list=None):
         self.channel = channel
-        self.chain = chain or None
-        self.routes = []
-        for r in routes_list:
-            if r.get('routes') is None:
-                route = Route(r.get('channel'), r.get('chain'), [], r.get('matchers'))
-                self.routes.append(route)
-            else:
-                route = Route(r.get('channel'), r.get('chain'), r.get('routes'), r.get('matchers'))
-                self.routes.append(route)
+        self.chain = chain
+        if routes_list is None:
+            self.routes = []
+        else:
+            for r in routes_list:
+                if r.get('routes') is None:
+                    route = Route(r.get('channel'), r.get('chain'), [], r.get('matchers'))
+                    self.routes.append(route)
+                else:
+                    route = Route(r.get('channel'), r.get('chain'), r.get('routes'), r.get('matchers'))
+                    self.routes.append(route)
 
     def get_route(self, alert_state):
         if len(self.routes) == 0:

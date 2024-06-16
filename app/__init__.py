@@ -5,7 +5,7 @@ from app.incident import Incident, Incidents
 from app.logger import logger
 from app.queue import unix_sleep_to_timedelta, Queue
 from app.slack import update_thread, create_thread, button_handler
-from config import settings, incidents_path, slack_verification_token
+from config import incidents_path, slack_verification_token, timeouts
 
 
 def queue_handle(incidents, queue_, application, webhooks):
@@ -23,7 +23,7 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
     incident_ = incidents.by_uuid[uuid_]
     step = incident_.chain[identifier]
     if step['type'] != 'webhook':
-        r_code = application.notify(incident_.channel_id, incident_.ts, step['type'], step['identifier'])
+        r_code = application.notify(incident_, step['type'], step['identifier'])
         incident_.chain_update(uuid_, identifier, done=True, result=r_code)
     else:
         response_code = webhooks[step['identifier']].push()
@@ -34,7 +34,7 @@ def queue_handle_status_update(incidents, uuid, queue, application):
     incident_ = incidents.by_uuid[uuid]
     updated = incident_.set_next_status()
     application.update(
-        incident_.channel_id, incident_.ts, incident_.status, incident_.last_state, updated,
+        incident_, incident_.status, incident_.last_state, updated,
         incident_.chain_enabled, incident_.status_enabled
     )
     if incident_.status == 'closed':
@@ -54,11 +54,11 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
     status = alert_state['status']
 
     updated_datetime = datetime.utcnow()
-    status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(settings.get(f'{status}_timeout'))
-    chain = application.chains[chain_name]
+    status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(timeouts.get(status))
+    chain = application.chains.get(chain_name)
     incident_ = Incident(
         alert=alert_state, status=status, ts=ts, channel_id=channel['id'], chain=[], chain_enabled=True,
-        status_enabled=True, updated=updated_datetime, message=message, status_update_datetime=status_update_datetime
+        status_enabled=True, updated=updated_datetime, status_update_datetime=status_update_datetime
     )
     uuid_ = incidents.add(incident_)
 
@@ -79,7 +79,7 @@ def alert_handle_update(uuid_, incident_, queue_, alert_state, application):
     # update slack
     if is_state_updated:
         application.update(
-            incident_.channel_id, incident_.ts, alert_state['status'], alert_state, is_status_updated,
+            incident_, alert_state['status'], alert_state, is_status_updated,
             incident_.chain_enabled, incident_.status_enabled
         )
 
@@ -144,7 +144,7 @@ def recreate_queue(incidents):
         for uuid_, i in incidents.by_uuid.items():
             queue_.append(uuid_, i.get_chain())
             queue_.put(i.status_update_datetime, 0, uuid_)
-        logger.debug(f'Queue restored from disk')
+        logger.debug(f'Queue restored')
     else:
         logger.debug(f'Empty Queue created')
     return queue_

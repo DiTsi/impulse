@@ -1,4 +1,4 @@
-name: develop
+name: ci/cd
 
 concurrency:
   group: ${{ github.ref }}
@@ -7,6 +7,7 @@ on:
   push:
     branches:
     - 'develop'
+    - 'main'
     tags:
     - 'v*'
 

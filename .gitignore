@@ -1,0 +1,14 @@
+.vscode
+.idea
+
+impulse.yml
+__pycache__
+
+venv
+env
+
+data
+incidents
+response.json
+response_example.json
+ngrok.sh

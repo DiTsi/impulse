@@ -1,0 +1,20 @@
+version: "3.3"
+services:
+  detweet:
+    image: ghcr.io/ditsi/impulse:develop
+    environment:
+      SLACK_BOT_USER_OAUTH_TOKEN: <slack_bot_user_oauth_token>
+      SLACK_VERIFICATION_TOKEN: <slack_verification_token>
+      DEBUG_SLACK_MENTION: "True"
+      CONFIG_PATH: "/config"
+      DATA_PATH: "/data"
+    volumes:
+    - ./data:/data
+    - ./config:/config
+    ports:
+    - 5000:5000
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M

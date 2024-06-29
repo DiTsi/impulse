@@ -33,7 +33,7 @@ class Incident:
         self.status_update_datetime = status_update_datetime
 
     def generate_chain(self, chain=None):
-        if chain:
+        if chain and chain.steps:
             index = 0
             dt = datetime.utcnow()
             for s in chain.steps:
@@ -47,10 +47,11 @@ class Incident:
 
     def get_chain(self):
         chain = []
-        for c in self.chain:
-            if not c['done']:
-                chain.append(c)
-        return self.chain
+        if self.chain_enabled:
+            for c in self.chain:
+                if not c['done']:
+                    chain.append(c)
+        return chain
 
     def chain_put(self, index, datetime_, type_, identifier):
         self.chain.insert(
@@ -144,10 +145,8 @@ class Incident:
         if alert_state != self.last_state or updated:
             self.dump(f'{incidents_path}/{uuid_}.yml')
             if updated:
-                logger.debug(f'Incident \'{uuid_}\' updated with new status \'{status}\'')
                 return True, True
             else:
-                logger.debug(f'Incident \'{uuid_}\' updated with same status \'{status}\'')
                 return True, False
         else:
             return False, False
@@ -174,9 +173,11 @@ class Incidents:
         return uuid_
 
     def del_by_uuid(self, uuid_):
+        incident = self.by_uuid[uuid_]
+        link = incident.link
         del self.by_uuid[uuid_]
         os.remove(f'{incidents_path}/{uuid_}.yml')
-        logger.info(f'Incident \'{uuid_}\' closed')
+        logger.info(f'Incident \'{uuid_}\' closed. Link: {link}')
 
     def serialize(self):
         r = {str(k): self.by_uuid[k].serialize() for k in self.by_uuid.keys()}

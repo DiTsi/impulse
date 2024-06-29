@@ -1,11 +1,12 @@
-firing_timeout: 6h ### After this time Incident status will change from "firing" to "unknown" if no new alerts appear
-unknown_timeout: 6h ### After this time Incident status will change from "resolved" to "closed" if no new alerts appear
-resolved_timeout: 12h ### After this time Incident status will change from "resolved" to "closed" if no new alerts appear
+# timeouts:
+#   firing: 6h ### After this time Incident status will change from "firing" to "unknown" if no new alerts appear
+#   unknown: 6h ### After this time Incident status will change from "resolved" to "closed" if no new alerts appear
+#   resolved: 12h ### After this time Incident status will change from "resolved" to "closed" if no new alerts appear
 
 
-route: ### Incident routing
-  channel: space
-  # chain: warning
+route:
+  channel: space ### default Slack channel for Incidents
+  # chain: warning ### default chain which will be used in default Slack channel
   # routes:
   # - matchers:
   #   - severity="warning"
@@ -15,50 +16,43 @@ route: ### Incident routing
   #   - team="space"
   #   - instance =~ "localhost.*"
   #   channel: space
-  #   chain: space_team
+  #   chain: firing_team
   #   routes:
   #   - matchers:
   #     - severity="critical"
   #     channel: space
-  #     chain: space_team_critical
+  #     chain: firing_team_critical
   # - matchers:
   #   - team="infrastructure"
   #   channel: infrastructure
   #   chain: infra
 
 
-application:
-  type: slack
-  admin_channel: default
-  # chains:
-  #   space_team:
-  #   - user: Andrey
-  #   - user: Oleg
-  #   - webhook: Oleg
+application: ### instant messaging app configuration
+  type: slack ### only 'slack' available now
+  # admin_channel: impulse_admin ### default channel where IMPulse warnings will be send
+  # chains: ### chains used to describe notifications order
+  #   firing_team:
+  #   - user: Alex
   #   - wait: 10m
-  #   - user_group: space_squad
+  #   - user: Dmitry
   #   warning:
-  #   - user_group: space_squad
-  #   - wait: 10s
-  #   - user: DiTsi
-  #   - wait: 10s
-  #   - webhook: Oleg
-  # user_groups:
-  #   space_squad:
-  #     users:
-  #     - DiTsi
-  #     - Oleg
-  # users:
-  #   DiTsi: {full_name: "Dmitry Tsybus"}
-  #   Oleg: {full_name: "Oleg"}
-  #   Andrey: {full_name: "Andrey"}
-  # message_template: |
+  #   - user_group: devops_squad
+  #   - wait: 5m
+  #   - webhook: Alex_call
+  # user_groups: ### user groups used to notify multiple users with one message
+  #   devops_squad:
+  #     users: [Dmitry, Alex]
+  # users: ### Slack users with their actual Full Names
+  #   Dmitry: {full_name: "Dmitry Tsybus"}
+  #   Alex: {full_name: "Alex Johnovich"}
+  # message_template: | ### template for construct Incident message as you wish
   #   {% set status = payload.get("status", "Unknown") -%}
   #   {% set annotations = payload.get("commonAnnotations", {}).copy() -%}
   #   {% set commonLabels = payload.get("commonLabels", {}) -%}
   #   {% set status_emoji = {"firing": ":fire:", "resolved": ":white_check_mark:"}[status] | default(":warning:") -%}
   #   {{ status_emoji }} {{ commonLabels.alertname }}
-    
+  #   -
   #   {% set annotations = payload.get("commonAnnotations", {}) -%}
   #   {% set groupLabels = payload.get("groupLabels", {}) -%}
   #   {% set commonLabels = payload.get("commonLabels", {}) -%}
@@ -82,8 +76,8 @@ application:
   #   {% if annotations.expr %} <{% raw %}https://grafana.com/explore?orgId=1&left=%7B"datasource":"prometheus_1","queries":%5B%7B"refId":"A","datasource":%7B"type":"prometheus","uid":"prometheus_1"%7D,"editorMode":"code","expr":"{% endraw %}{{ annotations.expr | urlencode | replace('%2C',',') | replace('%5C','%5C%22') | replace('%22','%5C%22') | replace('/','%2F') | replace('%0A','') }}{% raw %}","legendFormat":"__auto","range":true,"instant":true%7D%5D,"range":%7B"from":"now-1h","to":"now"%7D%7D{% endraw %}|:grafana:>{% endif %}
 
 
-# webhooks:
-#   Dmitry:
+# webhooks: ### custom object to create POST requests from 'application.chains'
+#   Alex_call:
 #     url: "https://api.twilio.com/2010-04-01/Accounts/{{ env['TWILIO_ACCOUNT_SID'] }}/Calls.json"
 #     data:
 #       To: '+998xxxxxxxxx'

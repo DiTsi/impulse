@@ -85,15 +85,15 @@ def create_thread(channel_id, message, status):
                 "actions": [
                     {
                         "name": "chain",
-                        "text": "▶ Chain",
+                        "text": buttons['chain']['enabled']['text'],
                         "type": "button",
-                        "style": "primary"
+                        "style": buttons['chain']['enabled']['style']
                     },
                     {
                         "name": "status",
-                        "text": "▶ Status",
+                        "text": buttons['status']['enabled']['text'],
                         "type": "button",
-                        "style": "primary"
+                        "style": buttons['status']['enabled']['style']
                     }
                 ]
             }

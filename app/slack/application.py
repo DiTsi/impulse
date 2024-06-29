@@ -51,20 +51,19 @@ class SlackApplication:
             unit = self.users[identifier]
         else:
             unit = self.user_groups[identifier]
-        response_code = post_thread(incident.channel_id, incident.ts, unit.mention_text())
-        return response_code
+        text, not_found = unit.mention_text()
+        response_code = post_thread(incident.channel_id, incident.ts, text)
+        return response_code, not_found
 
-    def update(self, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
+    def update(self, uuid_, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
         text = self.message_template.form_message(alert_state)
         update_thread(incident.channel_id, incident.ts, incident_status, text, chain_enabled, status_enabled)
-        if updated_status and status_enabled:
-            text = f'status updated: *{incident_status}*'
-            if incident_status != 'closed':
+        if updated_status:
+            logger.info(f'Incident \'{uuid_}\' updated with new status \'{incident_status}\'')
+            # post to thread
+            if status_enabled and incident_status != 'closed':
+                text = f'status updated: *{incident_status}*'
                 post_thread(incident.channel_id, incident.ts, text)
-            if incident_status == 'unknown':
-                text = (f'<https://slack.com/archives/{incident.channel_id}/{incident.link}|Incident> status set to *unknown*')
-                text += f'\n>_Check *Alertmanager\'s* `repeat_interval` option is less than *IMPulse* option `firing_timeout`_'
-                admin_message(self.admin_channel_id, text)
 
 
 def generate_application(app_dict, channels_list):

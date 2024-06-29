@@ -3,7 +3,7 @@ from time import sleep
 import requests
 
 from app.logger import logger
-from config import debug_slack_mention, slack_bot_user_oauth_token
+from config import slack_bot_user_oauth_token
 
 headers = {
     'Content-Type': 'application/json',
@@ -21,10 +21,14 @@ class User:
         return self.name
 
     def mention_text(self):
-        text = f'notify user *{self.name}*'
-        if debug_slack_mention == 'False':
-            text += f': <@{self.slack_id}>'
-        return text
+        not_found = False
+        text = f'notify user *{self.name}*: '
+        if self.slack_id:
+            text += f'<@{self.slack_id}>'
+        else:
+            not_found = True
+            text += f'\n>_Error. Not found in Slack_'
+        return text, not_found
 
 
 class UserGroup:
@@ -33,12 +37,16 @@ class UserGroup:
         self.users = users
 
     def mention_text(self):
-        text = f'notify user_group *{self.name}*'
-        if debug_slack_mention == 'False':
-            text += f': '
-            for user in self.users:
+        text = f'notify user_group *{self.name}*: '
+        not_found = False
+        for user in self.users:
+            if user.slack_id:
                 text += f'<@{user.slack_id}> '
-        return text
+            else:
+                not_found = True
+        if not_found:
+            text += f'\n>_Error. Some users of user_group not found in Slack_'
+        return text, not_found
 
 
 def get_users():
@@ -55,11 +63,11 @@ def get_users():
 
 
 def generate_users(users_dict=None):
-    def get_user_id_(s_users, user):
+    def get_user_id_(s_users, full_name):
         for u in s_users:
-            if u.get('real_name') == user:
+            if u.get('real_name') == full_name:
                 return u['id']
-        logger.warning(f'User \'{user}\' not found in Slack')
+        logger.warning(f'User \'{full_name}\' not found in Slack')
         return None
 
     users = dict()
@@ -67,8 +75,8 @@ def generate_users(users_dict=None):
         logger.debug(f'creating users')
         slack_users = get_users()
         for name in users_dict.keys():
-            slack_name = users_dict[name]['full_name']
-            slack_id = get_user_id_(slack_users, slack_name)
+            slack_fullname = users_dict[name]['full_name']
+            slack_id = get_user_id_(slack_users, slack_fullname)
             users[name] = User(name, slack_id=slack_id)
         return users
     else:

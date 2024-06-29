@@ -1,11 +1,10 @@
 version: "3.3"
 services:
   detweet:
-    image: ghcr.io/ditsi/impulse:develop
+    image: ghcr.io/ditsi/impulse:main # Do not use 'main'! Use tag from here https://github.com/DiTsi/impulse/tags
     environment:
       SLACK_BOT_USER_OAUTH_TOKEN: <slack_bot_user_oauth_token>
       SLACK_VERIFICATION_TOKEN: <slack_verification_token>
-      DEBUG_SLACK_MENTION: "True"
       CONFIG_PATH: "/config"
       DATA_PATH: "/data"
     volumes:

@@ -62,6 +62,7 @@ def admin_message(channel_id, message):
     payload = {
         'channel': channel_id,
         'text': message,
+        'mrkdwn_in': ['text'],
         'unfurl_links': False,
         'unfurl_media': False
     }

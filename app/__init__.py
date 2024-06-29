@@ -1,26 +1,40 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.incident import Incident, Incidents
 from app.logger import logger
 from app.queue import unix_sleep_to_timedelta, Queue
 from app.slack import update_thread, create_thread, button_handler, admin_message, post_thread
 from app.slack.user import env, admins_template_string
+from app.update.check import get_latest_tag
 from config import incidents_path, slack_verification_token, timeouts
 
 
-def queue_handle(incidents, queue_, application, webhooks):
+def queue_handle(incidents, queue_, application, webhooks, latest_tag):
     if len(queue_.dates) == 0:
         return
     type_, uuid_, identifier = queue_.handle()
     if type_ is not None:
         if type_ == 'update_status':
             queue_handle_status_update(incidents, uuid_, queue_, application)
-        elif type_ == 'chain_step':  # chain_step
-            queue_handle_step(incidents, uuid_, application, identifier, webhooks, queue_)
+        elif type_ == 'chain_step':
+            queue_handle_step(incidents, uuid_, application, identifier, webhooks)
+        elif type_ == 'check_update':
+            queue_handle_check_update(identifier, queue_, application, latest_tag)
 
 
-def queue_handle_step(incidents, uuid_, application, identifier, webhooks, queue_):
+def queue_handle_check_update(identifier, queue_, application, latest_tag):
+    current_tag = get_latest_tag()
+    if identifier == 'first':
+        latest_tag['version'] = current_tag
+    else:
+        if current_tag != latest_tag['version']:
+            application.new_version_notification(application.default_channel_id, current_tag)
+            latest_tag['version'] = current_tag
+    queue_.put(datetime.utcnow() + timedelta(days=1), 'check_update', None, identifier=None)
+
+
+def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
     incident_ = incidents.by_uuid[uuid_]
     step = incident_.chain[identifier]
     if step['type'] == 'webhook':
@@ -36,7 +50,7 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks, queue
                 text += (f'\n>_response code: {r_code}_'
                          f'\n>_{admins_text}_')
                 _ = post_thread(incident_.channel_id, incident_.ts, text)
-                logger.warning(f'Webhook \'{webhook_name}\' responce code is {r_code}')
+                logger.warning(f'Webhook \'{webhook_name}\' response code is {r_code}')
                 incident_.chain_update(uuid_, identifier, done=True, result=None)
         else:
             admins_text = env.from_string(admins_template_string).render(users=admins_ids)
@@ -158,9 +172,9 @@ def recreate_incidents():
     return incidents
 
 
-def recreate_queue(incidents):
+def recreate_queue(incidents, check_update):
     logger.debug(f'Creating Queue')
-    queue_ = Queue()
+    queue_ = Queue(check_update)
     if bool(incidents.by_uuid):
         for uuid_, i in incidents.by_uuid.items():
             queue_.append(uuid_, i.get_chain())

@@ -1,6 +1,6 @@
 from app.logger import logger
 from app.slack import (get_public_channels,
-                       post_thread, update_thread)
+                       post_thread, update_thread, admin_message)
 from app.slack.chain import generate_chains
 from app.slack.message_template import generate_message_template
 from app.slack.user import admins_template_string, env
@@ -8,7 +8,7 @@ from app.slack.user import generate_users, generate_user_groups
 
 
 class SlackApplication:
-    def __init__(self, app_config, channels_list):
+    def __init__(self, app_config, channels_list, default_channel):
         # create channels
         logger.debug(f'get Slack channels using API')
         public_channels = get_public_channels()
@@ -41,6 +41,7 @@ class SlackApplication:
         message_template = generate_message_template(message_template_dict)
 
         admins_list = app_config['admin_users']
+        self.default_channel_id = channels[default_channel]['id']
         self.admin_users = [users[admin] for admin in admins_list]
         self.users = users
         self.user_groups = user_groups
@@ -77,13 +78,22 @@ class SlackApplication:
                     text += f'\n>_{admins_text}_'
                 post_thread(incident.channel_id, incident.ts, text)
 
+    def new_version_notification(self, channel_id, new_tag):
+        admins_ids = [a.slack_id for a in self.admin_users]
+        admins_text = env.from_string(admins_template_string).render(users=admins_ids)
+        text = (f'New IMPulse version available: {new_tag}'
+                f'\n>_see <CHANGELOG.md|https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md>_'
+                f'\n>_{admins_text}_')
+        admin_message(channel_id, text)
 
-def generate_application(app_dict, channels_list):
+
+def generate_application(app_dict, channels_list, default_channel):
     app_type = app_dict['type']
     if app_type == 'slack':
         application = SlackApplication(
             app_dict,
-            channels_list
+            channels_list,
+            default_channel
         )
     else:
         logger.error(f'Application type \'{app_type}\' not supported\nExiting...')

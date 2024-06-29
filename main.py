@@ -8,7 +8,7 @@ from app.incident import Incidents
 from app.route import generate_route
 from app.slack.application import generate_application
 from app.webhook import generate_webhooks
-from config import settings
+from config import settings, check_updates
 
 app = Flask(__name__)
 incidents = Incidents([])
@@ -41,8 +41,9 @@ def get_incidents():
 
 
 if __name__ == '__main__':
+    latest_tag = {'version': None}
     incidents = recreate_incidents()
-    queue = recreate_queue(incidents)
+    queue = recreate_queue(incidents, check_updates)
 
     route_dict = settings.get('route')
     app_dict = settings.get('application')
@@ -51,7 +52,8 @@ if __name__ == '__main__':
     route = generate_route(route_dict)
     application = generate_application(
         app_dict,
-        channels_list=route.get_uniq_channels()
+        route.get_uniq_channels(),
+        route.channel
     )
     webhooks = generate_webhooks(webhooks_dict)
 
@@ -61,7 +63,7 @@ if __name__ == '__main__':
         func=queue_handle,
         trigger="interval",
         seconds=1.1,
-        args=[incidents, queue, application, webhooks]
+        args=[incidents, queue, application, webhooks, latest_tag]
     )
     scheduler.start()
 

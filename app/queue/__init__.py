@@ -2,18 +2,16 @@ from datetime import datetime, timedelta
 
 
 class Queue:
-    # TYPES = [
-    #     'update_status',
-    #     'chain_step'
-    #     'admin_warning'  # types: 'status_unknown', 'user_not_found', 'user_not_found_in_group', 'webhook_not_found'
-    # ]
-
-    def __init__(self):
+    def __init__(self, check_update):
         self.dates = []
         self.types = []
         self.incident_uuids = []
         self.identifiers = []
         self.lock = False
+
+        if check_update:
+            check_update_datetime = datetime.utcnow()
+            self.put(check_update_datetime, 'check_update', None, 'first')
 
     def put(self, datetime_, type_, incident_uuid, identifier=None):
         for i in range(len(self.dates)):
@@ -94,12 +92,10 @@ class Queue:
                     'incident_uuid': self.incident_uuids[i],
                     'step_number': self.identifiers[i]
                 })
-            elif self.types[i] == 'admin_warning':
+            elif self.types[i] == 'check_update':
                 result.append({
                     'datetime': self.dates[i],
-                    'type': self.types[i],
-                    'incident_uuid': self.incident_uuids[i],
-                    'admin_warning': self.identifiers[i]
+                    'type': self.types[i]
                 })
         return result
 

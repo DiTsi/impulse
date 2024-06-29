@@ -1,8 +1,9 @@
 from app.logger import logger
 from app.slack import (get_public_channels,
-                       post_thread, update_thread, admin_message)
+                       post_thread, update_thread)
 from app.slack.chain import generate_chains
 from app.slack.message_template import generate_message_template
+from app.slack.user import admins_template_string, env
 from app.slack.user import generate_users, generate_user_groups
 
 
@@ -39,7 +40,8 @@ class SlackApplication:
         message_template_dict = app_config.get('message_template')
         message_template = generate_message_template(message_template_dict)
 
-        self.admin_channel_id = public_channels[app_config['admin_channel']]['id']
+        admins_list = app_config['admin_users']
+        self.admin_users = [users[admin] for admin in admins_list]
         self.users = users
         self.user_groups = user_groups
         self.chains = chains
@@ -47,13 +49,19 @@ class SlackApplication:
         self.message_template = message_template
 
     def notify(self, incident, type_, identifier):
+        admins_ids = [a.slack_id for a in self.admin_users]
         if type_ == 'user':
             unit = self.users[identifier]
-        else:
+            text = unit.mention_text(admins_ids)
+            response_code = post_thread(incident.channel_id, incident.ts, text)
+            return response_code
+        elif type_ == 'user_group':
             unit = self.user_groups[identifier]
-        text, not_found = unit.mention_text()
-        response_code = post_thread(incident.channel_id, incident.ts, text)
-        return response_code, not_found
+            text = unit.mention_text(admins_ids)
+            response_code = post_thread(incident.channel_id, incident.ts, text)
+            return response_code
+        else:
+            pass
 
     def update(self, uuid_, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
         text = self.message_template.form_message(alert_state)
@@ -63,6 +71,10 @@ class SlackApplication:
             # post to thread
             if status_enabled and incident_status != 'closed':
                 text = f'status updated: *{incident_status}*'
+                if incident_status == 'unknown':
+                    admins_ids = [a.slack_id for a in self.admin_users]
+                    admins_text = env.from_string(admins_template_string).render(users=admins_ids)
+                    text += f'\n>_{admins_text}_'
                 post_thread(incident.channel_id, incident.ts, text)
 
 

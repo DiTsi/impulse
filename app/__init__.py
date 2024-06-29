@@ -4,7 +4,8 @@ from datetime import datetime
 from app.incident import Incident, Incidents
 from app.logger import logger
 from app.queue import unix_sleep_to_timedelta, Queue
-from app.slack import update_thread, create_thread, button_handler, admin_message
+from app.slack import update_thread, create_thread, button_handler, admin_message, post_thread
+from app.slack.user import env, admins_template_string
 from config import incidents_path, slack_verification_token, timeouts
 
 
@@ -17,56 +18,36 @@ def queue_handle(incidents, queue_, application, webhooks):
             queue_handle_status_update(incidents, uuid_, queue_, application)
         elif type_ == 'chain_step':  # chain_step
             queue_handle_step(incidents, uuid_, application, identifier, webhooks, queue_)
-        elif type_ == 'admin_warning':  # admin_warning
-            queue_handle_admin_message(incidents, uuid_, application, identifier)
-
-
-def queue_handle_admin_message(incidents, uuid_, application, identifier):
-    incident_ = incidents.by_uuid[uuid_]
-    type_ = identifier['type']
-    obj = identifier.get('object')
-    if type_ == 'status_unknown':
-        text = (f'<{incident_.link}|Incident> status set to *unknown*'
-                f'\n>_Check *Alertmanager\'s* `repeat_interval` option is less than *IMPulse* option `firing_timeout`_')
-        admin_message(application.admin_channel_id, text)
-    elif type_ == 'user_not_found':
-        text = (f'<{incident_.link}|Incident> affected. User \'{obj}\' not found in Slack'
-                f'\n>_Check user\'s full_name in `impulse.yml`_')
-        admin_message(application.admin_channel_id, text)
-    elif type_ == 'user_not_found_in_group':
-        text = (f'<{incident_.link}|Incident> affected. Group \'{obj}\' contains user that not found in Slack'
-                f'\n>_Check user_group\'s in `impulse.yml`_')
-        admin_message(application.admin_channel_id, text)
-    elif type_ == 'webhook_not_found':
-        text = (f'<{incident_.link}|Incident> affected. Webhook \'{obj}\' not found in config'
-                f'\n>_Check webhooks block in `impulse.yml`_')
-        admin_message(application.admin_channel_id, text)
-    else:
-        pass
 
 
 def queue_handle_step(incidents, uuid_, application, identifier, webhooks, queue_):
     incident_ = incidents.by_uuid[uuid_]
     step = incident_.chain[identifier]
-    if step['type'] != 'webhook':
-        r_code, not_found = application.notify(incident_, step['type'], step['identifier'])
-        if not_found:
-            if step['type'] == 'user':
-                queue_.put(datetime.utcnow(), 'admin_warning', uuid_, {'type': 'user_not_found', 'object': step['identifier']})
-            elif step['type'] == 'user_group':
-                queue_.put(datetime.utcnow(), 'admin_warning', uuid_,
-                           {'type': 'user_not_found_in_group', 'object': step['identifier']})
-        incident_.chain_update(uuid_, identifier, done=True, result=r_code)
-    else:
+    if step['type'] == 'webhook':
         webhook_name = step['identifier']
         webhook = webhooks.get(webhook_name)
+        admins_ids = [a.slack_id for a in application.admin_users]
+        text = f'notify webhook *{webhook_name}*'
         if webhook:
-            response_code = webhook.push()
-            incident_.chain_update(uuid_, identifier, done=True, result=response_code)
+            r_code = webhook.push()
+            incident_.chain_update(uuid_, identifier, done=True, result=r_code)
+            if r_code > 300:
+                admins_text = env.from_string(admins_template_string).render(users=admins_ids)
+                text += (f'\n>_response code: {r_code}_'
+                         f'\n>_{admins_text}_')
+                _ = post_thread(incident_.channel_id, incident_.ts, text)
+                logger.warning(f'Webhook \'{webhook_name}\' responce code is {r_code}')
+                incident_.chain_update(uuid_, identifier, done=True, result=None)
         else:
+            admins_text = env.from_string(admins_template_string).render(users=admins_ids)
+            text += (f'\n>_not found in `impulse.yml`_'
+                     f'\n>_{admins_text}_')
+            _ = post_thread(incident_.channel_id, incident_.ts, text)
             logger.warning(f'Webhook \'{webhook_name}\' not found in impulse.yml')
-            queue_.put(datetime.utcnow(), 'admin_warning', uuid_, {'type': 'webhook_not_found', 'object': webhook_name})
             incident_.chain_update(uuid_, identifier, done=True, result=None)
+    else:
+        r_code = application.notify(incident_, step['type'], step['identifier'])
+        incident_.chain_update(uuid_, identifier, done=True, result=r_code)
 
 
 def queue_handle_status_update(incidents, uuid, queue_, application):
@@ -80,7 +61,6 @@ def queue_handle_status_update(incidents, uuid, queue_, application):
         incidents.del_by_uuid(uuid)
         queue_.delete_by_id(uuid)
     elif incident_.status == 'unknown':
-        queue_.put(datetime.utcnow(), 'admin_warning', uuid, {'type': 'status_unknown'})
         queue_.update(uuid, incident_.status_update_datetime, incident_.status)
 
 

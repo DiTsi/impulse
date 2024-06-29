@@ -4,12 +4,28 @@ import requests
 
 from app.logger import logger
 from config import slack_bot_user_oauth_token
+from jinja2 import Environment
 
 headers = {
     'Content-Type': 'application/json',
     'Authorization': f'Bearer {slack_bot_user_oauth_token}',
 }
 url = 'https://slack.com'
+
+
+def bold_text(value):
+    return f"*{value}*"
+
+
+def slack_mention_text(value):
+    return f"<@{value}>"
+
+
+env = Environment()
+env.filters['bold_text'] = bold_text
+env.filters['slack_mention_text'] = slack_mention_text
+users_template_string = "{{ users | map('bold_text') | join(', ') }}"
+admins_template_string = "{{ users | map('slack_mention_text') | join(', ') }}"
 
 
 class User:
@@ -20,15 +36,15 @@ class User:
     def __repr__(self):
         return self.name
 
-    def mention_text(self):
-        not_found = False
-        text = f'notify user *{self.name}*: '
+    def mention_text(self, admins_ids):
+        text = f'notify user *{self.name}*'
         if self.slack_id:
-            text += f'<@{self.slack_id}>'
+            text += f': <@{self.slack_id}>'
         else:
-            not_found = True
-            text += f'\n>_Error. Not found in Slack_'
-        return text, not_found
+            admins_text = env.from_string(admins_template_string).render(users=admins_ids)
+            text += (f'\n>_not found in Slack_'
+                     f'\n>_{admins_text}_')
+        return text
 
 
 class UserGroup:
@@ -36,17 +52,22 @@ class UserGroup:
         self.name = name
         self.users = users
 
-    def mention_text(self):
+    def mention_text(self, admins_ids):
         text = f'notify user_group *{self.name}*: '
+        not_found_users = list()
         not_found = False
         for user in self.users:
             if user.slack_id:
                 text += f'<@{user.slack_id}> '
             else:
                 not_found = True
+                not_found_users.append(user.name)
         if not_found:
-            text += f'\n>_Error. Some users of user_group not found in Slack_'
-        return text, not_found
+            not_found_users_text = env.from_string(users_template_string).render(users=not_found_users)
+            admins_text = env.from_string(admins_template_string).render(users=admins_ids)
+            text += (f'\n>_users [{not_found_users_text}] not found in Slack_'
+                     f'\n>_{admins_text}_')
+        return text
 
 
 def get_users():

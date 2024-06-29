@@ -30,10 +30,13 @@ route:
 
 application: ### instant messaging app configuration
   type: slack ### only 'slack' available now
-  # admin_channel: impulse_admin ### default channel where IMPulse warnings will be send
+  admin_users: ### IMPulse administrators will be notified when any warnings
+  - Dmitry
+  users: ### Slack users with their actual Full Names
+    Dmitry: {full_name: "Dmitry Tsybus"}
   # chains: ### chains used to describe notifications order
   #   firing_team:
-  #   - user: Alex
+  #   - user: Dmitry
   #   - wait: 10m
   #   - user: Dmitry
   #   warning:
@@ -42,10 +45,8 @@ application: ### instant messaging app configuration
   #   - webhook: Alex_call
   # user_groups: ### user groups used to notify multiple users with one message
   #   devops_squad:
-  #     users: [Dmitry, Alex]
-  # users: ### Slack users with their actual Full Names
-  #   Dmitry: {full_name: "Dmitry Tsybus"}
-  #   Alex: {full_name: "Alex Johnovich"}
+  #     users:
+  #     - Dmitry
   # message_template: | ### template for construct Incident message as you wish
   #   {% set status = payload.get("status", "Unknown") -%}
   #   {% set annotations = payload.get("commonAnnotations", {}).copy() -%}

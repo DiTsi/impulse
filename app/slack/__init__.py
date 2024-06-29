@@ -76,13 +76,14 @@ def create_thread(channel_id, message, status):
         'attachments': [
             {
                 'color': status_colors.get(status),
-                'text': message
+                'text': message,
+                'mrkdwn_in': ['text'],
             },
             {
                 'color': status_colors.get(status),
                 'text': '',
-                "callback_id": "buttons",
-                "actions": [
+                'callback_id': 'buttons',
+                'actions': [
                     {
                         "name": "chain",
                         "text": buttons['chain']['enabled']['text'],
@@ -178,6 +179,7 @@ def update_thread(channel_id, ts, status, message, chain_enabled=True, status_en
             {
                 'color': status_colors.get(status),
                 'text': message,
+                'mrkdwn_in': ['text'],
             },
             {
                 'color': status_colors.get(status),

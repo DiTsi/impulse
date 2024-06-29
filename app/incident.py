@@ -5,10 +5,11 @@ from datetime import datetime
 
 import yaml
 
-from app.logger import logger
-from app.queue import unix_sleep_to_timedelta
-from app.slack import update_thread
 from config import incidents_path, timeouts
+from app.logger import logger
+from .queue import unix_sleep_to_timedelta
+from .slack import update_thread
+from .slack.config import url  # !
 
 
 class Incident:
@@ -22,7 +23,7 @@ class Incident:
                  status_update_datetime):
         self.last_state = alert
         self.ts = ts
-        self.link = f'https://slack.com/archives/{channel_id}/p{ts.replace(".", "")}'
+        self.link = f'{url}/archives/{channel_id}/p{ts.replace(".", "")}'
         'https://ditsiworkspace.slack.com/archives/C06NJALBX71/p1718536764226329'
         self.status = status
         self.channel_id = channel_id
@@ -186,3 +187,19 @@ class Incidents:
 
 def gen_uuid(data):
     return uuid.uuid5(uuid.NAMESPACE_OID, json.dumps(data))
+
+
+def recreate_incidents():
+    if not os.path.exists(incidents_path):
+        logger.debug(f'creating incidents_directory')
+        os.makedirs(incidents_path)
+        logger.debug(f'created incidents_directory')
+    else:
+        logger.debug(f'load incidents from disk')
+
+    incidents = Incidents([])
+    for path, directories, files in os.walk(incidents_path):
+        for filename in files:
+            incident_ = Incident.load(f'{incidents_path}/{filename}')
+            incidents.add(incident_)
+    return incidents

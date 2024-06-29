@@ -1,4 +1,5 @@
-from app.route.matcher import Matcher
+from app.logger import logger
+from .matcher import Matcher
 
 
 class MainRoute:
@@ -64,3 +65,14 @@ class Route(MainRoute):
                 channels = r.get_channels(channels)
                 pass
         return channels
+
+
+def generate_route(route_dict):
+    logger.debug(f'Creating Route')
+    main_channel_name = route_dict['channel']
+    main_chain = route_dict.get('chain')
+    routes = route_dict.get('routes')
+
+    route_ = MainRoute(main_channel_name, main_chain, routes)
+    logger.debug(f'Route created')
+    return route_

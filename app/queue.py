@@ -1,5 +1,9 @@
 from datetime import datetime, timedelta
 
+from app.logger import logger
+from .slack import admins_template_string, post_thread, env
+from .update import get_latest_tag
+
 
 class Queue:
     def __init__(self, check_update):
@@ -101,9 +105,88 @@ class Queue:
 
 
 def unix_sleep_to_timedelta(unix_sleep_time):
-    if not unix_sleep_time:
-        pass
     value = int(unix_sleep_time[:-1])
     unit = unix_sleep_time[-1]
     unit_map = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days'}
     return timedelta(**{unit_map[unit]: value})
+
+
+def queue_handle(incidents, queue_, application, webhooks, latest_tag):
+    if len(queue_.dates) == 0:
+        return
+    type_, uuid_, identifier = queue_.handle()
+    if type_ is not None:
+        if type_ == 'update_status':
+            queue_handle_status_update(incidents, uuid_, queue_, application)
+        elif type_ == 'chain_step':
+            queue_handle_step(incidents, uuid_, application, identifier, webhooks)
+        elif type_ == 'check_update':
+            queue_handle_check_update(identifier, queue_, application, latest_tag)
+
+
+def queue_handle_check_update(identifier, queue_, application, latest_tag):
+    current_tag = get_latest_tag()
+    if identifier == 'first':
+        latest_tag['version'] = current_tag
+    else:
+        if current_tag != latest_tag['version']:
+            application.new_version_notification(application.default_channel_id, current_tag)
+            latest_tag['version'] = current_tag
+    queue_.put(datetime.utcnow() + timedelta(days=1), 'check_update', None, identifier=None)
+
+
+def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
+    incident_ = incidents.by_uuid[uuid_]
+    step = incident_.chain[identifier]
+    if step['type'] == 'webhook':
+        webhook_name = step['identifier']
+        webhook = webhooks.get(webhook_name)
+        admins_ids = [a.slack_id for a in application.admin_users]
+        text = f'notify webhook *{webhook_name}*'
+        if webhook:
+            r_code = webhook.push()
+            incident_.chain_update(uuid_, identifier, done=True, result=r_code)
+            if r_code > 300:
+                admins_text = env.from_string(admins_template_string).render(users=admins_ids)
+                text += (f'\n>_response code: {r_code}_'
+                         f'\n>_{admins_text}_')
+                _ = post_thread(incident_.channel_id, incident_.ts, text)
+                logger.warning(f'Webhook \'{webhook_name}\' response code is {r_code}')
+                incident_.chain_update(uuid_, identifier, done=True, result=None)
+        else:
+            admins_text = env.from_string(admins_template_string).render(users=admins_ids)
+            text += (f'\n>_not found in `impulse.yml`_'
+                     f'\n>_{admins_text}_')
+            _ = post_thread(incident_.channel_id, incident_.ts, text)
+            logger.warning(f'Webhook \'{webhook_name}\' not found in impulse.yml')
+            incident_.chain_update(uuid_, identifier, done=True, result=None)
+    else:
+        r_code = application.notify(incident_, step['type'], step['identifier'])
+        incident_.chain_update(uuid_, identifier, done=True, result=r_code)
+
+
+def queue_handle_status_update(incidents, uuid, queue_, application):
+    incident_ = incidents.by_uuid[uuid]
+    updated = incident_.set_next_status()
+    application.update(
+        uuid, incident_, incident_.status, incident_.last_state, updated,
+        incident_.chain_enabled, incident_.status_enabled
+    )
+    if incident_.status == 'closed':
+        incidents.del_by_uuid(uuid)
+        queue_.delete_by_id(uuid)
+    elif incident_.status == 'unknown':
+        queue_.update(uuid, incident_.status_update_datetime, incident_.status)
+
+
+def recreate_queue(incidents, check_update):
+    logger.debug(f'Creating Queue')
+    queue_ = Queue(check_update)
+    if bool(incidents.by_uuid):
+        for uuid_, i in incidents.by_uuid.items():
+            queue_.append(uuid_, i.get_chain())
+            queue_.put(i.status_update_datetime, 'update_status', uuid_)
+        logger.debug(f'Queue restored')
+    else:
+        logger.debug(f'Empty Queue created')
+    return queue_

@@ -1,10 +1,10 @@
 from app.logger import logger
-from app.slack import (get_public_channels,
-                       post_thread, update_thread, admin_message)
-from app.slack.chain import generate_chains
-from app.slack.message_template import generate_message_template
-from app.slack.user import admins_template_string, env
-from app.slack.user import generate_users, generate_user_groups
+from .chain import generate_chains
+from .channels import get_public_channels
+from .message_template import generate_message_template
+from .messages import send_message
+from .threads import post_thread, update_thread
+from .user import admins_template_string, env, generate_users, generate_user_groups
 
 
 class SlackApplication:
@@ -84,7 +84,7 @@ class SlackApplication:
         text = (f'New IMPulse version available: {new_tag}'
                 f'\n>_see <CHANGELOG.md|https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md>_'
                 f'\n>_{admins_text}_')
-        admin_message(channel_id, text)
+        send_message(channel_id, text)
 
 
 def generate_application(app_dict, channels_list, default_channel):

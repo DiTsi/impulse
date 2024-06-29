@@ -1,7 +1,8 @@
 import os
+
 import requests
-from requests.auth import HTTPBasicAuth
 from jinja2 import Template
+from requests.auth import HTTPBasicAuth
 
 
 class Webhook:

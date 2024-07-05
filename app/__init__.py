@@ -1,5 +1,5 @@
 from .alerts import alert_handle, alert_handle_create, alert_handle_update
-from .application import slack_buttons_handler, mattermost_buttons_handler
+from .im import slack_buttons_handler, mattermost_buttons_handler
 from .incident import Incident, Incidents, recreate_incidents
 from app.logging import logger
 from .queue import unix_sleep_to_timedelta, Queue, queue_handle, recreate_queue

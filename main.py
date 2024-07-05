@@ -5,7 +5,7 @@ from flask import request, Flask, redirect, url_for, jsonify
 
 from app import (alert_handle, queue_handle, recreate_queue, Incidents, recreate_incidents, generate_webhooks,
                  generate_route, handler)
-from app.application import Application
+from app.im import Application
 from config import settings, check_updates
 
 app = Flask(__name__)

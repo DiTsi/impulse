@@ -1,7 +1,7 @@
 from config import mattermost_access_token
 
 mattermost_headers = {
-    'Content-Type': 'application/json',
+    'Content-Type': 'im/json',
     'Authorization': f'Bearer {mattermost_access_token}',
 }
 buttons = {

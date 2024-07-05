@@ -1,7 +1,7 @@
 from config import slack_bot_user_oauth_token
 
 slack_headers = {
-    'Content-Type': 'application/json',
+    'Content-Type': 'im/json',
     'Authorization': f'Bearer {slack_bot_user_oauth_token}',
 }
 buttons = {

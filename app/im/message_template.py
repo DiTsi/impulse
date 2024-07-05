@@ -1,8 +1,8 @@
 from jinja2 import Template
 
 from app.logging import logger
-from app.application.mattermost.message_template import default_message_template as mattermost_default_message_template
-from app.application.slack.message_template import default_message_template as slack_default_message_template
+from app.im.mattermost.message_template import default_message_template as mattermost_default_message_template
+from app.im.slack.message_template import default_message_template as slack_default_message_template
 
 
 class MessageTemplate:

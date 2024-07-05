@@ -1,9 +1,9 @@
-from app.application.slack import buttons
+from app.im.slack import buttons
 from app.logging import logger
 from config import slack_verification_token
 
 
-def reformat_original_message(original_message, chain_enabled, status_enabled):
+def reformat_message(original_message, chain_enabled, status_enabled):
     if chain_enabled:
         original_message['attachments'][1]['actions'][0]['text'] = buttons['chain']['enabled']['text']
         original_message['attachments'][1]['actions'][0]['style'] = buttons['chain']['enabled']['style']
@@ -43,5 +43,5 @@ def slack_buttons_handler(payload, incidents, queue_):
             else:
                 incident_.status_enabled = True
     # incident_.dump(f'{incidents_path}/{uuid_}.yml')
-    modified_message = reformat_original_message(original_message, incident_.chain_enabled, incident_.status_enabled)
+    modified_message = reformat_message(original_message, incident_.chain_enabled, incident_.status_enabled)
     return modified_message, 200

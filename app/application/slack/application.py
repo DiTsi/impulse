@@ -1,9 +1,15 @@
+import json
+
+import requests
+
 from app.logger import logger
+from . import buttons
 from .chain import generate_chains
 from .channels import get_public_channels
+from .config import url, status_colors, headers
 from .message_template import generate_message_template
 from .messages import send_message
-from .threads import post_thread, update_thread
+from .threads import post_thread, app_update_thread
 from .user import admins_template_string, env, generate_users, generate_user_groups
 
 
@@ -48,9 +54,11 @@ class SlackApplication:
         self.chains = chains
         self.channels = channels
         self.message_template = message_template
+        self.type = 'slack'
+        self.url = url
 
     def notify(self, incident, type_, identifier):
-        admins_ids = [a.slack_id for a in self.admin_users]
+        admins_ids = [a.id for a in self.admin_users]
         if type_ == 'user':
             unit = self.users[identifier]
             text = unit.mention_text(admins_ids)
@@ -66,36 +74,56 @@ class SlackApplication:
 
     def update(self, uuid_, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
         text = self.message_template.form_message(alert_state)
-        update_thread(incident.channel_id, incident.ts, incident_status, text, chain_enabled, status_enabled)
+        app_update_thread(incident.channel_id, incident.ts, incident_status, text, chain_enabled, status_enabled)
         if updated_status:
             logger.info(f'Incident \'{uuid_}\' updated with new status \'{incident_status}\'')
             # post to thread
             if status_enabled and incident_status != 'closed':
                 text = f'status updated: *{incident_status}*'
                 if incident_status == 'unknown':
-                    admins_ids = [a.slack_id for a in self.admin_users]
+                    admins_ids = [a.id for a in self.admin_users]
                     admins_text = env.from_string(admins_template_string).render(users=admins_ids)
                     text += f'\n>_{admins_text}_'
                 post_thread(incident.channel_id, incident.ts, text)
 
     def new_version_notification(self, channel_id, new_tag):
-        admins_ids = [a.slack_id for a in self.admin_users]
+        admins_ids = [a.id for a in self.admin_users]
         admins_text = env.from_string(admins_template_string).render(users=admins_ids)
         text = (f'New IMPulse version available: {new_tag}'
                 f'\n>_see <CHANGELOG.md|https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md>_'
                 f'\n>_{admins_text}_')
         send_message(channel_id, text)
 
-
-def generate_application(app_dict, channels_list, default_channel):
-    app_type = app_dict['type']
-    if app_type == 'slack':
-        application = SlackApplication(
-            app_dict,
-            channels_list,
-            default_channel
-        )
-    else:
-        logger.error(f'Application type \'{app_type}\' not supported\nExiting...')
-        exit()
-    return application
+    def create_thread(self, channel_id, message, status):
+        payload = {
+            'channel': channel_id,
+            'text': '',
+            'attachments': [
+                {
+                    'color': status_colors.get(status),
+                    'text': message,
+                    'mrkdwn_in': ['text'],
+                },
+                {
+                    'color': status_colors.get(status),
+                    'text': '',
+                    'callback_id': 'buttons',
+                    'actions': [
+                        {
+                            "name": "chain",
+                            "text": buttons['chain']['enabled']['text'],
+                            "type": "button",
+                            "style": buttons['chain']['enabled']['style']
+                        },
+                        {
+                            "name": "status",
+                            "text": buttons['status']['enabled']['text'],
+                            "type": "button",
+                            "style": buttons['status']['enabled']['style']
+                        }
+                    ]
+                }
+            ]
+        }
+        response = requests.post(f'{self.url}/api/chat.postMessage', headers=headers, data=json.dumps(payload))
+        return response.json().get('ts')

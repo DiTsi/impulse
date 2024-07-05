@@ -64,6 +64,6 @@ def handler(payload, incidents, queue_):
                 incident_.status_enabled = False
             else:
                 incident_.status_enabled = True
-    incident_.dump(f'{incidents_path}/{uuid_}.yml')
+    # incident_.dump(f'{incidents_path}/{uuid_}.yml')
     modified_message = button_handler(original_message, incident_.chain_enabled, incident_.status_enabled)
     return modified_message, 200

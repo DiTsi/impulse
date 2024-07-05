@@ -1,10 +1,9 @@
 from datetime import datetime
 
 from app.logger import logger
-from config import timeouts, incidents_path
+from config import timeouts
 from .incident import Incident
 from .queue import unix_sleep_to_timedelta
-from .slack import create_thread
 
 
 def alert_handle_create(application, route, incidents, queue_, alert_state):
@@ -13,7 +12,7 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
     channel = application.channels[channel]
     template = application.message_template
     message = template.form_message(alert_state)
-    ts = create_thread(channel_id=channel['id'], message=message, status=alert_state['status'])
+    ts = application.create_thread(channel_id=channel['id'], message=message, status=alert_state['status'])
     status = alert_state['status']
 
     updated_datetime = datetime.utcnow()
@@ -21,7 +20,8 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
     chain = application.chains.get(chain_name)
     incident_ = Incident(
         alert=alert_state, status=status, ts=ts, channel_id=channel['id'], chain=[], chain_enabled=True,
-        status_enabled=True, updated=updated_datetime, status_update_datetime=status_update_datetime
+        status_enabled=True, updated=updated_datetime, status_update_datetime=status_update_datetime,
+        type_=application.type
     )
     uuid_ = incidents.add(incident_)
 
@@ -32,7 +32,7 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
 
     incident_.generate_chain(chain)
     queue_.append(uuid_, incident_.chain)
-    incident_.dump(f'{incidents_path}/{uuid_}.yml')
+    # incident_.dump(f'{incidents_path}/{uuid_}.yml')
 
 
 def alert_handle_update(uuid_, incident_, queue_, alert_state, application):

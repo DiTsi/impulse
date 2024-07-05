@@ -1,44 +1,10 @@
 import json
+from time import sleep
 
 import requests
 
 from .buttons import buttons
-from .config import headers, url, status_colors
-
-
-def create_thread(channel_id, message, status):
-    payload = {
-        'channel': channel_id,
-        'text': '',
-        'attachments': [
-            {
-                'color': status_colors.get(status),
-                'text': message,
-                'mrkdwn_in': ['text'],
-            },
-            {
-                'color': status_colors.get(status),
-                'text': '',
-                'callback_id': 'buttons',
-                'actions': [
-                    {
-                        "name": "chain",
-                        "text": buttons['chain']['enabled']['text'],
-                        "type": "button",
-                        "style": buttons['chain']['enabled']['style']
-                    },
-                    {
-                        "name": "status",
-                        "text": buttons['status']['enabled']['text'],
-                        "type": "button",
-                        "style": buttons['status']['enabled']['style']
-                    }
-                ]
-            }
-        ]
-    }
-    response = requests.post(f'{url}/api/chat.postMessage', headers=headers, data=json.dumps(payload))
-    return response.json().get('ts')
+from .config import headers, status_colors
 
 
 # def create_blocked_thread(channel_id, message, status): #! didn't work with "return modified_message, 200"
@@ -89,7 +55,7 @@ def create_thread(channel_id, message, status):
 #         data=json.dumps(payload)
 #     )
 #     return response.json().get('ts')
-def update_thread(channel_id, ts, status, message, chain_enabled=True, status_enabled=True):
+def update_thread(url, channel_id, ts, status, message, chain_enabled=True, status_enabled=True):
     payload = {
         'channel': channel_id,
         'text': '',
@@ -126,17 +92,6 @@ def update_thread(channel_id, ts, status, message, chain_enabled=True, status_en
         headers=headers,
         data=json.dumps(payload)
     )
+    sleep(0.1)
 
 
-def post_thread(channel_id, ts, text):
-    payload = {
-        'channel': channel_id,
-        'text': text,
-        'thread_ts': ts
-    }
-    r = requests.post(
-        f'{url}/api/chat.postMessage',
-        headers=headers,
-        data=json.dumps(payload)
-    )
-    return r.status_code

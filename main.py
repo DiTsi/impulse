@@ -4,7 +4,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask, redirect, url_for
 
 from app import (alert_handle, queue_handle, recreate_queue, Incidents, recreate_incidents, generate_webhooks,
-                 generate_route, generate_application, handler)
+                 generate_route, handler)
+from app.application import generate_application
 from config import settings, check_updates
 
 app = Flask(__name__)
@@ -39,12 +40,13 @@ def get_incidents():
 
 if __name__ == '__main__':
     latest_tag = {'version': None}
-    incidents = recreate_incidents()
-    queue = recreate_queue(incidents, check_updates)
 
     route_dict = settings.get('route')
     app_dict = settings.get('application')
     webhooks_dict = settings.get('webhooks')
+
+    incidents = recreate_incidents(app_dict['type'])
+    queue = recreate_queue(incidents, check_updates)
 
     route = generate_route(route_dict)
     application = generate_application(

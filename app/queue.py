@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from app.logger import logger
-from .slack import admins_template_string, post_thread, env
+from app.application.slack import admins_template_string, post_thread, env
 from .update import get_latest_tag
 
 
@@ -141,7 +141,7 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
     if step['type'] == 'webhook':
         webhook_name = step['identifier']
         webhook = webhooks.get(webhook_name)
-        admins_ids = [a.slack_id for a in application.admin_users]
+        admins_ids = [a.id for a in application.admin_users]
         text = f'notify webhook *{webhook_name}*'
         if webhook:
             r_code = webhook.push()

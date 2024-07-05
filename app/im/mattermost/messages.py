@@ -6,7 +6,7 @@ import requests
 from .config import mattermost_headers
 
 
-def send_message(url, channel_id, message):
+def mattermost_send_message(url, channel_id, message):
     payload = {
         'channel': channel_id,
         'text': message,

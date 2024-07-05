@@ -3,23 +3,8 @@ from time import sleep
 import requests
 
 from app.logging import logger
-from .config import mattermost_headers
-from jinja2 import Environment
-
-
-def mattermost_bold_text(value):
-    return f"**{value}**"
-
-
-def mattermost_mention_text(value):
-    return f"@{value}"
-
-
-mattermost_env = Environment()
-mattermost_env.filters['mattermost_bold_text'] = mattermost_bold_text
-mattermost_env.filters['mattermost_mention_text'] = mattermost_mention_text
-mattermost_users_template_string = "{{ users | map('mattermost_bold_text') | join(', ') }}"
-mattermost_admins_template_string = "{{ users | map('mattermost_mention_text') | join(', ') }}"
+from .config import mattermost_headers, mattermost_bold_text, mattermost_mention_text, mattermost_env, \
+    mattermost_admins_template_string
 
 
 class User:

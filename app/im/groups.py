@@ -1,7 +1,7 @@
-from app.im.mattermost.user import mattermost_users_template_string, mattermost_admins_template_string, \
-    mattermost_env
+from app.im.mattermost.config import mattermost_env, mattermost_admins_template_string
+from app.im.slack.config import slack_env
+from app.im.slack.config import slack_users_template_string, slack_admins_template_string
 from app.logging import logger
-from app.im.slack.user import slack_users_template_string, slack_env, slack_admins_template_string
 
 
 def generate_user_groups(user_groups_dict=None, users=None):

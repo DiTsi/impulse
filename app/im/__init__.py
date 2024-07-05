@@ -6,8 +6,10 @@ import requests
 from app.logging import logger
 from .chain import generate_chains
 from .groups import generate_user_groups
+from .mattermost import mattermost_send_message
 from .mattermost.channels import mattermost_get_public_channels
-from .mattermost.config import mattermost_headers
+from .mattermost.config import mattermost_headers, mattermost_bold_text, mattermost_admins_template_string, \
+    mattermost_env
 from .mattermost.teams import get_team
 from .mattermost.threads import mattermost_get_create_thread_payload
 from .mattermost.threads import mattermost_get_update_payload
@@ -17,7 +19,7 @@ from .slack import slack_send_message
 from .slack.buttons import slack_buttons_handler
 from .mattermost.buttons import mattermost_buttons_handler
 from .slack.channels import slack_get_public_channels
-from .slack.config import slack_headers
+from .slack.config import slack_headers, slack_bold_text, slack_admins_template_string, slack_env
 from .slack.threads import slack_get_create_thread_payload
 from .slack.threads import slack_get_update_payload
 from .slack.user import slack_generate_users
@@ -108,23 +110,36 @@ class Application:
             logger.info(f'Incident \'{uuid_}\' updated with new status \'{incident_status}\'')
             # post to thread
             if status_enabled and incident_status != 'closed':
-                text = f'status updated: *{incident_status}*'
+                if self.type == 'slack':
+                    text = f'status updated: {slack_bold_text(incident_status)}'
+                else:
+                    text = f'status updated: {mattermost_bold_text(incident_status)}'
                 if incident_status == 'unknown':
-                    admins_ids = [a.id for a in self.admin_users]
-                    admins_text = env.from_string(admins_template_string).render(users=admins_ids)
-                    text += f'\n>_{admins_text}_'
+                    if self.type == 'slack':
+                        admins_ids = [a.id for a in self.admin_users]
+                        admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins_ids)
+                        text += f'\n>_{admins_text}_'
+                    else:
+                        admins_names = [a.username for a in self.admin_users]
+                        admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_names)
+                        text += f'\n|_{admins_text}_'
                 self.post_thread(incident.channel_id, incident.ts, text)
 
     def new_version_notification(self, channel_id, new_tag):
-        admins_ids = [a.id for a in self.admin_users]
-        admins_text = env.from_string(admins_template_string).render(users=admins_ids)
-        text = (f'New IMPulse version available: {new_tag}'
-                f'\n>_see <CHANGELOG.md|https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md>_'
-                f'\n>_{admins_text}_')
         if self.type == 'slack':
+            admins_ids = [a.id for a in self.admin_users]
+            admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins_ids)
+            text = (f'New IMPulse version available: {new_tag}'
+                    f'\n>_see <CHANGELOG.md|https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md>_'
+                    f'\n>_{admins_text}_')
             slack_send_message(self.url, channel_id, text)
         else:
-            pass
+            admins_names = [a.username for a in self.admin_users]
+            admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_names)
+            text = (f'New IMPulse version available: {new_tag}'
+                    f'\n>_see [CHANGELOG.md](https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md)_'
+                    f'\n>_{admins_text}_')
+            mattermost_send_message(self.url, channel_id, text)
 
     def create_thread(self, channel_id, message, status):
         if self.type == 'slack':

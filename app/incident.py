@@ -22,7 +22,7 @@ class Incident:
         self.last_state = alert
         self.ts = ts
         if type_ == 'slack':
-            self.link = f'{url}/archives/{channel_id}/p{ts.replace(".", "")}'
+            self.link = f'https://slack.com/archives/{channel_id}/p{ts.replace(".", "")}'
         else:
             self.link = None #!
         self.status = status
@@ -62,7 +62,7 @@ class Incident:
     def chain_update(self, uuid_, index, done, result):
         self.chain[index]['done'] = done
         self.chain[index]['result'] = result
-        # self.dump(f'{incidents_path}/{uuid_}.yml')
+        self.dump(f'{incidents_path}/{uuid_}.yml')
 
     def set_next_status(self):
         new_status = Incident.next_status[self.status]
@@ -144,7 +144,7 @@ class Incident:
         status = alert_state['status']
         updated = self.update_status(status)
         if alert_state != self.last_state or updated:
-            # self.dump(f'{incidents_path}/{uuid_}.yml')
+            self.dump(f'{incidents_path}/{uuid_}.yml')
             if updated:
                 return True, True
             else:

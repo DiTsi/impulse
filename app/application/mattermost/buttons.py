@@ -36,16 +36,6 @@ def mattermost_buttons_handler(app, payload, incidents, queue_):
             incident_.status_enabled = False
         else:
             incident_.status_enabled = True
-    # message = app.message_template.form_message(incident_.last_state)
-    # app.update_thread(channel_id, post_id, incident_.status, message, incident_.chain_enabled, incident_.status_enabled)
-    # incident_.dump(f'{incidents_path}/{uuid_}.yml')
-    # return {
-    #         "update": {
-    #             "message": 'OK',
-    #             "props": {}
-    #         }
-    #     }
     original_message = app.message_template.form_message(incident_.last_state)
-    # modified_message = reformat_message(original_message, incident_.chain_enabled, incident_.status_enabled)
     payload = mattermost_get_button_update_payload(original_message, incident_.status, incident_.chain_enabled, incident_.status_enabled)
     return payload, 200

@@ -1,11 +1,11 @@
 import json
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import request, Flask, redirect, url_for
+from flask import request, Flask, redirect, url_for, jsonify
 
 from app import (alert_handle, queue_handle, recreate_queue, Incidents, recreate_incidents, generate_webhooks,
                  generate_route, handler)
-from app.application import generate_application
+from app.application import Application
 from config import settings, check_updates
 
 app = Flask(__name__)
@@ -27,10 +27,13 @@ def receive_alert():
         return redirect(url_for('get_incidents'))
 
 
-@app.route('/slack', methods=['POST'])
-def slack_handler():
-    payload = json.loads(request.form['payload'])
-    return handler(payload, incidents, queue)
+@app.route('/app', methods=['POST', 'PUT', 'GET'])
+def buttons_handler():
+    if application == 'slack':
+        payload = json.loads(request.form['payload'])
+    else:
+        payload = request.json
+    return handler(application, payload, incidents, queue)
 
 
 @app.route('/incidents', methods=['GET'])
@@ -49,7 +52,7 @@ if __name__ == '__main__':
     queue = recreate_queue(incidents, check_updates)
 
     route = generate_route(route_dict)
-    application = generate_application(
+    application = Application(
         app_dict,
         route.get_uniq_channels(),
         route.channel

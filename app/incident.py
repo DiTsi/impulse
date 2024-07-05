@@ -6,10 +6,8 @@ from datetime import datetime
 import yaml
 
 from config import incidents_path, timeouts
-from app.logger import logger
+from app.logging import logger
 from .queue import unix_sleep_to_timedelta
-from app.application.slack import app_update_thread
-from app.application.slack.config import url
 
 
 class Incident:
@@ -104,7 +102,7 @@ class Incident:
     def update_thread(self, alert, message):
         self.last_state = alert
         self.updated = datetime.utcnow()
-        app_update_thread(
+        update_thread(
             self.channel_id,
             self.ts,
             alert.get('status'),

@@ -1,13 +1,29 @@
 from config import slack_bot_user_oauth_token
 
-url = 'https://slack.com'
-headers = {
+slack_headers = {
     'Content-Type': 'application/json',
     'Authorization': f'Bearer {slack_bot_user_oauth_token}',
 }
-status_colors = {
-    'firing': '#f61f1f',
-    'unknown': '#c1a300',
-    'resolved': '#56c15e',
-    'closed': '#969696',
+buttons = {
+    # styles: normal, danger
+    'chain': {
+        'enabled': {
+            'text': '◼ Chain',
+            'style': 'primary'
+        },
+        'disabled': {
+            'text': '▶ Chain',
+            'style': 'normal'
+        }
+    },
+    'status': {
+        'enabled': {
+            'text': '◼ Status',
+            'style': 'primary'
+        },
+        'disabled': {
+            'text': '▶ Status',
+            'style': 'normal'
+        }
+    }
 }

@@ -1,31 +1,8 @@
-from app.logger import logger
-from config import slack_verification_token, incidents_path
-
-buttons = {
-    'chain': {
-        'enabled': {
-            'text': '◼ Chain',
-            'style': 'primary'
-        },
-        'disabled': {
-            'text': '▶ Chain',
-            'style': 'normal'  # danger
-        }
-    },
-    'status': {
-        'enabled': {
-            'text': '◼ Status',
-            'style': 'primary'
-        },
-        'disabled': {
-            'text': '▶ Status',
-            'style': 'normal'  # danger
-        }
-    }
-}
+from .config import buttons
+from .threads import mattermost_get_button_update_payload
 
 
-def button_handler(original_message, chain_enabled, status_enabled):
+def reformat_message(original_message, chain_enabled, status_enabled):
     if chain_enabled:
         original_message['attachments'][1]['actions'][0]['text'] = buttons['chain']['enabled']['text']
         original_message['attachments'][1]['actions'][0]['style'] = buttons['chain']['enabled']['style']
@@ -42,28 +19,33 @@ def button_handler(original_message, chain_enabled, status_enabled):
     return original_message
 
 
-def handler(payload, incidents, queue_):
-    if payload.get('token') != slack_verification_token:
-        logger.error(f'Unauthorized request to \'/mattermost\'')
-        return {}, 401
-
-    incident_, uuid_ = incidents.get_by_ts(ts=payload['message_ts'])
-    original_message = payload.get('original_message')
-    actions = payload.get('actions')
-
-    for action in actions:
-        if action['name'] == 'chain':
-            if incident_.chain_enabled:
-                incident_.chain_enabled = False
-                queue_.delete_by_id(uuid_, delete_steps=True, delete_status=False)
-            else:
-                incident_.chain_enabled = True
-                queue_.append(uuid_, incident_.chain)
-        elif action['name'] == 'status':
-            if incident_.status_enabled:
-                incident_.status_enabled = False
-            else:
-                incident_.status_enabled = True
+def mattermost_buttons_handler(app, payload, incidents, queue_):
+    channel_id = payload['channel_id']
+    post_id = payload['post_id']
+    incident_, uuid_ = incidents.get_by_ts(ts=post_id)
+    action = payload['context']['action']
+    if action == 'chain':
+        if incident_.chain_enabled:
+            incident_.chain_enabled = False
+            queue_.delete_by_id(uuid_, delete_steps=True, delete_status=False)
+        else:
+            incident_.chain_enabled = True
+            queue_.append(uuid_, incident_.chain)
+    elif action == 'status':
+        if incident_.status_enabled:
+            incident_.status_enabled = False
+        else:
+            incident_.status_enabled = True
+    # message = app.message_template.form_message(incident_.last_state)
+    # app.update_thread(channel_id, post_id, incident_.status, message, incident_.chain_enabled, incident_.status_enabled)
     # incident_.dump(f'{incidents_path}/{uuid_}.yml')
-    modified_message = button_handler(original_message, incident_.chain_enabled, incident_.status_enabled)
-    return modified_message, 200
+    # return {
+    #         "update": {
+    #             "message": 'OK',
+    #             "props": {}
+    #         }
+    #     }
+    original_message = app.message_template.form_message(incident_.last_state)
+    # modified_message = reformat_message(original_message, incident_.chain_enabled, incident_.status_enabled)
+    payload = mattermost_get_button_update_payload(original_message, incident_.status, incident_.chain_enabled, incident_.status_enabled)
+    return payload, 200

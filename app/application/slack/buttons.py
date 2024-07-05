@@ -1,31 +1,9 @@
-from app.logger import logger
-from config import slack_verification_token, incidents_path
-
-buttons = {
-    'chain': {
-        'enabled': {
-            'text': '◼ Chain',
-            'style': 'primary'
-        },
-        'disabled': {
-            'text': '▶ Chain',
-            'style': 'normal'  # danger
-        }
-    },
-    'status': {
-        'enabled': {
-            'text': '◼ Status',
-            'style': 'primary'
-        },
-        'disabled': {
-            'text': '▶ Status',
-            'style': 'normal'  # danger
-        }
-    }
-}
+from app.application.slack import buttons
+from app.logging import logger
+from config import slack_verification_token
 
 
-def button_handler(original_message, chain_enabled, status_enabled):
+def reformat_original_message(original_message, chain_enabled, status_enabled):
     if chain_enabled:
         original_message['attachments'][1]['actions'][0]['text'] = buttons['chain']['enabled']['text']
         original_message['attachments'][1]['actions'][0]['style'] = buttons['chain']['enabled']['style']
@@ -42,7 +20,7 @@ def button_handler(original_message, chain_enabled, status_enabled):
     return original_message
 
 
-def handler(payload, incidents, queue_):
+def slack_buttons_handler(payload, incidents, queue_):
     if payload.get('token') != slack_verification_token:
         logger.error(f'Unauthorized request to \'/slack\'')
         return {}, 401
@@ -65,5 +43,5 @@ def handler(payload, incidents, queue_):
             else:
                 incident_.status_enabled = True
     # incident_.dump(f'{incidents_path}/{uuid_}.yml')
-    modified_message = button_handler(original_message, incident_.chain_enabled, incident_.status_enabled)
+    modified_message = reformat_original_message(original_message, incident_.chain_enabled, incident_.status_enabled)
     return modified_message, 200

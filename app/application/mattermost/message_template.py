@@ -1,8 +1,3 @@
-from jinja2 import Template
-
-from app.logger import logger
-
-
 default_message_template = """
 {% set status = payload.get("status", "Unknown") -%}
 {% set annotations = payload.get("commonAnnotations", {}).copy() -%}
@@ -32,28 +27,3 @@ default_message_template = """
 {%- endif %}
 {% if annotations.expr %} <{% raw %}https://grafana.com/explore?orgId=1&left=%7B"datasource":"prometheus_1","queries":%5B%7B"refId":"A","datasource":%7B"type":"prometheus","uid":"prometheus_1"%7D,"editorMode":"code","expr":"{% endraw %}{{ annotations.expr | urlencode | replace('%2C',',') | replace('%5C','%5C%22') | replace('%22','%5C%22') | replace('/','%2F') | replace('%0A','') }}{% raw %}","legendFormat":"__auto","range":true,"instant":true%7D%5D,"range":%7B"from":"now-1h","to":"now"%7D%7D{% endraw %}|:grafana:>{% endif %}
 """
-
-
-class MessageTemplate:
-    def __init__(self, template):
-        self.template = template
-
-    def form_message(self, alert_state):
-        template = Template(self.template)
-        return template.render(payload=alert_state)
-
-
-def generate_message_template(message_template_dict=None):
-    if message_template_dict:
-        logger.debug(f'Creating MessageTemplate')
-
-        message_template = MessageTemplate(
-            message_template_dict
-        )
-        logger.debug(f'MessageTemplate created')
-    else:
-        logger.debug(f'No message_template defined in impulse.yml. Continue with default')
-        message_template = MessageTemplate(
-            default_message_template
-        )
-    return message_template

@@ -1,7 +1,7 @@
 import os
 import yaml
 
-from app.logger import logger
+from app.logging import logger
 
 slack_bot_user_oauth_token = os.environ.get('SLACK_BOT_USER_OAUTH_TOKEN')
 slack_verification_token = os.environ.get('SLACK_VERIFICATION_TOKEN')
@@ -23,5 +23,6 @@ with open(f'{config_path}/impulse.yml', 'r') as file:
             'resolved': settings.get('timeouts', {}).get('resolved', '12h'),
         }
         check_updates = settings.get('check_updates', True)
+        impulse_url = settings.get('url', None)
     except yaml.YAMLError as e:
         logger.error("Error reading YAML file: ", e)

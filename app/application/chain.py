@@ -1,4 +1,4 @@
-from app.logger import logger
+from app.logging import logger
 
 
 class Chain:

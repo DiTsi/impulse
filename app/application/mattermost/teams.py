@@ -1,14 +1,14 @@
 import requests
 
-from app.logger import logger
-from .config import headers
+from app.logging import logger
+from .config import mattermost_headers
 
 
 def get_team(url, team_name):
     try:
         response = requests.get(
             f'{url}/api/v4/teams',
-            headers=headers
+            headers=mattermost_headers
         )
         data = response.json()
         for i in data:

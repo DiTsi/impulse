@@ -42,6 +42,6 @@ def slack_buttons_handler(payload, incidents, queue_):
                 incident_.status_enabled = False
             else:
                 incident_.status_enabled = True
-    incident_.dump(f'{incidents_path}/{uuid_}.yml')
+    incident_.dump()
     modified_message = reformat_message(original_message, incident_.chain_enabled, incident_.status_enabled)
     return modified_message, 200

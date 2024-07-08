@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 
 from app.logging import logger
 
-
 load_dotenv()
 
 slack_bot_user_oauth_token = os.getenv('SLACK_BOT_USER_OAUTH_TOKEN')

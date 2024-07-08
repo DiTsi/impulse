@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from app.logging import logger
-from config import timeouts, incidents_path
+from config import timeouts
 from .incident import Incident
 from .queue import unix_sleep_to_timedelta
 
@@ -19,9 +19,8 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
     status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(timeouts.get(status))
     chain = application.chains.get(chain_name)
     incident_ = Incident(
-        alert=alert_state, status=status, ts=thread_id, channel_id=channel['id'], chain=[], chain_enabled=True,
-        status_enabled=True, updated=updated_datetime, status_update_datetime=status_update_datetime,
-        type_=application.type
+        alert_state, status, thread_id, channel['id'], [], True,
+        True, updated_datetime, status_update_datetime, application.type, application.url, application.team
     )
     uuid_ = incidents.add(incident_)
 
@@ -32,7 +31,7 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
 
     incident_.generate_chain(chain)
     queue_.append(uuid_, incident_.chain)
-    incident_.dump(f'{incidents_path}/{uuid_}.yml')
+    incident_.dump()
 
 
 def alert_handle_update(uuid_, incident_, queue_, alert_state, application):

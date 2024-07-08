@@ -48,9 +48,6 @@ if __name__ == '__main__':
     app_dict = settings.get('application')
     webhooks_dict = settings.get('webhooks')
 
-    incidents = recreate_incidents(app_dict['type'])
-    queue = recreate_queue(incidents, check_updates)
-
     route = generate_route(route_dict)
     application = Application(
         app_dict,
@@ -58,6 +55,9 @@ if __name__ == '__main__':
         route.channel
     )
     webhooks = generate_webhooks(webhooks_dict)
+
+    incidents = recreate_incidents(application.type, application.url, application.team)
+    queue = recreate_queue(incidents, check_updates)
 
     # run scheduler
     scheduler = BackgroundScheduler()

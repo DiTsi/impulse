@@ -30,9 +30,9 @@ class Application:
         type = app_config['type']
         if type == 'slack':
             url = 'https://slack.com'
-            team = None
             logger.debug(f'get {type.capitalize()} channels using API')
             public_channels = slack_get_public_channels(url)
+            team_name = None
         else:
             url = app_config['url']
             team_name = app_config['team']
@@ -74,6 +74,7 @@ class Application:
         self.chains = chains
         self.channels = channels
         self.message_template = message_template
+        self.team = team_name
         self.type = type
         self.url = url
 
@@ -146,12 +147,14 @@ class Application:
             payload = slack_get_create_thread_payload(channel_id, message, status)
             response = requests.post(f'{self.url}/api/chat.postMessage', headers=slack_headers, data=json.dumps(payload))
             sleep(1)
-            return response.json().get('ts')
+            response_json = response.json()
+            return response_json['ts']
         else:
             payload = mattermost_get_create_thread_payload(channel_id, message, status)
             response = requests.post(f'{self.url}/api/v4/posts', headers=mattermost_headers, data=json.dumps(payload))
             sleep(0.1)
-            return response.json().get('id')
+            response_json = response.json()
+            return response_json['id']
 
     def post_thread(self, channel_id, id, text):
         if self.type == 'slack':

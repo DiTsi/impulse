@@ -2,21 +2,21 @@ from time import sleep
 
 import requests
 
-from app.logger import logger
-from .config import headers, url
+from app.logging import logger
+from .config import slack_headers
 
 
-def get_public_channels():
+def slack_get_public_channels(url):
     try:
         response = requests.get(
             f'{url}/api/conversations.list',
-            headers=headers
+            headers=slack_headers
         )
-        sleep(1.5)
+        sleep(1)
         data = response.json()
         channels_list = data.get('channels', [])
         channels_dict = {c.get('name'): c for c in channels_list}
         return channels_dict
     except requests.exceptions.RequestException as e:
         logger.error(f'Failed to retrieve channel list: {e}')  # !
-        return []
+        return dict()

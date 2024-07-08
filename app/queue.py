@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
-from app.logger import logger
-from .slack import admins_template_string, post_thread, env
+from app.logging import logger
+from .im import slack_env, slack_admins_template_string, mattermost_env, mattermost_admins_template_string
 from .update import get_latest_tag
 
 
@@ -141,23 +141,36 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
     if step['type'] == 'webhook':
         webhook_name = step['identifier']
         webhook = webhooks.get(webhook_name)
-        admins_ids = [a.slack_id for a in application.admin_users]
+        if application.type == 'slack':
+            admins = [a.slack_id for a in application.admin_users]
+        else:
+            admins = [a.username for a in application.admin_users]
         text = f'notify webhook *{webhook_name}*'
         if webhook:
             r_code = webhook.push()
             incident_.chain_update(uuid_, identifier, done=True, result=r_code)
-            if r_code > 300:
-                admins_text = env.from_string(admins_template_string).render(users=admins_ids)
-                text += (f'\n>_response code: {r_code}_'
-                         f'\n>_{admins_text}_')
-                _ = post_thread(incident_.channel_id, incident_.ts, text)
+            if r_code >= 300:
+                if application.type == 'slack':
+                    admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins)
+                    text += (f'\n>_response code: {r_code}_'
+                             f'\n>_{admins_text}_')
+                else:
+                    admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins)
+                    text += (f'\n|_response code: {r_code}_'
+                             f'\n|_{admins_text}_')
+                _ = application.post_thread(incident_.channel_id, incident_.ts, text)
                 logger.warning(f'Webhook \'{webhook_name}\' response code is {r_code}')
                 incident_.chain_update(uuid_, identifier, done=True, result=None)
         else:
-            admins_text = env.from_string(admins_template_string).render(users=admins_ids)
-            text += (f'\n>_not found in `impulse.yml`_'
-                     f'\n>_{admins_text}_')
-            _ = post_thread(incident_.channel_id, incident_.ts, text)
+            if application.type == 'slack':
+                admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins)
+                text += (f'\n>_not found in `impulse.yml`_'
+                         f'\n>_{admins_text}_')
+            else:
+                admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins)
+                text += (f'\n|_not found in `impulse.yml`_'
+                         f'\n|_{admins_text}_')
+            _ = application.post_thread(incident_.channel_id, incident_.ts, text)
             logger.warning(f'Webhook \'{webhook_name}\' not found in impulse.yml')
             incident_.chain_update(uuid_, identifier, done=True, result=None)
     else:

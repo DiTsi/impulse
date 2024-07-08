@@ -1,10 +1,11 @@
 import json
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import request, Flask, redirect, url_for
+from flask import request, Flask, redirect, url_for, jsonify
 
 from app import (alert_handle, queue_handle, recreate_queue, Incidents, recreate_incidents, generate_webhooks,
-                 generate_route, generate_application, handler)
+                 generate_route, handler)
+from app.im import Application
 from config import settings, check_updates
 
 app = Flask(__name__)
@@ -26,10 +27,13 @@ def receive_alert():
         return redirect(url_for('get_incidents'))
 
 
-@app.route('/slack', methods=['POST'])
-def slack_handler():
-    payload = json.loads(request.form['payload'])
-    return handler(payload, incidents, queue)
+@app.route('/app', methods=['POST', 'PUT'])
+def buttons_handler():
+    if application.type == 'slack':
+        payload = json.loads(request.form['payload'])
+    else:
+        payload = request.json
+    return handler(application, payload, incidents, queue)
 
 
 @app.route('/incidents', methods=['GET'])
@@ -39,20 +43,21 @@ def get_incidents():
 
 if __name__ == '__main__':
     latest_tag = {'version': None}
-    incidents = recreate_incidents()
-    queue = recreate_queue(incidents, check_updates)
 
     route_dict = settings.get('route')
     app_dict = settings.get('application')
     webhooks_dict = settings.get('webhooks')
 
     route = generate_route(route_dict)
-    application = generate_application(
+    application = Application(
         app_dict,
         route.get_uniq_channels(),
         route.channel
     )
     webhooks = generate_webhooks(webhooks_dict)
+
+    incidents = recreate_incidents(application.type, application.url, application.team)
+    queue = recreate_queue(incidents, check_updates)
 
     # run scheduler
     scheduler = BackgroundScheduler()

@@ -6,10 +6,8 @@ from datetime import datetime
 import yaml
 
 from config import incidents_path, timeouts
-from app.logger import logger
+from app.logging import logger
 from .queue import unix_sleep_to_timedelta
-from .slack import update_thread
-from .slack.config import url  # !
 
 
 class Incident:
@@ -20,18 +18,21 @@ class Incident:
     }
 
     def __init__(self, alert, status, ts, channel_id, chain, chain_enabled, status_enabled, updated,
-                 status_update_datetime):
+                 status_update_datetime, application_type, application_url, application_team):
         self.last_state = alert
         self.ts = ts
-        self.link = f'{url}/archives/{channel_id}/p{ts.replace(".", "")}'
-        'https://ditsiworkspace.slack.com/archives/C06NJALBX71/p1718536764226329'
+        if application_type == 'slack':
+            self.link = f'{application_url}/archives/{channel_id}/p{ts.replace(".", "")}'
+        else:
+            self.link = f'{application_url}/{application_team}/pl/{ts}'
         self.status = status
         self.channel_id = channel_id
         self.chain = chain
         self.chain_enabled = chain_enabled
         self.status_enabled = status_enabled
-        self.updated = updated
         self.status_update_datetime = status_update_datetime
+        self.updated = updated
+        self.uuid = gen_uuid(alert.get('groupLabels'))
 
     def generate_chain(self, chain=None):
         if chain and chain.steps:
@@ -62,14 +63,14 @@ class Incident:
     def chain_update(self, uuid_, index, done, result):
         self.chain[index]['done'] = done
         self.chain[index]['result'] = result
-        self.dump(f'{incidents_path}/{uuid_}.yml')
+        self.dump()
 
     def set_next_status(self):
         new_status = Incident.next_status[self.status]
         return self.update_status(new_status)
 
     @classmethod
-    def load(cls, dump_file):
+    def load(cls, dump_file, application_type, application_url, application_team):
         with open(dump_file, 'r') as f:
             content = yaml.load(f, Loader=yaml.CLoader)
             last_state = content.get('last_state')
@@ -82,10 +83,10 @@ class Incident:
             status_enabled = content.get('status_enabled')
             status_update_datetime = content.get('status_update_datetime')
         return cls(last_state, status, ts, channel_id, chain, chain_enabled, status_enabled,
-                   updated, status_update_datetime)
+                   updated, status_update_datetime, application_type, application_url, application_team)
 
-    def dump(self, incident_file):
-        with open(incident_file, 'w') as f:
+    def dump(self):
+        with open(f'{incidents_path}/{self.uuid}.yml', 'w') as f:
             d = {
                 "chain_enabled": self.chain_enabled,
                 "chain": self.chain,
@@ -98,17 +99,6 @@ class Incident:
                 "updated": self.updated,
             }
             yaml.dump(d, f, default_flow_style=False)
-
-    def update_thread(self, alert, message):
-        self.last_state = alert
-        self.updated = datetime.utcnow()
-        update_thread(
-            self.channel_id,
-            self.ts,
-            alert.get('status'),
-            message
-        )
-        logger.debug(f'incident updated')
 
     def serialize(self):
         return {
@@ -133,6 +123,7 @@ class Incident:
         self.updated = now
         if self.status != status:
             self.status = status
+            self.dump()
             return True
         else:
             return False
@@ -141,16 +132,16 @@ class Incident:
         """
         :return: update_state, update_status
         """
-        status = alert_state['status']
-        updated = self.update_status(status)
-        if alert_state != self.last_state or updated:
-            self.dump(f'{incidents_path}/{uuid_}.yml')
+        if self.last_state == alert_state:
+            return False, False
+        else:
+            self.last_state = alert_state
+            updated = self.update_status(alert_state['status'])
+            self.dump()
             if updated:
                 return True, True
             else:
                 return True, False
-        else:
-            return False, False
 
 
 class Incidents:
@@ -189,7 +180,7 @@ def gen_uuid(data):
     return uuid.uuid5(uuid.NAMESPACE_OID, json.dumps(data))
 
 
-def recreate_incidents():
+def recreate_incidents(application_type, application_url, application_team):
     if not os.path.exists(incidents_path):
         logger.debug(f'creating incidents_directory')
         os.makedirs(incidents_path)
@@ -200,6 +191,6 @@ def recreate_incidents():
     incidents = Incidents([])
     for path, directories, files in os.walk(incidents_path):
         for filename in files:
-            incident_ = Incident.load(f'{incidents_path}/{filename}')
+            incident_ = Incident.load(f'{incidents_path}/{filename}', application_type, application_url, application_team)
             incidents.add(incident_)
     return incidents

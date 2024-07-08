@@ -1,12 +1,43 @@
-import json
-
-import requests
-
-from .buttons import buttons
-from .config import headers, url, status_colors
+from . import buttons
+from ..colors import status_colors
 
 
-def create_thread(channel_id, message, status):
+def slack_get_update_payload(channel_id, ts, message, status, chain_enabled=True, status_enabled=True):
+    payload = {
+        'channel': channel_id,
+        'text': '',
+        'attachments': [
+            {
+                'color': status_colors.get(status),
+                'text': message,
+                'mrkdwn_in': ['text'],
+            },
+            {
+                'color': status_colors.get(status),
+                'text': f'',
+                "callback_id": "buttons",
+                "actions": [
+                    {
+                        "name": 'chain',
+                        "text": buttons['chain']['enabled']['text'] if chain_enabled else buttons['chain']['disabled']['text'],
+                        "type": 'button',
+                        "style": buttons['chain']['enabled']['style'] if chain_enabled else buttons['chain']['disabled']['style']
+                    },
+                    {
+                        "name": 'status',
+                        "text": buttons['status']['enabled']['text'] if status_enabled else buttons['status']['disabled']['text'],
+                        "type": 'button',
+                        "style": buttons['status']['enabled']['style'] if status_enabled else buttons['status']['disabled']['style'],
+                    }
+                ],
+            },
+        ],
+        'ts': ts,
+    }
+    return payload
+
+
+def slack_get_create_thread_payload(channel_id, message, status):
     payload = {
         'channel': channel_id,
         'text': '',
@@ -37,11 +68,10 @@ def create_thread(channel_id, message, status):
             }
         ]
     }
-    response = requests.post(f'{url}/api/chat.postMessage', headers=headers, data=json.dumps(payload))
-    return response.json().get('ts')
+    return payload
 
 
-# def create_blocked_thread(channel_id, message, status): #! didn't work with "return modified_message, 200"
+# def get_blocked_thread_payload(channel_id, message, status): #! didn't work with "return modified_message, 200"
 #     payload = {
 #         'channel': channel_id,
 #         'text': '',
@@ -88,55 +118,4 @@ def create_thread(channel_id, message, status):
 #         headers=headers,
 #         data=json.dumps(payload)
 #     )
-#     return response.json().get('ts')
-def update_thread(channel_id, ts, status, message, chain_enabled=True, status_enabled=True):
-    payload = {
-        'channel': channel_id,
-        'text': '',
-        'attachments': [
-            {
-                'color': status_colors.get(status),
-                'text': message,
-                'mrkdwn_in': ['text'],
-            },
-            {
-                'color': status_colors.get(status),
-                'text': f'',
-                "callback_id": "buttons",
-                "actions": [
-                    {
-                        "name": 'chain',
-                        "text": buttons['chain']['enabled']['text'] if chain_enabled else buttons['chain']['disabled']['text'],
-                        "type": 'button',
-                        "style": buttons['chain']['enabled']['style'] if chain_enabled else buttons['chain']['disabled']['style']
-                    },
-                    {
-                        "name": 'status',
-                        "text": buttons['status']['enabled']['text'] if status_enabled else buttons['status']['disabled']['text'],
-                        "type": 'button',
-                        "style": buttons['status']['enabled']['style'] if status_enabled else buttons['status']['disabled']['style'],
-                    }
-                ],
-            },
-        ],
-        'ts': ts,
-    }
-    requests.post(
-        f'{url}/api/chat.update',
-        headers=headers,
-        data=json.dumps(payload)
-    )
-
-
-def post_thread(channel_id, ts, text):
-    payload = {
-        'channel': channel_id,
-        'text': text,
-        'thread_ts': ts
-    }
-    r = requests.post(
-        f'{url}/api/chat.postMessage',
-        headers=headers,
-        data=json.dumps(payload)
-    )
-    return r.status_code
+#     return payload

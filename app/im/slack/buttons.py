@@ -1,6 +1,6 @@
-from app.im.slack import buttons
+from .config import buttons
 from app.logging import logger
-from config import slack_verification_token, incidents_path
+from config import slack_verification_token
 
 
 def reformat_message(original_message, chain_enabled, status_enabled):

@@ -64,7 +64,7 @@ class Application:
                 logger.warning(f'no public channel \'{ch}\' in {type.capitalize()}')
 
         message_template_dict = app_config.get('message_template')
-        message_template = generate_message_template(message_template_dict)
+        message_template = generate_message_template(type, message_template_dict)
 
         admins_list = app_config['admin_users']
         self.default_channel_id = channels[default_channel]['id']
@@ -80,7 +80,7 @@ class Application:
 
     def notify(self, incident, notify_type, identifier):
         if self.type == 'slack':
-            admins_ids = [a.id for a in self.admin_users]
+            admins_ids = [a.slack_id for a in self.admin_users]
             if notify_type == 'user':
                 unit = self.users[identifier]
                 text = unit.mention_text(admins_ids)
@@ -117,7 +117,7 @@ class Application:
                     text = f'status updated: {mattermost_bold_text(incident_status)}'
                 if incident_status == 'unknown':
                     if self.type == 'slack':
-                        admins_ids = [a.id for a in self.admin_users]
+                        admins_ids = [a.slack_id for a in self.admin_users]
                         admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins_ids)
                         text += f'\n>_{admins_text}_'
                     else:
@@ -128,7 +128,7 @@ class Application:
 
     def new_version_notification(self, channel_id, new_tag):
         if self.type == 'slack':
-            admins_ids = [a.id for a in self.admin_users]
+            admins_ids = [a.slack_id for a in self.admin_users]
             admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins_ids)
             text = (f'New IMPulse version available: {new_tag}'
                     f'\n>_see <CHANGELOG.md|https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md>_'

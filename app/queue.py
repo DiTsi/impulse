@@ -142,7 +142,7 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
         webhook_name = step['identifier']
         webhook = webhooks.get(webhook_name)
         if application.type == 'slack':
-            admins = [a.id for a in application.admin_users]
+            admins = [a.slack_id for a in application.admin_users]
         else:
             admins = [a.username for a in application.admin_users]
         text = f'notify webhook *{webhook_name}*'

@@ -27,9 +27,9 @@ def receive_alert():
         return redirect(url_for('get_incidents'))
 
 
-@app.route('/app', methods=['POST', 'PUT', 'GET'])
+@app.route('/app', methods=['POST', 'PUT'])
 def buttons_handler():
-    if application == 'slack':
+    if application.type == 'slack':
         payload = json.loads(request.form['payload'])
     else:
         payload = request.json

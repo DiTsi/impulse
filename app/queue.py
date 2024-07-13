@@ -180,9 +180,9 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
 
 def queue_handle_status_update(incidents, uuid, queue_, application):
     incident_ = incidents.by_uuid[uuid]
-    updated = incident_.set_next_status()
+    status_updated = incident_.set_next_status()
     application.update(
-        uuid, incident_, incident_.status, incident_.last_state, updated,
+        uuid, incident_, incident_.status, incident_.last_state, status_updated,
         incident_.chain_enabled, incident_.status_enabled
     )
     if incident_.status == 'closed':

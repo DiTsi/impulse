@@ -1,4 +1,5 @@
 import logging
+from config import log_level
 
 
 class CustomFormatter(logging.Formatter):
@@ -33,4 +34,5 @@ def create_logger(name, level=logging.INFO):
     return lr
 
 
-logger = create_logger('main_logger', logging.DEBUG)
+log_level = getattr(logging, log_level.upper(), logging.INFO)
+logger = create_logger('main_logger', log_level)

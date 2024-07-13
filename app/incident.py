@@ -67,7 +67,8 @@ class Incident:
 
     def set_next_status(self):
         new_status = Incident.next_status[self.status]
-        return self.update_status(new_status)
+        r = self.update_status(new_status)
+        return r
 
     @classmethod
     def load(cls, dump_file, application_type, application_url, application_team):
@@ -115,33 +116,33 @@ class Incident:
         }
 
     def update_status(self, status):
+        updated = False
         now = datetime.utcnow()
+        self.updated = now
         if status != 'closed':
             self.status_update_datetime = now + unix_sleep_to_timedelta(timeouts.get(status))
         else:
             self.status_update_datetime = None
-        self.updated = now
         if self.status != status:
-            self.status = status
-            self.dump()
-            return True
-        else:
-            return False
+            self.set_status(status)
+            updated = True
+        self.dump()
+        return updated
 
-    def update(self, alert_state, uuid_):
-        """
-        :return: update_state, update_status
-        """
-        if self.last_state == alert_state:
-            return False, False
-        else:
+    def update_state(self, alert_state):
+        update_state = False
+        update_status = False
+
+        updated = self.update_status(alert_state['status'])
+        if updated:
+            update_status = True
+        if self.last_state != alert_state:
+            update_state = True
             self.last_state = alert_state
-            updated = self.update_status(alert_state['status'])
-            self.dump()
-            if updated:
-                return True, True
-            else:
-                return True, False
+        return update_state, update_status
+
+    def set_status(self, status):
+        self.status = status
 
 
 class Incidents:

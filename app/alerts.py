@@ -35,22 +35,19 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
 
 
 def alert_handle_update(uuid_, incident_, queue_, alert_state, application):
-    # update incident
-    is_state_updated, is_status_updated = incident_.update(alert_state, uuid_)
-
-    # update slack
-    if is_state_updated:
+    is_state_updated, is_status_updated = incident_.update_state(alert_state)
+    if is_state_updated or is_status_updated:
         application.update(
             uuid_, incident_, alert_state['status'], alert_state, is_status_updated,
             incident_.chain_enabled, incident_.status_enabled
         )
-
-    # update queue
     queue_.update(uuid_, incident_.status_update_datetime, incident_.status)
 
 
 def alert_handle(application, route_, incidents, queue_, alert_state):
     incident_, uuid_ = incidents.get(alert=alert_state)
+    logger.debug(f'New Alertmanager event for incident {uuid_}')
+    logger.debug(f'{alert_state}')
     if incident_ is None:
         alert_handle_create(application, route_, incidents, queue_, alert_state)
     else:

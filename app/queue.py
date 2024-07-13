@@ -104,13 +104,6 @@ class Queue:
         return result
 
 
-def unix_sleep_to_timedelta(unix_sleep_time):
-    value = int(unix_sleep_time[:-1])
-    unit = unix_sleep_time[-1]
-    unit_map = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days'}
-    return timedelta(**{unit_map[unit]: value})
-
-
 def queue_handle(incidents, queue_, application, webhooks, latest_tag):
     if len(queue_.dates) == 0:
         return

@@ -3,7 +3,7 @@ from time import sleep
 import requests
 
 from app.logging import logger
-from .config import slack_headers
+from .config import slack_headers, slack_request_delay
 
 
 def slack_get_public_channels(url):
@@ -12,7 +12,7 @@ def slack_get_public_channels(url):
             f'{url}/api/conversations.list',
             headers=slack_headers
         )
-        sleep(1)
+        sleep(slack_request_delay)
         data = response.json()
         channels_list = data.get('channels', [])
         channels_dict = {c.get('name'): c for c in channels_list}

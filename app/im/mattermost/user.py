@@ -4,7 +4,7 @@ import requests
 
 from app.logging import logger
 from .config import mattermost_headers, mattermost_bold_text, mattermost_mention_text, mattermost_env, \
-    mattermost_admins_template_string
+    mattermost_admins_template_string, mattermost_request_delay
 
 
 class User:
@@ -33,7 +33,7 @@ def mattermost_get_users(url):
         f'{url}/api/v4/users',
         headers=mattermost_headers
     )
-    sleep(0.1)
+    sleep(mattermost_request_delay)
     if not response.ok:
         logger.error(f'Incorrect Mattermost response. Reason: {response.reason}')
         exit()
@@ -51,7 +51,7 @@ def mattermost_generate_users(url, users_dict=None):
 
     users = dict()
     if users_dict:
-        logger.debug(f'creating users')
+        logger.debug(f'Creating users')
         mattermost_users = mattermost_get_users(url)
         for name in users_dict.keys():
             mattermost_fullname = users_dict[name]['username']

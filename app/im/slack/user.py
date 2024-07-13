@@ -3,7 +3,8 @@ from time import sleep
 import requests
 
 from app.logging import logger
-from .config import slack_headers, slack_bold_text, slack_mention_text, slack_env, slack_admins_template_string
+from .config import slack_headers, slack_bold_text, slack_mention_text, slack_env, slack_admins_template_string, \
+    slack_request_delay
 
 
 class User:
@@ -30,7 +31,7 @@ def slack_get_users(url):
         f'{url}/api/users.list',
         headers=slack_headers
     )
-    sleep(1)
+    sleep(slack_request_delay)
     if not response.ok:
         logger.error(f'Incorrect Slack response. Reason: {response.reason}')
         exit()
@@ -48,7 +49,7 @@ def slack_generate_users(url, users_dict=None):
 
     users = dict()
     if users_dict:
-        logger.debug(f'creating users')
+        logger.debug(f'Creating users')
         slack_users = slack_get_users(url)
         for name in users_dict.keys():
             slack_fullname = users_dict[name]['full_name']
@@ -56,5 +57,5 @@ def slack_generate_users(url, users_dict=None):
             users[name] = User(name, slack_id=slack_id)
         return users
     else:
-        logger.debug(f'no users defined in impulse.yml')
+        logger.debug(f'No users defined in impulse.yml')
         return users

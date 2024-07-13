@@ -3,7 +3,7 @@ from time import sleep
 import requests
 
 from app.logging import logger
-from .config import mattermost_headers
+from .config import mattermost_headers, mattermost_request_delay
 
 
 def mattermost_get_public_channels(url, team):
@@ -12,7 +12,7 @@ def mattermost_get_public_channels(url, team):
             f"{url}/api/v4/teams/{team['id']}/channels", #!
             headers=mattermost_headers
         )
-        sleep(0.1)
+        sleep(mattermost_request_delay)
         data = response.json()
         channels_dict = {c.get('name'): c for c in data}
         return channels_dict

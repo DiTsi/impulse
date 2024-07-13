@@ -7,9 +7,10 @@ from app.logging import logger
 from .chain import generate_chains
 from .groups import generate_user_groups
 from .mattermost import mattermost_send_message
+from .mattermost.buttons import mattermost_buttons_handler
 from .mattermost.channels import mattermost_get_public_channels
 from .mattermost.config import mattermost_headers, mattermost_bold_text, mattermost_admins_template_string, \
-    mattermost_env
+    mattermost_env, mattermost_request_delay
 from .mattermost.teams import get_team
 from .mattermost.threads import mattermost_get_create_thread_payload
 from .mattermost.threads import mattermost_get_update_payload
@@ -17,9 +18,8 @@ from .mattermost.user import mattermost_generate_users
 from .message_template import generate_message_template
 from .slack import slack_send_message
 from .slack.buttons import slack_buttons_handler
-from .mattermost.buttons import mattermost_buttons_handler
 from .slack.channels import slack_get_public_channels
-from .slack.config import slack_headers, slack_bold_text, slack_admins_template_string, slack_env
+from .slack.config import slack_headers, slack_bold_text, slack_admins_template_string, slack_env, slack_request_delay
 from .slack.threads import slack_get_create_thread_payload
 from .slack.threads import slack_get_update_payload
 from .slack.user import slack_generate_users
@@ -30,7 +30,7 @@ class Application:
         type = app_config['type']
         if type == 'slack':
             url = 'https://slack.com'
-            logger.debug(f'get {type.capitalize()} channels using API')
+            logger.debug(f'Get {type.capitalize()} channels using API')
             public_channels = slack_get_public_channels(url)
             team_name = None
         else:
@@ -40,16 +40,16 @@ class Application:
             logger.debug(f'get {type.capitalize()} channels using API')
             public_channels = mattermost_get_public_channels(url, team)
 
-        logger.debug(f'get channels IDs for channels in route')
+        logger.debug(f'Get channels IDs for channels in route')
         channels = dict()
         for ch in channels_list:
             try:
                 channels[ch] = public_channels[ch]
             except KeyError:
-                logger.warning(f'no public channel \'{ch}\' in {type.capitalize()}')
+                logger.warning(f'No public channel \'{ch}\' in {type.capitalize()}')
 
         chains = generate_chains(app_config.get('chains', dict()))
-        logger.debug(f'get {type.capitalize()} users using API')
+        logger.debug(f'Get {type.capitalize()} users using API')
         if type == 'slack':
             users = slack_generate_users(url, app_config.get('users'))
         else:
@@ -61,7 +61,7 @@ class Application:
             try:
                 channels[ch] = public_channels[ch]
             except KeyError:
-                logger.warning(f'no public channel \'{ch}\' in {type.capitalize()}')
+                logger.warning(f'No public channel \'{ch}\' in {type.capitalize()}')
 
         message_template_dict = app_config.get('message_template')
         message_template = generate_message_template(type, message_template_dict)
@@ -146,13 +146,13 @@ class Application:
         if self.type == 'slack':
             payload = slack_get_create_thread_payload(channel_id, message, status)
             response = requests.post(f'{self.url}/api/chat.postMessage', headers=slack_headers, data=json.dumps(payload))
-            sleep(1)
+            sleep(slack_request_delay)
             response_json = response.json()
             return response_json['ts']
         else:
             payload = mattermost_get_create_thread_payload(channel_id, message, status)
             response = requests.post(f'{self.url}/api/v4/posts', headers=mattermost_headers, data=json.dumps(payload))
-            sleep(0.1)
+            sleep(mattermost_request_delay)
             response_json = response.json()
             return response_json['id']
 
@@ -164,7 +164,7 @@ class Application:
                 headers=slack_headers,
                 data=json.dumps(payload)
             )
-            sleep(1)
+            sleep(slack_request_delay)
         else:
             payload = {'channel_id': channel_id, 'root_id': id, 'message': text}
             r = requests.post(
@@ -172,7 +172,7 @@ class Application:
                 headers=mattermost_headers,
                 data=json.dumps(payload)
             )
-            sleep(0.1)
+            sleep(mattermost_request_delay)
         return r.status_code
 
     def update_thread(self, channel_id, id, status, message, chain_enabled=True, status_enabled=True):
@@ -190,4 +190,4 @@ class Application:
                 headers=mattermost_headers,
                 data=json.dumps(payload)
             )
-            sleep(0.1)
+            sleep(mattermost_request_delay)

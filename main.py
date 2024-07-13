@@ -3,7 +3,7 @@ import json
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask, redirect, url_for
 
-from app import (alert_handle, queue_handle, recreate_queue, Incidents, recreate_incidents, generate_webhooks,
+from app import (alert_handle, queue_handle, recreate_queue, Incidents, create_or_load_incidents, generate_webhooks,
                  generate_route, handler)
 from app.im import Application
 from config import settings, check_updates
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     )
     webhooks = generate_webhooks(webhooks_dict)
 
-    incidents = recreate_incidents(application.type, application.url, application.team)
+    incidents = create_or_load_incidents(application.type, application.url, application.team)
     queue = recreate_queue(incidents, check_updates)
 
     # run scheduler

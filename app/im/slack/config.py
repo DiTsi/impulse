@@ -29,6 +29,7 @@ buttons = {
         }
     }
 }
+slack_request_delay = 1.5  # seconds
 
 
 def slack_bold_text(value):

@@ -2,8 +2,8 @@ from datetime import datetime
 
 from app.logging import logger
 from config import timeouts
-from .incident import Incident
-from .queue import unix_sleep_to_timedelta
+from .incident import Incident, actual_version
+from .time import unix_sleep_to_timedelta
 
 
 def alert_handle_create(application, route, incidents, queue_, alert_state):
@@ -20,7 +20,8 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
     chain = application.chains.get(chain_name)
     incident_ = Incident(
         alert_state, status, thread_id, channel['id'], [], True,
-        True, updated_datetime, status_update_datetime, application.type, application.url, application.team
+        True, updated_datetime, status_update_datetime, application.type, application.url, application.team,
+        actual_version
     )
     uuid_ = incidents.add(incident_)
 

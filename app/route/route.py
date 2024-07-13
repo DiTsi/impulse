@@ -74,5 +74,4 @@ def generate_route(route_dict):
     routes = route_dict.get('routes')
 
     route_ = MainRoute(main_channel_name, main_chain, routes)
-    logger.debug(f'Route created')
     return route_

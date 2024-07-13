@@ -1,6 +1,6 @@
 from config import impulse_url
-from ..colors import status_colors
 from .config import buttons
+from ..colors import status_colors
 
 
 def mattermost_get_button_update_payload(message, status, chain_enabled, status_enabled):

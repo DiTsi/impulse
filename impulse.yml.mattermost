@@ -8,8 +8,8 @@
 
 
 route:
-  channel: space ### default Slack channel for Incidents
-  # chain: warning ### default chain which will be used in default Slack channel
+  channel: space ### default Mattermost channel for Incidents
+  # chain: warning ### default chain which will be used in default Mattermost channel
   # routes:
   # - matchers:
   #   - severity="warning"
@@ -32,12 +32,12 @@ route:
 
 
 application: ### instant messaging app configuration
-  url: https://mattermost.ditsi.ru
+  url: https://<your_mattermost_domain>.com
   team: test
-  type: mattermost ### only 'slack' available now
+  type: mattermost ### 'slack' or 'mattermost'
   admin_users: ### IMPulse administrators will be notified when any warnings
   - Dmitry
-  users: ### Slack users with their actual Full Names
+  users: ### Mattermost users with their actual Full Names
     Dmitry: {username: "ditsi"}
   # chains: ### chains used to describe notifications order
   #   firing_team:

@@ -32,7 +32,7 @@ route:
 
 
 application: ### instant messaging app configuration
-  type: slack ### only 'slack' available now
+  type: slack ### 'slack' or 'mattermost'
   admin_users: ### IMPulse administrators will be notified when any warnings
   - Dmitry
   users: ### Slack users with their actual Full Names

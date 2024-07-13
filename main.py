@@ -1,7 +1,7 @@
 import json
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import request, Flask, redirect, url_for, jsonify
+from flask import request, Flask, redirect, url_for
 
 from app import (alert_handle, queue_handle, recreate_queue, Incidents, recreate_incidents, generate_webhooks,
                  generate_route, handler)
@@ -69,5 +69,4 @@ if __name__ == '__main__':
     )
     scheduler.start()
 
-    # flog.default_handler.setFormatter(CustomFormatter())
     app.run(host='0.0.0.0', port=5000)

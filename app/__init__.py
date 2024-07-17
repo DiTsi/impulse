@@ -8,7 +8,7 @@ from .update import get_latest_tag
 from .webhook import generate_webhooks
 
 
-def handler(app, payload, incidents, queue):
+def buttons_handler(app, payload, incidents, queue):
     if app.type == 'slack':
         return slack_buttons_handler(payload, incidents, queue)
     else:

@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask, redirect, url_for
 
 from app import (alert_handle, queue_handle, recreate_queue, Incidents, create_or_load_incidents, generate_webhooks,
-                 generate_route, handler)
+                 generate_route, buttons_handler)
 from app.im import Application
 from config import settings, check_updates
 
@@ -33,7 +33,7 @@ def buttons_handler():
         payload = json.loads(request.form['payload'])
     else:
         payload = request.json
-    return handler(application, payload, incidents, queue)
+    return buttons_handler(application, payload, incidents, queue)
 
 
 @app.route('/incidents', methods=['GET'])

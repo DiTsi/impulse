@@ -25,7 +25,7 @@ class Incident:
         if application_type == 'slack':
             self.link = f'{application_url}/archives/{channel_id}/p{ts.replace(".", "")}'
         else:
-            self.link = f'{application_url}/{application_team}/pl/{ts}'
+            self.link = f'{application_url}/{application_team.lower()}/pl/{ts}'
         self.status = status
         self.channel_id = channel_id
         self.chain = chain

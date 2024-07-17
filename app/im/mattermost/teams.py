@@ -12,7 +12,7 @@ def get_team(url, team_name):
         )
         data = response.json()
         for i in data:
-            if i['name'] == team_name:
+            if i['display_name'] == team_name:
                 return i
         return None #!
     except requests.exceptions.RequestException as e:

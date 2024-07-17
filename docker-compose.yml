@@ -1,6 +1,6 @@
 version: "3.3"
 services:
-  detweet:
+  app:
     image: ghcr.io/ditsi/impulse:main # Do not use 'main'! Use tag from here https://github.com/DiTsi/impulse/tags
     environment:
       SLACK_BOT_USER_OAUTH_TOKEN: <slack_bot_user_oauth_token>
@@ -12,9 +12,10 @@ services:
     - ./data:/data
     - ./config:/config
     ports:
-    - 5000:5000
+    - "127.0.0.1:5000:5000"
     deploy:
       resources:
         limits:
           cpus: '0.5'
           memory: 500M
+    privileged: true

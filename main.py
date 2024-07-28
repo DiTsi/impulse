@@ -13,22 +13,22 @@ incidents = Incidents([])
 
 
 @app.route('/queue', methods=['GET'])
-def get_queue():
+def route_queue_get():
     return queue.serialize(), 200
 
 
 @app.route('/', methods=['POST', 'GET'])
-def receive_alert():
+def route_alert_post():
     if request.method == 'POST':
         alert_state = request.json
         alert_handle(application, route, incidents, queue, alert_state)
         return alert_state, 200
     else:
-        return redirect(url_for('get_incidents'))
+        return redirect(url_for('route_incidents_get'))
 
 
 @app.route('/app', methods=['POST', 'PUT'])
-def buttons_handler():
+def route_app_buttons():
     if application.type == 'slack':
         payload = json.loads(request.form['payload'])
     else:
@@ -37,7 +37,7 @@ def buttons_handler():
 
 
 @app.route('/incidents', methods=['GET'])
-def get_incidents():
+def route_incidents_get():
     return incidents.serialize(), 200
 
 

@@ -10,21 +10,21 @@ buttons = {
     # styles: good, warning, danger, default, primary, and success
     'chain': {
         'enabled': {
-            'text': ':black_square_for_stop: Chain',
+            'text': '◼ Chain',
             'style': 'good'
         },
         'disabled': {
-            'text': ':arrow_forward: Chain',
+            'text': '▶ Chain',
             'style': 'danger'
         }
     },
     'status': {
         'enabled': {
-            'text': ':black_square_for_stop: Status',
+            'text': '◼ Status',
             'style': 'good'
         },
         'disabled': {
-            'text': ':arrow_forward: Status',
+            'text': '▶ Status',
             'style': 'danger'
         }
     }

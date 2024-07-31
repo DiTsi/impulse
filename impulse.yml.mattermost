@@ -82,7 +82,6 @@ application: ### instant messaging app configuration
   #       {{ k }}=`{{ v }}`
   #   {%- endfor %}
   #   {%- endif %}
-  #   {% if annotations.expr %}[grafana]({% raw %}https://grafana.com/explore?orgId=1&left=%7B"datasource":"prometheus_1","queries":%5B%7B"refId":"A","datasource":%7B"type":"prometheus","uid":"prometheus_1"%7D,"editorMode":"code","expr":"{% endraw %}{{ annotations.expr | urlencode | replace('%2C',',') | replace('%5C','%5C%22') | replace('%22','%5C%22') | replace('/','%2F') | replace('%0A','') }}{% raw %}","legendFormat":"__auto","range":true,"instant":true%7D%5D,"range":%7B"from":"now-1h","to":"now"%7D%7D{% endraw %}){% endif %}
 
 
 # webhooks: ### custom object to create POST requests from 'application.chains'

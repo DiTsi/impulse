@@ -12,17 +12,20 @@ class Webhook:
             data[k] = self.render(data[k])
         self.data = data
 
-        u, p = user.split(':')
-        self.user = self.render(u)
-        self.password = self.render(p)
+        if user is None:
+            self.user = None
+            self.password = None
+        else:
+            u, p = user.split(':')
+            self.user = self.render(u)
+            self.password = self.render(p)
 
     def push(self):
-        auth = HTTPBasicAuth(self.user, self.password)
-        response = requests.post(
-            url=self.url,
-            data=self.data,
-            auth=auth
-        )
+        if self.user is not None:
+            auth = HTTPBasicAuth(self.user, self.password)
+            response = requests.post(url=self.url, data=self.data, auth=auth)
+        else:
+            response = requests.post(url=self.url, data=self.data)
         return response.status_code
 
     def render(self, custom_string):

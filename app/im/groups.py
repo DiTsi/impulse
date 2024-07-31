@@ -1,4 +1,4 @@
-from app.im.mattermost.config import mattermost_env, mattermost_admins_template_string
+from app.im.mattermost.config import mattermost_env, mattermost_admins_template_string, mattermost_users_template_string
 from app.im.slack.config import slack_env
 from app.im.slack.config import slack_users_template_string, slack_admins_template_string
 from app.logging import logger
@@ -23,7 +23,7 @@ class UserGroup:
         self.name = name
         self.users = users
 
-    def mention_text(self, type, admins_ids):
+    def mention_text(self, type_, admins_ids):
         text = f'notify user_group *{self.name}*: '
         not_found_users = list()
         not_found = False
@@ -34,11 +34,13 @@ class UserGroup:
                 not_found = True
                 not_found_users.append(user.username)
         if not_found:
-            if type == 'slack':
+            if type_ == 'slack':
                 not_found_users_text = slack_env.from_string(slack_users_template_string).render(users=not_found_users)
                 admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins_ids)
             else:
-                not_found_users_text = mattermost_env.from_string(mattermost_users_template_string).render(users=not_found_users)
+                not_found_users_text = mattermost_env.from_string(mattermost_users_template_string).render(
+                    users=not_found_users
+                )
                 admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_ids)
             text += (f'\n>_users [{not_found_users_text}] not found in Slack_'
                      f'\n>_{admins_text}_')

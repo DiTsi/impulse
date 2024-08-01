@@ -37,14 +37,19 @@ def slack_get_update_payload(channel_id, ts, message, status, chain_enabled=True
     return payload
 
 
-def slack_get_create_thread_payload(channel_id, message, status):
+def slack_get_create_thread_payload(channel_id, body, header, status):
     payload = {
         'channel': channel_id,
         'text': '',
         'attachments': [
             {
                 'color': status_colors.get(status),
-                'text': message,
+                'text': header,
+                'mrkdwn_in': ['text']
+            },
+            {
+                'color': status_colors.get(status),
+                'text': body,
                 'mrkdwn_in': ['text'],
             },
             {

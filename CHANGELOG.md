@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.4.1
+## v0.5.0
 Changes:
 - Replaced ugly Mattermost button icons
 - Mattermost config now uses displayed team name

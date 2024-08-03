@@ -15,7 +15,7 @@ from .mattermost.teams import get_team
 from .mattermost.threads import mattermost_get_create_thread_payload
 from .mattermost.threads import mattermost_get_update_payload
 from .mattermost.user import mattermost_generate_users
-from .message_template import generate_message_template
+from .template import generate_template
 from .slack import slack_send_message
 from .slack.buttons import slack_buttons_handler
 from .slack.channels import slack_get_public_channels
@@ -63,9 +63,9 @@ class Application:
             except KeyError:
                 logger.warning(f'No public channel \'{ch}\' in {type.capitalize()}')
 
-        message_template_dict = app_config.get('message_template')
-        message_template = generate_message_template(type, message_template_dict)
-
+        body_template_dict = app_config.get('body_template')
+        header_template_dict = app_config.get('header_template')
+        body_template, header_template = generate_template(type, body_template_dict, header_template_dict)
         admins_list = app_config['admin_users']
         self.default_channel_id = channels[default_channel]['id']
         self.admin_users = [users[admin] for admin in admins_list]
@@ -73,7 +73,8 @@ class Application:
         self.user_groups = user_groups
         self.chains = chains
         self.channels = channels
-        self.message_template = message_template
+        self.body_template = body_template
+        self.header_template = header_template
         self.team = team_name
         self.type = type
         self.url = url
@@ -83,29 +84,29 @@ class Application:
             admins_ids = [a.slack_id for a in self.admin_users]
             if notify_type == 'user':
                 unit = self.users[identifier]
-                text = unit.mention_text(admins_ids)
+                text = self.body_template + unit.mention_text(admins_ids)
                 response_code = self.post_thread(incident.channel_id, incident.ts, text)
                 return response_code
             else:
                 unit = self.user_groups[identifier]
-                text = unit.mention_text(self.type, admins_ids)
+                text = self.body_template + unit.mention_text(self.type, admins_ids)
                 response_code = self.post_thread(incident.channel_id, incident.ts, text)
                 return response_code
         else:
             admins_names = [a.username for a in self.admin_users]
             if notify_type == 'user':
                 unit = self.users[identifier]
-                text = unit.mention_text(admins_names)
+                text = self.body_template + unit.mention_text(admins_names)
                 response_code = self.post_thread(incident.channel_id, incident.ts, text)
                 return response_code
             else:
                 unit = self.user_groups[identifier]
-                text = unit.mention_text(self.type, admins_names)
+                text = self.body_template + unit.mention_text(self.type, admins_names)
                 response_code = self.post_thread(incident.channel_id, incident.ts, text)
                 return response_code
 
     def update(self, uuid_, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
-        text = self.message_template.form_message(alert_state)
+        text = self.body_template.form_message(alert_state)
         self.update_thread(incident.channel_id, incident.ts, incident_status, text, chain_enabled, status_enabled)
         if updated_status:
             logger.info(f'Incident \'{uuid_}\' updated with new status \'{incident_status}\'')
@@ -142,9 +143,9 @@ class Application:
                     f'\n>_{admins_text}_')
             mattermost_send_message(self.url, channel_id, text)
 
-    def create_thread(self, channel_id, message, status):
+    def create_thread(self, channel_id, body, header, status):
         if self.type == 'slack':
-            payload = slack_get_create_thread_payload(channel_id, message, status)
+            payload = slack_get_create_thread_payload(channel_id, body, header, status)
             response = requests.post(f'{self.url}/api/chat.postMessage', headers=slack_headers, data=json.dumps(payload))
             sleep(slack_request_delay)
             response_json = response.json()

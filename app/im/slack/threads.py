@@ -2,14 +2,14 @@ from . import buttons
 from ..colors import status_colors
 
 
-def slack_get_update_payload(channel_id, ts, message, status, chain_enabled=True, status_enabled=True):
+def slack_get_update_payload(channel_id, ts, body, header, status_icons, status, chain_enabled=True, status_enabled=True):
     payload = {
         'channel': channel_id,
-        'text': '',
+        'text': f'{status_icons} {header}',
         'attachments': [
             {
                 'color': status_colors.get(status),
-                'text': message,
+                'text': body,
                 'mrkdwn_in': ['text'],
             },
             {
@@ -37,16 +37,11 @@ def slack_get_update_payload(channel_id, ts, message, status, chain_enabled=True
     return payload
 
 
-def slack_get_create_thread_payload(channel_id, body, header, status):
+def slack_get_create_thread_payload(channel_id, body, header, status_icons, status):
     payload = {
         'channel': channel_id,
-        'text': '',
+        'text': f'{status_icons} {header}',
         'attachments': [
-            {
-                'color': status_colors.get(status),
-                'text': header,
-                'mrkdwn_in': ['text']
-            },
             {
                 'color': status_colors.get(status),
                 'text': body,

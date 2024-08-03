@@ -6,12 +6,12 @@ from ..colors import status_colors
 def mattermost_get_button_update_payload(message, status, chain_enabled, status_enabled):
     payload = {
         'update': {
-            'message': '',
+            'message': '', #!
             'props': {
                 'attachments': [
                     {
                         'fallback': 'test',
-                        'text': message,
+                        'text': message, #!
                         'color': status_colors.get(status),
                         'actions': [
                             {
@@ -51,16 +51,16 @@ def mattermost_get_button_update_payload(message, status, chain_enabled, status_
     return payload
 
 
-def mattermost_get_update_payload(channel_id, id, message, status, chain_enabled, status_enabled):
+def mattermost_get_update_payload(channel_id, id, body, header, status_icons, status, chain_enabled, status_enabled):
     payload = {
         'channel': channel_id,
         'id': id,
-        'message': '',
+        'message': f'{status_icons} {header}',
         'props': {
             'attachments': [
                 {
                     'fallback': 'test',
-                    'text': message,
+                    'text': body,
                     'color': status_colors.get(status),
                     'actions': [
                         {
@@ -99,15 +99,15 @@ def mattermost_get_update_payload(channel_id, id, message, status, chain_enabled
     return payload
 
 
-def mattermost_get_create_thread_payload(channel_id, message, status):
+def mattermost_get_create_thread_payload(channel_id, body, header, status_icons, status):
     payload = {
         'channel_id': channel_id,
-        'message': '',
+        'message': f'{status_icons} {header}',
         'props': {
             'attachments': [
                 {
                     'fallback': 'test',
-                    'text': message,
+                    'text': body,
                     'color': status_colors.get(status),
                     'actions': [
                         {

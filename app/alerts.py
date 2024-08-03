@@ -12,9 +12,11 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
     channel = application.channels[channel]
     body_template = application.body_template
     header_template = application.header_template
+    status_icons_template = application.status_icons_template
     body = body_template.form_message(alert_state)
     header = header_template.form_message(alert_state)
-    thread_id = application.create_thread(channel_id=channel['id'], body=body, header=header, status=alert_state['status'])
+    status_icons = status_icons_template.form_message(alert_state)
+    thread_id = application.create_thread(channel['id'], body, header, status_icons, status=alert_state['status'])
     status = alert_state['status']
 
     updated_datetime = datetime.utcnow()

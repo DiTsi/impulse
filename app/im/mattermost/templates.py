@@ -1,9 +1,16 @@
+mattermost_incident_status_icons_template = """
+{% set status = payload.get("status", "Unknown") -%}
+{% set status_emoji = {"firing": ":fire:", "resolved": ":white_check_mark:"}[status] -%}
+{{ status_emoji }}
+"""
+
 mattermost_incident_header_template = """
 {% set commonLabels = payload.get("commonLabels", {}) -%}
 {{ commonLabels.alertname }}
 """
 
 mattermost_incident_body_template = """
+{% set commonLabels = payload.get("commonLabels", {}) -%}
 {% set annotations = payload.get("commonAnnotations", {}) -%}
 {% set groupLabels = payload.get("groupLabels", {}) -%}
 {% set commonLabels = payload.get("commonLabels", {}) -%}

@@ -1,17 +1,15 @@
-slack_incident_header_template = """
+slack_incident_status_icons_template = """
 {% set status = payload.get("status", "Unknown") -%}
+{% set status_emoji = {"firing": ":fire:", "resolved": ":white_check_mark:"}[status] -%}
+{{ status_emoji }}
+"""
+
+slack_incident_header_template = """
 {% set commonLabels = payload.get("commonLabels", {}) -%}
-{% set status_emoji = {
-   "firing": ":fire:",
-   "resolved": ":white_check_mark:",
-   "Unknown": ":warning:"
-} -%}
-{{ status_emoji.get(status, ":warning:") }} {{ commonLabels.alertname }}
+{{ commonLabels.alertname }}
 """
 
 slack_incident_body_template = """
-{% set status = payload.get("status", "Unknown") -%}
-{% set annotations = payload.get("commonAnnotations", {}).copy() -%}
 {% set commonLabels = payload.get("commonLabels", {}) -%}
 {% set annotations = payload.get("commonAnnotations", {}) -%}
 {% set groupLabels = payload.get("groupLabels", {}) -%}

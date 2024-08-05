@@ -1,0 +1,69 @@
+name: to_test
+
+concurrency:
+  group: ${{ github.ref }}
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: /Log in to the Container registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+    - name: Build Docker image
+      run: docker build .
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: 'test'
+        labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    runs-on: ubuntu-20.04
+    environment: test
+    if: startsWith(github.ref, 'refs/heads/feature')
+    steps:
+      - name: stop service, update tagari_test/api
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          port: ${{ secrets.PORT }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~/test/impulse_slack && docker-compose up -d
+#            cp ~/root/docker-compose-test.yml ~/tagari_test/docker-compose.yml
+#            cp -r ~/root/rabbitmq ~/tagari_test/
+#            if [ -d ~/tagari_test/api ]; then rm -rf ~/tagari_test/api; fi
+#            GIT_SSH_COMMAND='ssh -i ~/.ssh/id_rsa_api' git clone --branch ${{ github.ref_name }} git@github.com:mee-tme/api.git ~/tagari_test/api
+#      - name: start service
+#        uses: appleboy/ssh-action@master
+#        with:
+#          host: ${{ secrets.HOST }}
+#          username: ${{ secrets.USER }}
+#          key: ${{ secrets.SSH_KEY }}
+#          script: |
+#            cd ~/tagari_test && docker-compose up -d --build

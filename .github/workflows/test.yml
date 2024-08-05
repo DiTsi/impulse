@@ -28,22 +28,28 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract metadata (tags, labels) for Docker
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+#    - name: Extract metadata (tags, labels) for Docker
+#      id: meta
+#      uses: docker/metadata-action@v5
+#      with:
+#        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
     - name: Build Docker image
       run: docker build .
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: 'test'
-        labels: ${{ steps.meta.outputs.labels }}
+    - name: Tag Docker image
+      run: docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
+
+    - name: Push Docker image
+      run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
+
+#    - name: Build and push Docker image
+#      uses: docker/build-push-action@v5
+#      with:
+#        context: .
+#        push: true
+#        tags: 'test'
+#        labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
     runs-on: ubuntu-20.04

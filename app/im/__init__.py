@@ -130,15 +130,15 @@ class Application:
         if self.type == 'slack':
             admins_ids = [a.slack_id for a in self.admin_users]
             admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins_ids)
-            text = (f'New IMPulse version available: {new_tag}'
-                    f'\n>_see <CHANGELOG.md|https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md>_'
-                    f'\n>_{admins_text}_')
+            text = (f"New IMPulse version available: *{new_tag}*. "
+                    f"See <https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md|CHANGELOG.md>"
+                    f"\n>_{admins_text}_")
             slack_send_message(self.url, channel_id, text)
         else:
             admins_names = [a.username for a in self.admin_users]
             admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_names)
-            text = (f'New IMPulse version available: {new_tag}'
-                    f'\n>_see [CHANGELOG.md](https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md)_'
+            text = (f'New IMPulse version available: *{new_tag}*. '
+                    f'See [CHANGELOG.md](https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md)'
                     f'\n>_{admins_text}_')
             mattermost_send_message(self.url, channel_id, text)
 

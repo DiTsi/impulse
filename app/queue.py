@@ -122,10 +122,11 @@ def queue_handle_check_update(identifier, queue_, application, latest_tag):
     if identifier == 'first':
         latest_tag['version'] = current_tag
     else:
+        current_tag = 'v0.4' #!
         if current_tag != latest_tag['version']:
             application.new_version_notification(application.default_channel_id, current_tag)
             latest_tag['version'] = current_tag
-    queue_.put(datetime.utcnow() + timedelta(days=1), 'check_update', None, identifier=None)
+    queue_.put(datetime.utcnow() + timedelta(seconds=10), 'check_update', None, identifier=None)
 
 
 def queue_handle_step(incidents, uuid_, application, identifier, webhooks):

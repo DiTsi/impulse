@@ -6,7 +6,6 @@ concurrency:
 on:
   push:
     branches:
-    - 'develop'
     - 'main'
     tags:
     - 'v*'

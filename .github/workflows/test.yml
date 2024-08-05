@@ -38,7 +38,7 @@ jobs:
       run: docker build .
 
     - name: Tag Docker image
-      run: docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
+      run: docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
 
     - name: Push Docker image
       run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test

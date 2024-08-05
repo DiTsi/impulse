@@ -34,22 +34,21 @@ jobs:
 #      with:
 #        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-    - name: Build Docker image
-      run: docker build .
+#    - name: Build Docker image
+#      run: docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test .
+#
+#    - name: Tag Docker image
+#      run: docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
+#
+#    - name: Push Docker image
+#      run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
 
-    - name: Tag Docker image
-      run: docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
-
-    - name: Push Docker image
-      run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
-
-#    - name: Build and push Docker image
-#      uses: docker/build-push-action@v5
-#      with:
-#        context: .
-#        push: true
-#        tags: 'test'
-#        labels: ${{ steps.meta.outputs.labels }}
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: 'ghcr.io/ditsi/impulse:test'
 
   deploy:
     runs-on: ubuntu-20.04

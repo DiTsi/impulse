@@ -1,21 +1,17 @@
-name: ci/cd
+name: to_test
 
 concurrency:
   group: ${{ github.ref }}
 
 on:
-  push:
-    branches:
-    - 'main'
-    tags:
-    - 'v*'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push-image:
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,19 +28,25 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract metadata (tags, labels) for Docker
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
-    - name: Build Docker image
-      run: docker build .
-
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: 'ghcr.io/ditsi/impulse:test'
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-20.04
+    environment: test
+    steps:
+      - name: Recreate IMPulse
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          port: ${{ secrets.PORT }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~/test/impulse_slack && docker-compose pull && docker-compose up -d
+            cd ~/test/impulse_mattermost && docker-compose pull && docker-compose up -d

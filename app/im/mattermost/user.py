@@ -47,7 +47,7 @@ def mattermost_generate_users(url, users_dict=None):
             if u.get('username') == username:
                 return u['first_name'], u['last_name']
         logger.warning(f'User \'{username}\' not found in Mattermost')
-        return None
+        return None, None
 
     users = dict()
     if users_dict:

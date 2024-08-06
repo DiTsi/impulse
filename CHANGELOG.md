@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.6.0
+Changes:
+- Added release notes to 'update available' message
+- Fix Mattermost update message functional
+- Fix Mattermost user notification for user without first name
+- Fix Mattermost bug when declared user not exists in Mattermost 
+
 ## v0.5.0
 Changes:
 - Replaced ugly Mattermost button icons

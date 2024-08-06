@@ -28,21 +28,6 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-#    - name: Extract metadata (tags, labels) for Docker
-#      id: meta
-#      uses: docker/metadata-action@v5
-#      with:
-#        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
-#    - name: Build Docker image
-#      run: docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test .
-#
-#    - name: Tag Docker image
-#      run: docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
-#
-#    - name: Push Docker image
-#      run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
-
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
@@ -64,15 +49,4 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd ~/test/impulse_slack && docker-compose up -d
-#            cp ~/root/docker-compose-test.yml ~/impulse_test/docker-compose.yml
-#            cp -r ~/root/rabbitmq ~/impulse_test/
-#            if [ -d ~/impulse_test/api ]; then rm -rf ~/impulse_test/api; fi
-#            GIT_SSH_COMMAND='ssh -i ~/.ssh/id_rsa_api' git clone --branch ${{ github.ref_name }} git@github.com:mee-tme/api.git ~/impulse_test/api
-#      - name: start service
-#        uses: appleboy/ssh-action@master
-#        with:
-#          host: ${{ secrets.HOST }}
-#          username: ${{ secrets.USER }}
-#          key: ${{ secrets.SSH_KEY }}
-#          script: |
-#            cd ~/impulse_test && docker-compose up -d --build
+            cd ~/test/impulse_mattermost && docker-compose up -d

@@ -3,7 +3,7 @@ from time import sleep
 import requests
 
 from app.logging import logger
-from .config import mattermost_headers, mattermost_bold_text, mattermost_mention_text, mattermost_env, \
+from app.im.mattermost.config import mattermost_headers, mattermost_bold_text, mattermost_mention_text, mattermost_env, \
     mattermost_admins_template_string, mattermost_request_delay
 
 

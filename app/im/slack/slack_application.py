@@ -2,9 +2,12 @@ import json
 
 import requests
 
-from app.im import Application, slack_headers, slack_request_delay, slack_get_public_channels, slack_generate_users, \
-    slack_bold_text, slack_env, slack_admins_template_string, slack_send_message, slack_get_create_thread_payload, \
-    slack_get_update_payload
+from app.im.application import Application
+from app.im.slack import slack_get_public_channels, slack_send_message
+from app.im.slack.config import slack_headers, slack_request_delay, slack_bold_text, slack_env, \
+    slack_admins_template_string
+from app.im.slack.threads import slack_get_create_thread_payload, slack_get_update_payload
+from app.im.slack.user import slack_generate_users
 
 
 class SlackApplication(Application):

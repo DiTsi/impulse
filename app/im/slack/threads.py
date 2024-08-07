@@ -1,5 +1,5 @@
-from . import buttons
-from ..colors import status_colors
+from app.im.colors import status_colors
+from app.im.mattermost.config import buttons
 
 
 def slack_get_update_payload(channel_id, ts, body, header, status_icons, status, chain_enabled=True, status_enabled=True):

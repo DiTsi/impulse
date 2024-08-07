@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 
+from app.im.mattermost.config import mattermost_env, mattermost_admins_template_string
+from app.im.slack.config import slack_env, slack_admins_template_string
 from app.logging import logger
-from .im import slack_env, slack_admins_template_string, mattermost_env, mattermost_admins_template_string
-from .update import get_latest_tag
+from app.update import get_latest_tag
 
 
 class Queue:

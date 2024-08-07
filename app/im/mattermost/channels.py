@@ -2,14 +2,14 @@ from time import sleep
 
 import requests
 
+from app.im.mattermost.config import mattermost_headers, mattermost_request_delay
 from app.logging import logger
-from .config import mattermost_headers, mattermost_request_delay
 
 
 def mattermost_get_public_channels(url, team):
     try:
         response = requests.get(
-            f"{url}/api/v4/teams/{team['id']}/channels", #!
+            f"{url}/api/v4/teams/{team['id']}/channels",  # !
             headers=mattermost_headers
         )
         sleep(mattermost_request_delay)

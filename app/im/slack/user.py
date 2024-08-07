@@ -2,9 +2,9 @@ from time import sleep
 
 import requests
 
+from app.im.slack.config import slack_headers, slack_bold_text, slack_mention_text, slack_env, \
+    slack_admins_template_string, slack_request_delay
 from app.logging import logger
-from .config import slack_headers, slack_bold_text, slack_mention_text, slack_env, slack_admins_template_string, \
-    slack_request_delay
 
 
 class User:

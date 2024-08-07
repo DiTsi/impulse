@@ -133,7 +133,8 @@ class Application(ABC):
         r = requests.get(f'https://api.github.com/repos/DiTsi/impulse/releases/tags/{new_tag}')
         release_notes = r.json().get('body')
         new_version_text = self._format_text_bold(f'New IMPulse version available: {new_tag}')
-        changelog_link_text = self._format_text_link("CHANGELOG.md", "https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md")
+        changelog_link_text = self._format_text_link("CHANGELOG.md",
+                                                     "https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md")
         text = (f'{new_version_text} {changelog_link_text}'
                 f'\n\n{release_notes}')
         admins_text = self._get_admins_text()

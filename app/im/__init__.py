@@ -134,7 +134,8 @@ class Application(ABC):
                 )
                 if incident_status == 'unknown':
                     admins_text = self._get_admins_text()
-                    formatted_admins_text = self._format_admins_text(admins_text)
+                    italic_admins_text = self._format_text_italic(admins_text)
+                    formatted_admins_text = self._format_text_citation(italic_admins_text)
                     body += f'\n➤ admins: {formatted_admins_text}'
                 self.post_thread(incident.channel_id, incident.ts, body)
 
@@ -147,11 +148,15 @@ class Application(ABC):
         pass
 
     @abstractmethod
-    def _get_admins_text(self):
+    def _format_text_italic(self, text):
         pass
 
     @abstractmethod
-    def _format_admins_text(self, text):
+    def _format_text_citation(self, text):
+        pass
+
+    @abstractmethod
+    def _get_admins_text(self):
         pass
 
     def new_version_notification(self, channel_id, new_tag):
@@ -163,7 +168,8 @@ class Application(ABC):
         text = (f'{new_version_text} {changelog_link_text}'
                 f'\n\n{release_notes}')
         admins_text = self._get_admins_text()
-        self.send_message(channel_id, text, admins_text)
+        italic_admins_text = self._format_text_italic(admins_text)
+        self.send_message(channel_id, text, italic_admins_text)
 
     @abstractmethod
     def send_message(self, channel_id, text, attachment):
@@ -230,6 +236,12 @@ class SlackApplication(Application):
     def _format_text_bold(self, text):
         return slack_bold_text(text)
 
+    def _format_text_italic(self, text):
+        return f'_{text}_'
+
+    def _format_text_citation(self, text):
+        return f'>{text}'
+
     def _format_text_link(self, text, url):
         return f"(<{url}|{text}>)"
 
@@ -237,16 +249,13 @@ class SlackApplication(Application):
         admins_text = slack_env.from_string(slack_admins_template_string).render(
             users=self.get_notification_destinations()
         )
-        return f'_{admins_text}_'
-
-    def _format_admins_text(self, text):
-        return f'>{text}'
+        return admins_text
 
     def send_message(self, channel_id, text, attachment):
         slack_send_message(self.url, channel_id, text, attachment)
 
-    def _create_thread_payload(self, channel_id, message, status):
-        return slack_get_create_thread_payload(channel_id, message, status)
+    def _create_thread_payload(self, channel_id, body, header, status_icons, status):
+        return slack_get_create_thread_payload(channel_id, body, header, status_icons, status)
 
     def _post_thread_payload(self, channel_id, id, text):
         return {'channel': channel_id, 'thread_ts': id, 'text': text}
@@ -290,6 +299,12 @@ class MattermostApplication(Application):
     def _format_text_bold(self, text):
         return mattermost_bold_text(text)
 
+    def _format_text_italic(self, text):
+        return f'_{text}_'
+
+    def _format_text_citation(self, text):
+        return f'|{text}'
+
     def _format_text_link(self, text, url):
         return f"([{text}]({url}))"
 
@@ -297,16 +312,13 @@ class MattermostApplication(Application):
         admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(
             users=self.get_notification_destinations()
         )
-        return f'_{admins_text}_'
-
-    def _format_admins_text(self, text):
-        return f'|{text}'
+        return admins_text
 
     def send_message(self, channel_id, text, attachment):
         mattermost_send_message(self.url, channel_id, text, attachment)
 
-    def _create_thread_payload(self, channel_id, message, status):
-        return mattermost_get_create_thread_payload(channel_id, message, status)
+    def _create_thread_payload(self, channel_id, body, header, status_icons, status):
+        return mattermost_get_create_thread_payload(channel_id, body, header, status_icons, status)
 
     def _post_thread_payload(self, channel_id, id_, text):
         return {'channel_id': channel_id, 'root_id': id_, 'message': text}

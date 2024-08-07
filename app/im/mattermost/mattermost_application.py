@@ -3,9 +3,13 @@ from time import sleep
 
 import requests
 
-from app.im import Application, mattermost_headers, mattermost_request_delay, get_team, mattermost_get_public_channels, \
-    mattermost_generate_users, mattermost_bold_text, mattermost_env, mattermost_admins_template_string, \
-    mattermost_send_message, mattermost_get_create_thread_payload, mattermost_get_update_payload
+from app.im.application import Application
+from app.im.mattermost import mattermost_get_public_channels, mattermost_send_message
+from app.im.mattermost.config import mattermost_headers, mattermost_request_delay, mattermost_bold_text, mattermost_env, \
+    mattermost_admins_template_string
+from app.im.mattermost.teams import get_team
+from app.im.mattermost.threads import mattermost_get_create_thread_payload, mattermost_get_update_payload
+from app.im.mattermost.user import mattermost_generate_users
 
 
 class MattermostApplication(Application):

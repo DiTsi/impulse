@@ -1,4 +1,4 @@
-from .threads import mattermost_get_button_update_payload
+from app.im.mattermost.threads import mattermost_get_button_update_payload
 
 
 def mattermost_buttons_handler(app, payload, incidents, queue_):
@@ -18,5 +18,6 @@ def mattermost_buttons_handler(app, payload, incidents, queue_):
         else:
             incident_.status_enabled = True
     original_message = app.message_template.form_message(incident_.last_state)
-    payload = mattermost_get_button_update_payload(original_message, incident_.status, incident_.chain_enabled, incident_.status_enabled)
+    payload = mattermost_get_button_update_payload(original_message, incident_.status, incident_.chain_enabled,
+                                                   incident_.status_enabled)
     return payload, 200

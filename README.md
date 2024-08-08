@@ -5,4 +5,4 @@ Incident management program that creates Incidents in instant messaging app base
 ![](https://impulse-docs.readthedocs.io/latest/media/slack_tile.png)
 
 ## Documentation
-See here: [https://impulse-docs.readthedocs.io/en/latest/](https://impulse-docs.readthedocs.io/latest/)
+See here: [https://impulse-docs.readthedocs.io/latest/](https://impulse-docs.readthedocs.io/latest/)

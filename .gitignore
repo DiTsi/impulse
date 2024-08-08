@@ -1,6 +1,7 @@
 .vscode
 .idea
 .env
+.venv
 
 impulse.yml
 __pycache__

@@ -17,6 +17,6 @@ def mattermost_buttons_handler(app, payload, incidents, queue_):
             incident_.status_enabled = False
         else:
             incident_.status_enabled = True
-    original_message = app.message_template.form_message(incident_.last_state)
+    original_message = app.body_template.form_message(incident_.last_state)
     payload = mattermost_get_button_update_payload(original_message, incident_.status, incident_.chain_enabled, incident_.status_enabled)
     return payload, 200

@@ -63,10 +63,13 @@ class Application:
             except KeyError:
                 logger.warning(f'No public channel \'{ch}\' in {type.capitalize()}')
 
-        templates = app_config.get('templates', dict())
-        body_template_dict = templates.get('body')
-        header_template_dict = templates.get('header')
-        status_icons_template_dict = templates.get('status_icons')
+        templates = app_config.get('template_files', dict())
+        body_template_file = templates.get('body', f'./templates/{type}_body.j2')
+        header_template_file = templates.get('header', f'./templates/{type}_header.j2')
+        status_icons_template_file = templates.get('status_icons', f'./templates/{type}_status_icons.j2')
+        body_template_dict = open(body_template_file).read()
+        header_template_dict = open(header_template_file).read()
+        status_icons_template_dict = open(status_icons_template_file).read()
         body_template, header_template, status_icons_template = generate_template(
             type, body_template_dict, header_template_dict, status_icons_template_dict
         )

@@ -141,20 +141,25 @@ class Application:
                 self.post_thread(incident.channel_id, incident.ts, body)
 
     def new_version_notification(self, channel_id, new_tag):
+        r = requests.get(f'https://api.github.com/repos/DiTsi/impulse/releases/tags/{new_tag}')
+        release_notes = r.json().get('body')
+
         if self.type == 'slack':
             admins_ids = [a.slack_id for a in self.admin_users]
             admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins_ids)
-            text = (f'New IMPulse version available: {new_tag}'
-                    f'\n>_see <CHANGELOG.md|https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md>_'
-                    f'\n>_{admins_text}_')
-            slack_send_message(self.url, channel_id, text)
+            text = (
+                f"*New IMPulse version available: {new_tag}* (<https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md|CHANGELOG.md>)"
+                f"\n\n{release_notes}"
+            )
+            slack_send_message(self.url, channel_id, text, f"_{admins_text}_")
         else:
             admins_names = [a.username for a in self.admin_users]
             admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_names)
-            text = (f'New IMPulse version available: {new_tag}'
-                    f'\n>_see [CHANGELOG.md](https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md)_'
-                    f'\n>_{admins_text}_')
-            mattermost_send_message(self.url, channel_id, text)
+            text = (
+                f'**New IMPulse version available: {new_tag}** ([CHANGELOG.md](https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md))'
+                f'\n\n{release_notes}'
+            )
+            mattermost_send_message(self.url, channel_id, text, f"_{admins_text}_")
 
     def create_thread(self, channel_id, body, header, status_icons, status):
         if self.type == 'slack':

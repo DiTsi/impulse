@@ -19,7 +19,7 @@ class User:
     def mention_text(self, admins_usernames):
         fullname = self.first_name + ' ' + self.last_name
         text = f'notify user {mattermost_bold_text(fullname)}'
-        if self.first_name:
+        if self.username:
             text += f': {mattermost_mention_text(self.username)}'
         else:
             admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_usernames)
@@ -47,7 +47,7 @@ def mattermost_generate_users(url, users_dict=None):
             if u.get('username') == username:
                 return u['first_name'], u['last_name']
         logger.warning(f'User \'{username}\' not found in Mattermost')
-        return None
+        return None, None
 
     users = dict()
     if users_dict:

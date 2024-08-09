@@ -92,14 +92,14 @@ class Application:
             admins_ids = [a.slack_id for a in self.admin_users]
             if notify_type == 'user':
                 unit = self.users[identifier]
-                text = (f"{self.header_template.form_message(incident.last_state)}\n"
-                        f"{unit.mention_text(admins_ids)}")
+                text = (f'>{self.header_template.form_message(incident.last_state)}\n'
+                        f'{unit.mention_text(admins_ids)}')
                 response_code = self.post_thread(incident.channel_id, incident.ts, text)
                 return response_code
             else:
                 unit = self.user_groups[identifier]
-                text = (f"{self.header_template.form_message(incident.last_state)}\n"
-                        f"{unit.mention_text(self.type, admins_ids)}")
+                text = (f'|{self.header_template.form_message(incident.last_state)}\n'
+                        f'{unit.mention_text(self.type, admins_ids)}')
                 response_code = self.post_thread(incident.channel_id, incident.ts, text)
                 return response_code
         else:
@@ -127,9 +127,15 @@ class Application:
             # post to thread
             if status_enabled and incident_status != 'closed':
                 if self.type == 'slack':
-                    body = f'status updated: {slack_bold_text(incident_status)}'
+                    body = (
+                        f'>{self.header_template.form_message(incident.last_state)}\n'
+                        f'➤ status: {slack_bold_text(incident_status)}'
+                    )
                 else:
-                    body = f'status updated: {mattermost_bold_text(incident_status)}'
+                    body = (
+                        f'|{self.header_template.form_message(incident.last_state)}\n'
+                        f'➤ status: {mattermost_bold_text(incident_status)}'
+                    )
                 if incident_status == 'unknown':
                     if self.type == 'slack':
                         admins_ids = [a.slack_id for a in self.admin_users]
@@ -205,6 +211,7 @@ class Application:
                 headers=slack_headers,
                 data=json.dumps(payload)
             )
+            pass
         else:
             payload = mattermost_get_update_payload(channel_id, id, body, header, status_icons, status, chain_enabled, status_enabled)
             requests.put(
@@ -212,4 +219,5 @@ class Application:
                 headers=mattermost_headers,
                 data=json.dumps(payload)
             )
+            pass
             sleep(mattermost_request_delay)

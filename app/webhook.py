@@ -24,8 +24,10 @@ class Webhook:
         if self.user is not None:
             auth = HTTPBasicAuth(self.user, self.password)
             response = requests.post(url=self.url, data=self.data, auth=auth)
+            pass
         else:
             response = requests.post(url=self.url, data=self.data)
+            pass
         return response.status_code
 
     def render(self, custom_string):

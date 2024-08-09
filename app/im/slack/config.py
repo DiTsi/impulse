@@ -32,6 +32,10 @@ buttons = {
 slack_request_delay = 1.5  # seconds
 
 
+def slack_normal_text(value):
+    return f"{value}"
+
+
 def slack_bold_text(value):
     return f"*{value}*"
 
@@ -43,5 +47,7 @@ def slack_mention_text(value):
 slack_env = Environment()
 slack_env.filters['slack_bold_text'] = slack_bold_text
 slack_env.filters['slack_mention_text'] = slack_mention_text
+slack_users_template_string = "{{ users | map('slack_bold_text') | join(', ') }}"
+slack_admins_template_string = "{{ users | map('slack_mention_text') | join(', ') }}"
 slack_users_template_string = "{{ users | map('slack_bold_text') | join(', ') }}"
 slack_admins_template_string = "{{ users | map('slack_mention_text') | join(', ') }}"

@@ -1,9 +1,6 @@
 url: http://localhost:5000 ### IMPulse url where Mattermost will send button events
 
 
-# check_updates: True ### Check updates every 24 hours
-
-
 # timeouts:
 #   firing: 6h ### After this time Incident status will change from "firing" to "unknown" if no new alerts appear
 #   unknown: 6h ### After this time Incident status will change from "resolved" to "closed" if no new alerts appear

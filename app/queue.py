@@ -150,12 +150,12 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
                 text += f'{r_code}'
                 if r_code >= 400:
                     admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins)
-                    text += f'➤ {admins_text}'
+                    text += f'➤ admins: {admins_text}'
             else:
                 text += f'{r_code}'
                 if r_code >= 400:
                     admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins)
-                    text += f'➤ {admins_text}'
+                    text += f'➤ admins: {admins_text}'
                 _ = application.post_thread(incident_.channel_id, incident_.ts, text)
                 incident_.chain_update(uuid_, identifier, done=True, result=None)
             if r_code >= 400:

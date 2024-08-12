@@ -150,13 +150,13 @@ class Application:
                     if self.type == 'slack':
                         admins_ids = [a.slack_id for a in self.admin_users]
                         admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins_ids)
-                        body += f'\n➤ {admins_text}'
+                        body += f'\n➤ admins: {admins_text}'
                     else:
                         admins_names = [a.username for a in self.admin_users]
                         admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(
                             users=admins_names
                         )
-                        body += f'\n➤ {admins_text}'
+                        body += f'\n➤ admins: {admins_text}'
                 self.post_thread(incident.channel_id, incident.ts, body)
 
     def new_version_notification(self, channel_id, new_tag):
@@ -221,7 +221,6 @@ class Application:
                 headers=slack_headers,
                 data=json.dumps(payload)
             )
-            pass
         else:
             payload = mattermost_get_update_payload(channel_id, id, body, header, status_icons, status, chain_enabled, status_enabled)
             requests.put(
@@ -229,5 +228,4 @@ class Application:
                 headers=mattermost_headers,
                 data=json.dumps(payload)
             )
-            pass
             sleep(mattermost_request_delay)

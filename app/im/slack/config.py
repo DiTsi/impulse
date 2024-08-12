@@ -49,5 +49,3 @@ slack_env.filters['slack_bold_text'] = slack_bold_text
 slack_env.filters['slack_mention_text'] = slack_mention_text
 slack_users_template_string = "{{ users | map('slack_bold_text') | join(', ') }}"
 slack_admins_template_string = "{{ users | map('slack_mention_text') | join(', ') }}"
-slack_users_template_string = "{{ users | map('slack_bold_text') | join(', ') }}"
-slack_admins_template_string = "{{ users | map('slack_mention_text') | join(', ') }}"

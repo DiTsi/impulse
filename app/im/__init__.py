@@ -27,17 +27,17 @@ from .slack.user import slack_generate_users
 
 class Application:
     def __init__(self, app_config, channels_list, default_channel):
-        type = app_config['type']
-        if type == 'slack':
+        type_ = app_config['type']
+        if type_ == 'slack':
             url = 'https://slack.com'
-            logger.debug(f'Get {type.capitalize()} channels using API')
+            logger.debug(f'Get {type_.capitalize()} channels using API')
             public_channels = slack_get_public_channels(url)
             team_name = None
         else:
             url = app_config['url']
             team_name = app_config['team']
             team = get_team(url, team_name)
-            logger.debug(f'get {type.capitalize()} channels using API')
+            logger.debug(f'get {type_.capitalize()} channels using API')
             public_channels = mattermost_get_public_channels(url, team)
 
         logger.debug(f'Get channels IDs for channels in route')
@@ -46,11 +46,11 @@ class Application:
             try:
                 channels[ch] = public_channels[ch]
             except KeyError:
-                logger.warning(f'No public channel \'{ch}\' in {type.capitalize()}')
+                logger.warning(f'No public channel \'{ch}\' in {type_.capitalize()}')
 
         chains = generate_chains(app_config.get('chains', dict()))
-        logger.debug(f'Get {type.capitalize()} users using API')
-        if type == 'slack':
+        logger.debug(f'Get {type_.capitalize()} users using API')
+        if type_ == 'slack':
             users = slack_generate_users(url, app_config.get('users'))
         else:
             users = mattermost_generate_users(url, app_config.get('users'))
@@ -61,17 +61,17 @@ class Application:
             try:
                 channels[ch] = public_channels[ch]
             except KeyError:
-                logger.warning(f'No public channel \'{ch}\' in {type.capitalize()}')
+                logger.warning(f'No public channel \'{ch}\' in {type_.capitalize()}')
 
         templates = app_config.get('template_files', dict())
-        body_template_file = templates.get('body', f'./templates/{type}_body.j2')
-        header_template_file = templates.get('header', f'./templates/{type}_header.j2')
-        status_icons_template_file = templates.get('status_icons', f'./templates/{type}_status_icons.j2')
+        body_template_file = templates.get('body', f'./templates/{type_}_body.j2')
+        header_template_file = templates.get('header', f'./templates/{type_}_header.j2')
+        status_icons_template_file = templates.get('status_icons', f'./templates/{type_}_status_icons.j2')
         body_template_dict = open(body_template_file).read()
         header_template_dict = open(header_template_file).read()
         status_icons_template_dict = open(status_icons_template_file).read()
         body_template, header_template, status_icons_template = generate_template(
-            type, body_template_dict, header_template_dict, status_icons_template_dict
+            type_, body_template_dict, header_template_dict, status_icons_template_dict
         )
         admins_list = app_config['admin_users']
         self.default_channel_id = channels[default_channel]['id']
@@ -84,7 +84,7 @@ class Application:
         self.header_template = header_template
         self.status_icons_template = status_icons_template
         self.team = team_name
-        self.type = type
+        self.type = type_
         self.url = url
 
     def notify(self, incident, notify_type, identifier):
@@ -92,26 +92,36 @@ class Application:
             admins_ids = [a.slack_id for a in self.admin_users]
             if notify_type == 'user':
                 unit = self.users[identifier]
-                text = (f'>{self.header_template.form_message(incident.last_state)}\n'
-                        f'{unit.mention_text(admins_ids)}')
+                text = (
+                    f'>{self.header_template.form_message(incident.last_state)}\n'
+                    f'{unit.mention_text(admins_ids)}'
+                )
                 response_code = self.post_thread(incident.channel_id, incident.ts, text)
                 return response_code
             else:
                 unit = self.user_groups[identifier]
-                text = (f'|{self.header_template.form_message(incident.last_state)}\n'
-                        f'{unit.mention_text(self.type, admins_ids)}')
+                text = (
+                    f'{self.header_template.form_message(incident.last_state)}\n'
+                    f'{unit.mention_text(self.type, admins_ids)}'
+                )
                 response_code = self.post_thread(incident.channel_id, incident.ts, text)
                 return response_code
         else:
             admins_names = [a.username for a in self.admin_users]
             if notify_type == 'user':
                 unit = self.users[identifier]
-                text = self.body_template + unit.mention_text(admins_names)
+                text = (
+                    f'{self.header_template.form_message(incident.last_state)}\n'
+                    f'{unit.mention_text(admins_names)}'
+                )
                 response_code = self.post_thread(incident.channel_id, incident.ts, text)
                 return response_code
             else:
                 unit = self.user_groups[identifier]
-                text = self.body_template + unit.mention_text(self.type, admins_names)
+                text = (
+                    f'{self.header_template.form_message(incident.last_state)}\n'
+                    f'{unit.mention_text(self.type, admins_names)}'
+                )
                 response_code = self.post_thread(incident.channel_id, incident.ts, text)
                 return response_code
 
@@ -133,20 +143,20 @@ class Application:
                     )
                 else:
                     body = (
-                        f'|{self.header_template.form_message(incident.last_state)}\n'
+                        f'{self.header_template.form_message(incident.last_state)}\n'
                         f'➤ status: {mattermost_bold_text(incident_status)}'
                     )
                 if incident_status == 'unknown':
                     if self.type == 'slack':
                         admins_ids = [a.slack_id for a in self.admin_users]
                         admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins_ids)
-                        body += f'\n>_{admins_text}_'
+                        body += f'\n➤ {admins_text}'
                     else:
                         admins_names = [a.username for a in self.admin_users]
                         admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(
                             users=admins_names
                         )
-                        body += f'\n|_{admins_text}_'
+                        body += f'\n➤ {admins_text}'
                 self.post_thread(incident.channel_id, incident.ts, body)
 
     def new_version_notification(self, channel_id, new_tag):

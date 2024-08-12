@@ -53,7 +53,7 @@ def mattermost_get_button_update_payload(message, status, chain_enabled, status_
 
 def mattermost_get_update_payload(channel_id, id, body, header, status_icons, status, chain_enabled, status_enabled):
     payload = {
-        'channel': channel_id,
+        'channel_id': channel_id,
         'id': id,
         'message': f'{status_icons} {header}',
         'props': {

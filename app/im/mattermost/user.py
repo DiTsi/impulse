@@ -18,13 +18,13 @@ class User:
 
     def mention_text(self, admins_usernames):
         fullname = self.first_name + ' ' + self.last_name
-        text = f'notify user {mattermost_bold_text(fullname)}'
+        text = f'➤ user {mattermost_bold_text(fullname)}: '
         if self.username:
-            text += f': {mattermost_mention_text(self.username)}'
+            text += f'{mattermost_mention_text(self.username)}'
         else:
             admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_usernames)
-            text += (f'\n>_not found in Mattermost_'
-                     f'\n>_{admins_text}_')
+            text += (f'**not found in Mattermost**\n'
+                     f'➤ admins: {admins_text}')
         return text
 
 

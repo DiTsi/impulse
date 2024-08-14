@@ -3,6 +3,7 @@ from datetime import datetime
 from app.logging import logger
 from config import timeouts
 from .incident import Incident, actual_version
+from .incident.incident import IncidentConfig
 from .time import unix_sleep_to_timedelta
 
 
@@ -18,10 +19,23 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
     updated_datetime = datetime.utcnow()
     status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(timeouts.get(status))
     chain = application.chains.get(chain_name)
+    config = IncidentConfig(
+        application_type=application.type,
+        application_url=application.url,
+        application_team=application.team
+    )
     incident_ = Incident(
-        alert_state, status, thread_id, channel['id'], [], True,
-        True, updated_datetime, status_update_datetime, application.type, application.url, application.team,
-        actual_version
+        last_state=alert_state,
+        status=status,
+        ts=thread_id,
+        channel_id=channel['id'],
+        config=config,
+        chain=[],
+        chain_enabled=True,
+        status_enabled=True,
+        updated=updated_datetime,
+        status_update_datetime=status_update_datetime,
+        version=actual_version
     )
     uuid_ = incidents.add(incident_)
 

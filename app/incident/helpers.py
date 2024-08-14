@@ -4,6 +4,7 @@ import uuid
 
 from app import logger
 from app.incident import Incidents, Incident, actual_version, update_incident
+from app.incident.incident import IncidentConfig
 from config import incidents_path
 
 
@@ -22,8 +23,15 @@ def create_or_load_incidents(application_type, application_url, application_team
     incidents = Incidents([])
     for path, directories, files in os.walk(incidents_path):
         for filename in files:
+            config = IncidentConfig(
+                application_type=application_type,
+                application_url=application_url,
+                application_team=application_team
+            )
+
             incident_ = Incident.load(
-                f'{incidents_path}/{filename}', application_type, application_url, application_team
+                dump_file=f'{incidents_path}/{filename}',
+                config=config
             )
             if incident_.version != actual_version:
                 update_incident(incident_)

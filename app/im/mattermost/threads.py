@@ -3,15 +3,15 @@ from .config import buttons
 from ..colors import status_colors
 
 
-def mattermost_get_button_update_payload(message, status, chain_enabled, status_enabled):
+def mattermost_get_button_update_payload(body, header, status_icons, status, chain_enabled, status_enabled):
     payload = {
         'update': {
-            'message': '', #!
+            'message': f'{status_icons} {header}',
             'props': {
                 'attachments': [
                     {
                         'fallback': 'test',
-                        'text': message, #!
+                        'text': body,
                         'color': status_colors.get(status),
                         'actions': [
                             {

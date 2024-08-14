@@ -53,9 +53,9 @@ application: ### instant messaging app configuration
   #     users:
   #     - Dmitry
   # template_files:
-  #   status_icons: ./templates/slack_status_icons.j2
-  #   header: ./templates/slack_header.j2
-  #   body: ./templates/slack_body.j2
+  #   status_icons: ./templates/mattermost_status_icons.j2
+  #   header: ./templates/mattermost_header.j2
+  #   body: ./templates/mattermost_body.j2
 
 
 # webhooks: ### custom object to create POST requests from 'application.chains'

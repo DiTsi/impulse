@@ -63,7 +63,6 @@ class Route(MainRoute):
         if len(self.routes) != 0:
             for r in self.routes:
                 channels = r.get_channels(channels)
-                pass
         return channels
 
 

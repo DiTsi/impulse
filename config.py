@@ -22,7 +22,7 @@ with open(f'{config_path}/impulse.yml', 'r') as file:
             'unknown': settings.get('timeouts', {}).get('unknown', '6h'),
             'resolved': settings.get('timeouts', {}).get('resolved', '12h'),
         }
-        check_updates = settings.get('check_updates', True)
+        check_updates = True
         impulse_url = settings.get('url', None)
     except yaml.YAMLError as e:
         print(f"Error reading YAML file: {e}")

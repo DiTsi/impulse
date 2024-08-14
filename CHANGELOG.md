@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0.0
+Update instructions:
+- Remove `check_updates` option from `impulse.yml`
+- Remove `application.message_template` option. Instead you can use `application.template_files`
+- Rename `webhook.user` to `webhook.auth`
+
+Changes:
+- New incident message structure. Contains `status_icons`, `header` and `body`
+- Added template files for incident message components
+- Changed `impulse.yml` format
+- Fix Mattermost update payload
+- New notifications format
+- Mattermost buttons state fix
+- Update Mattermost button payload
+- Fix user_group notifications
+
 ## v0.6.0
 Changes:
 - Added release notes to 'update available' message

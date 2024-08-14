@@ -1,5 +1,6 @@
-from app.im.mattermost.config import mattermost_env, mattermost_admins_template_string, mattermost_users_template_string
-from app.im.slack.config import slack_env
+from app.im.mattermost.config import mattermost_env, mattermost_admins_template_string, \
+    mattermost_users_template_string, mattermost_bold_text, mattermost_mention_text
+from app.im.slack.config import slack_env, slack_bold_text, slack_mention_text
 from app.im.slack.config import slack_users_template_string, slack_admins_template_string
 from app.logging import logger
 
@@ -24,15 +25,25 @@ class UserGroup:
         self.users = users
 
     def mention_text(self, type_, admins_ids):
-        text = f'notify user_group *{self.name}*: '
+        if type_ == 'slack':
+            text = f'➤ user_group {slack_bold_text(self.name)}: '
+        else:
+            text = f'➤ user_group {mattermost_bold_text(self.name)}: '
         not_found_users = list()
         not_found = False
         for user in self.users:
-            if user.id:
-                text += f'<@{user.id}> '
+            if type_ == 'slack':
+                if user.slack_id:
+                    text += f'{slack_mention_text(user.slack_id)} '
+                else:
+                    not_found = True
+                    not_found_users.append(user.username)
             else:
-                not_found = True
-                not_found_users.append(user.username)
+                if user.username:
+                    text += f'{mattermost_mention_text(user.username)} '
+                else:
+                    not_found = True
+                    not_found_users.append(user.username)
         if not_found:
             if type_ == 'slack':
                 not_found_users_text = slack_env.from_string(slack_users_template_string).render(users=not_found_users)

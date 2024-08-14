@@ -6,23 +6,17 @@ from requests.auth import HTTPBasicAuth
 
 
 class Webhook:
-    def __init__(self, url, data=None, user=None):
+    def __init__(self, url, data=None, auth=None):
         self.url = self.render(url)
         for k in data.keys():
             data[k] = self.render(data[k])
         self.data = data
-
-        if user is None:
-            self.user = None
-            self.password = None
-        else:
-            u, p = user.split(':')
-            self.user = self.render(u)
-            self.password = self.render(p)
+        self.auth = auth
 
     def push(self):
-        if self.user is not None:
-            auth = HTTPBasicAuth(self.user, self.password)
+        if self.auth is not None:
+            u, p = self.auth.split(':')
+            auth = HTTPBasicAuth(self.render(u), self.render(p))
             response = requests.post(url=self.url, data=self.data, auth=auth)
         else:
             response = requests.post(url=self.url, data=self.data)
@@ -40,6 +34,6 @@ def generate_webhooks(webhooks_dict=None):
             webhook_dict = webhooks_dict[name]
             url = webhook_dict.get('url')
             data = webhook_dict.get('data')
-            user = webhook_dict.get('user')
-            webhooks[name] = Webhook(url, data, user)
+            auth = webhook_dict.get('auth')
+            webhooks[name] = Webhook(url, data, auth)
     return webhooks

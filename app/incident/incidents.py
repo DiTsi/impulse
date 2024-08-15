@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Tuple, Dict
+from typing import Dict
 
 from app import logger
 from app.incident import Incident
@@ -9,19 +9,17 @@ from config import incidents_path
 
 class Incidents:
     def __init__(self, incidents_list):
-        self.by_uuid: Dict[str, Incident] = {gen_uuid(i.last_state.get('groupLabels')): i for i in incidents_list}
+        self.by_uuid: Dict[str, Incident] = {i.uuid: i for i in incidents_list}
 
-    def get(self, alert: Dict) -> Tuple[Optional[Incident], str]:
+    def get(self, alert: Dict) -> Incident | None:
         uuid_ = gen_uuid(alert.get('groupLabels'))
-        return self.by_uuid.get(uuid_), uuid_
+        return self.by_uuid.get(uuid_)
 
-    def get_by_ts(self, ts: str) -> Optional[Tuple[Incident, str]]:
-        return next(((v, k) for k, v in self.by_uuid.items() if v.ts == ts), None)
+    def get_by_ts(self, ts: str) -> Incident | None:
+        return next((incident for incident in self.by_uuid.values() if incident.ts == ts), None)
 
-    def add(self, incident: Incident) -> str:
-        uuid_ = gen_uuid(incident.last_state.get('groupLabels'))
-        self.by_uuid[uuid_] = incident
-        return uuid_
+    def add(self, incident: Incident):
+        self.by_uuid[incident.uuid] = incident
 
     def del_by_uuid(self, uuid_: str):
         incident = self.by_uuid.pop(uuid_, None)

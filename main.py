@@ -3,8 +3,9 @@ import json
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask, redirect, url_for
 
-from app import (alert_handle, queue_handle, recreate_queue, Incidents, create_or_load_incidents, generate_webhooks,
+from app import (alert_handle, queue_handle, recreate_queue, create_or_load_incidents, generate_webhooks,
                  generate_route, buttons_handler)
+from app.incident import Incidents
 from app.im.helpers import get_application
 from config import settings, check_updates
 

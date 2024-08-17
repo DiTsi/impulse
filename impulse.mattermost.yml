@@ -37,7 +37,7 @@ application: ### instant messaging app configuration
   type: mattermost ### 'slack' or 'mattermost'
   admin_users: ### IMPulse administrators will be notified when any warnings
   - Dmitry
-  users: ### Mattermost users with their actual Full Names
+  users: ### Mattermost's users with their actual Full Names
     Dmitry: {username: "ditsi"}
   # chains: ### chains used to describe notifications order
   #   firing_team:

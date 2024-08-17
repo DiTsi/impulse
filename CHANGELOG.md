@@ -1,9 +1,13 @@
 # Changelog
 
+## v1.0.1
+Changes:
+- Increase limit from 100 to 1000 for Slack API `api/conversations.list`
+
 ## v1.0.0
 Update instructions:
 - Remove `check_updates` option from `impulse.yml`
-- Remove `application.message_template` option. Instead you can use `application.template_files`
+- Remove `application.message_template` option. Instead, you can use `application.template_files`
 - Rename `webhook.user` to `webhook.auth`
 
 Changes:

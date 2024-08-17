@@ -4,10 +4,10 @@ from time import sleep
 
 import requests
 
-from app import logger
 from app.im.chain import generate_chains
 from app.im.groups import generate_user_groups
 from app.im.message_template import generate_message_template
+from app.logging import logger
 
 
 class Application(ABC):

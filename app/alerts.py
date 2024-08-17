@@ -1,10 +1,9 @@
 from datetime import datetime
 
+from app.incident.incident import IncidentConfig, Incident
 from app.logging import logger
-from config import timeouts
-from .incident import Incident, actual_version
-from .incident.incident import IncidentConfig
-from .time import unix_sleep_to_timedelta
+from app.time import unix_sleep_to_timedelta
+from config import timeouts, INCIDENT_ACTUAL_VERSION
 
 
 def alert_handle_create(application, route, incidents, queue_, alert_state):
@@ -39,7 +38,7 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
         status_enabled=True,
         updated=updated_datetime,
         status_update_datetime=status_update_datetime,
-        version=actual_version
+        version=INCIDENT_ACTUAL_VERSION
     )
     incidents.add(incident_)
 

@@ -2,9 +2,9 @@ from time import sleep
 
 import requests
 
-from app.logging import logger
 from app.im.mattermost.config import mattermost_headers, mattermost_bold_text, mattermost_mention_text, mattermost_env, \
     mattermost_admins_template_string, mattermost_request_delay
+from app.logging import logger
 
 
 class User:
@@ -61,5 +61,3 @@ def mattermost_generate_users(url, users_dict=None):
     else:
         logger.debug(f'no users defined in impulse.yml')
         return users
-
-

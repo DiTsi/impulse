@@ -1,10 +1,10 @@
 import os
 from typing import Dict
 
-from app import logger
-from app.incident import Incident
 from app.incident.helpers import gen_uuid
-from config import incidents_path
+from app.incident.incident import Incident, IncidentConfig
+from app.logging import logger
+from config import incidents_path, INCIDENT_ACTUAL_VERSION
 
 
 class Incidents:
@@ -34,3 +34,40 @@ class Incidents:
 
     def serialize(self) -> Dict[str, Dict]:
         return {uuid_: incident.serialize() for uuid_, incident in self.by_uuid.items()}
+
+    @classmethod
+    def create_or_load(cls, application_type, application_url, application_team):
+        # Ensure the incidents directory exists or create it
+        if not os.path.exists(incidents_path):
+            logger.debug('Creating incidents directory')
+            os.makedirs(incidents_path)
+            logger.debug('Created incidents directory')
+        else:
+            logger.debug('Loading incidents from disk')
+
+        incidents = cls([])
+
+        # Walk through the directory and load each incident
+        for path, directories, files in os.walk(incidents_path):
+            for filename in files:
+                config = IncidentConfig(
+                    application_type=application_type,
+                    application_url=application_url,
+                    application_team=application_team
+                )
+
+                incident_ = Incident.load(
+                    dump_file=f'{incidents_path}/{filename}',
+                    config=config
+                )
+                if incident_.version != INCIDENT_ACTUAL_VERSION:
+                    cls.update_incident(incident_)
+                incidents.add(incident_)
+
+        return incidents
+
+    @staticmethod
+    def update_incident(incident: Incident):
+        logger.debug(f'Updating incident with uuid {incident.uuid} to version {INCIDENT_ACTUAL_VERSION}')
+        incident.version = INCIDENT_ACTUAL_VERSION
+        incident.dump()

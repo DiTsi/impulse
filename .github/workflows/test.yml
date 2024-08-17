@@ -12,7 +12,7 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     permissions:
       contents: read
       packages: write
@@ -48,5 +48,5 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd ~/test/impulse_slack && docker-compose pull && docker-compose up -d
-            cd ~/test/impulse_mattermost && docker-compose pull && docker-compose up -d
+            cd ~/opt/impulse/test/slack && docker-compose pull && docker-compose up -d
+            cd ~/opt/impulse/test/mattermost && docker-compose pull && docker-compose up -d

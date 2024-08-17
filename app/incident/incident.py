@@ -6,7 +6,7 @@ import yaml
 
 from app.incident.helpers import gen_uuid
 from app.time import unix_sleep_to_timedelta
-from config import incidents_path, timeouts
+from config import incidents_path, timeouts, INCIDENT_ACTUAL_VERSION
 
 
 @dataclass
@@ -28,7 +28,7 @@ class Incident:
     status_enabled: bool = False
     status_update_datetime: Optional[datetime] = None
     updated: datetime = datetime.now(UTC)
-    version: str = '1.0'
+    version: str = INCIDENT_ACTUAL_VERSION
     uuid: str = field(init=False)
     link: str = field(init=False)
 
@@ -97,7 +97,7 @@ class Incident:
             status_enabled=content.get('status_enabled', False),
             status_update_datetime=content.get('status_update_datetime'),
             updated=content.get('updated'),
-            version=content.get('version', '1.0')
+            version=content.get('version', INCIDENT_ACTUAL_VERSION)
         )
         return incident
 
@@ -135,7 +135,7 @@ class Incident:
         now = datetime.now(UTC)
         self.updated = now
         self.status_update_datetime = (
-            now + unix_sleep_to_timedelta(timeouts.get(status))) if status != 'closed' else None
+                now + unix_sleep_to_timedelta(timeouts.get(status))) if status != 'closed' else None
         if self.status != status:
             self.set_status(status)
             self.dump()

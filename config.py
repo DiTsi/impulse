@@ -13,6 +13,7 @@ config_path = os.getenv('CONFIG_PATH', default='./')
 log_level = os.getenv('LOG_LEVEL', default='INFO')
 
 incidents_path = data_path + '/incidents'
+INCIDENT_ACTUAL_VERSION = 'v0.4'
 
 with open(f'{config_path}/impulse.yml', 'r') as file:
     try:

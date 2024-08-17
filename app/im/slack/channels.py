@@ -10,6 +10,7 @@ def slack_get_public_channels(url):
     try:
         response = requests.get(
             f'{url}/api/conversations.list',
+            params={'limit': 1000},
             headers=slack_headers
         )
         sleep(slack_request_delay)

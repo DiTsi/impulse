@@ -48,5 +48,5 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd ~/opt/impulse/test/slack && docker-compose pull && docker-compose up -d
-            cd ~/opt/impulse/test/mattermost && docker-compose pull && docker-compose up -d
+            cd /opt/impulse/test/slack && docker-compose pull && docker-compose up -d
+            cd /opt/impulse/test/mattermost && docker-compose pull && docker-compose up -d

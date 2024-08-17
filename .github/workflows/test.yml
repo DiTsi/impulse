@@ -41,12 +41,17 @@ jobs:
     environment: test
     steps:
       - name: Recreate IMPulse
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
           port: ${{ secrets.PORT }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /opt/impulse/test/slack && docker-compose pull && docker-compose up -d
-            cd /opt/impulse/test/mattermost && docker-compose pull && docker-compose up -d
+            cd /opt/impulse/test/slack
+            docker-compose pull
+            docker-compose up -d
+            
+            cd /opt/impulse/test/mattermost
+            docker-compose pull
+            docker-compose up -d

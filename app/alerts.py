@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 
 from app.incident.incident import IncidentConfig, Incident
 from app.logging import logger
@@ -19,8 +19,8 @@ def alert_handle_create(application, route, incidents, queue_, alert_state):
     thread_id = application.create_thread(channel['id'], body, header, status_icons, status=alert_state['status'])
     status = alert_state['status']
 
-    updated_datetime = datetime.utcnow()
-    status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(timeouts.get(status))
+    updated_datetime = datetime.now(UTC)
+    status_update_datetime = datetime.now(UTC) + unix_sleep_to_timedelta(timeouts.get(status))
     chain = application.chains.get(chain_name)
     config = IncidentConfig(
         application_type=application.type,
@@ -64,9 +64,9 @@ def alert_handle_update(uuid_, incident_, queue_, alert_state, application):
 
 def alert_handle(application, route_, incidents, queue_, alert_state):
     incident_ = incidents.get(alert=alert_state)
-    logger.debug(f'New Alertmanager event for incident {incident_.uuid}')
-    logger.debug(f'{alert_state}')
     if incident_ is None:
         alert_handle_create(application, route_, incidents, queue_, alert_state)
     else:
+        logger.debug(f'New Alertmanager event for incident {incident_.uuid}')
+        logger.debug(f'{alert_state}')
         alert_handle_update(incident_.uuid, incident_, queue_, alert_state, application)

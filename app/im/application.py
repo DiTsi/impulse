@@ -6,7 +6,7 @@ import requests
 
 from app.im.chain import generate_chains
 from app.im.groups import generate_user_groups
-from app.im.template import generate_template, JinjaTemplate
+from app.im.template import JinjaTemplate
 from app.logging import logger
 
 
@@ -180,7 +180,7 @@ class Application(ABC):
     def _post_thread_payload(self, channel_id, id, text):
         pass
 
-    def update_thread(self, channel_id, id_, body, header, status_icons, status, chain_enabled=True,
+    def update_thread(self, channel_id, id_, status, body, header, status_icons, chain_enabled=True,
                       status_enabled=True):
         payload = self._update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
                                               status_enabled)

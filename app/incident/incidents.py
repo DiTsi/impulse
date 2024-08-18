@@ -33,7 +33,7 @@ class Incidents:
             logger.warning(f'Incident with uuid: {uuid_} not found in the collection.')
 
     def serialize(self) -> Dict[str, Dict]:
-        return {uuid_: incident.serialize() for uuid_, incident in self.by_uuid.items()}
+        return {str(uuid_): incident.serialize() for uuid_, incident in self.by_uuid.items()}
 
     @classmethod
     def create_or_load(cls, application_type, application_url, application_team):

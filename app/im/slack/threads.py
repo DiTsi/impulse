@@ -2,7 +2,8 @@ from app.im.colors import status_colors
 from app.im.mattermost.config import buttons
 
 
-def slack_get_update_payload(channel_id, ts, body, header, status_icons, status, chain_enabled=True, status_enabled=True):
+def slack_get_update_payload(channel_id, ts, body, header, status_icons, status, chain_enabled=True,
+                             status_enabled=True):
     payload = {
         'channel': channel_id,
         'text': f'{status_icons} {header}',
@@ -19,15 +20,19 @@ def slack_get_update_payload(channel_id, ts, body, header, status_icons, status,
                 "actions": [
                     {
                         "name": 'chain',
-                        "text": buttons['chain']['enabled']['text'] if chain_enabled else buttons['chain']['disabled']['text'],
+                        "text": buttons['chain']['enabled']['text'] if chain_enabled else buttons['chain']['disabled'][
+                            'text'],
                         "type": 'button',
-                        "style": buttons['chain']['enabled']['style'] if chain_enabled else buttons['chain']['disabled']['style']
+                        "style": buttons['chain']['enabled']['style'] if chain_enabled else
+                        buttons['chain']['disabled']['style']
                     },
                     {
                         "name": 'status',
-                        "text": buttons['status']['enabled']['text'] if status_enabled else buttons['status']['disabled']['text'],
+                        "text": buttons['status']['enabled']['text'] if status_enabled else
+                        buttons['status']['disabled']['text'],
                         "type": 'button',
-                        "style": buttons['status']['enabled']['style'] if status_enabled else buttons['status']['disabled']['style'],
+                        "style": buttons['status']['enabled']['style'] if status_enabled else
+                        buttons['status']['disabled']['style'],
                     }
                 ],
             },
@@ -69,7 +74,6 @@ def slack_get_create_thread_payload(channel_id, body, header, status_icons, stat
         ]
     }
     return payload
-
 
 # def get_blocked_thread_payload(channel_id, message, status): #! didn't work with "return modified_message, 200"
 #     payload = {

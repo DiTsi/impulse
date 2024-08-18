@@ -6,7 +6,7 @@ import requests
 
 from app.im.chain import generate_chains
 from app.im.groups import generate_user_groups
-from app.im.message_template import generate_message_template
+from app.im.template import generate_template, JinjaTemplate
 from app.logging import logger
 
 
@@ -20,13 +20,14 @@ class Application(ABC):
         self.chains = generate_chains(app_config.get('chains', dict()))
         self.users = self.generate_users(app_config.get('users'))
         self.user_groups = generate_user_groups(app_config.get('user_groups'), self.users)
-        self.message_template = generate_message_template(type, app_config.get('message_template'))
         self.admin_users = [self.users[admin] for admin in app_config['admin_users']]
+        self.templates = app_config.get('template_files', dict())
+        self.body_template, self.header_template, self.status_icons_template = self.generate_template()
 
         # Application-specific parameters
         self.post_message_url = None
         self.headers = None
-        self.post_delay = None
+        self.request_delay = None
         self.thread_id_key = None
 
     def get_channels(self, channels_list):
@@ -66,16 +67,33 @@ class Application(ABC):
     def _generate_users(self, users_dict):
         pass
 
+    def generate_template(self):
+        def read_template(file_key, default_path):
+            file_path = self.templates.get(file_key, default_path)
+            return JinjaTemplate(open(file_path).read())
+
+        body_template = read_template('body', f'./templates/{self.type}_body.j2')
+        header_template = read_template('header', f'./templates/{self.type}_header.j2')
+        status_icons_template = read_template('status_icons', f'./templates/{self.type}_status_icons.j2')
+
+        return body_template, header_template, status_icons_template
+
     def notify(self, incident, notify_type, identifier):
         destinations = self.get_notification_destinations()
         if notify_type == 'user':
             unit = self.users[identifier]
-            text = unit.mention_text(destinations)
+            text = (
+                f'>{self.header_template.form_message(incident.last_state)}\n'
+                f'{unit.mention_text(destinations)}'
+            )
             response_code = self.post_thread(incident.channel_id, incident.ts, text)
             return response_code
         else:
             unit = self.user_groups[identifier]
-            text = unit.mention_text(self.type, destinations)
+            text = (
+                f'{self.header_template.form_message(incident.last_state)}\n'
+                f'{unit.mention_text(self.type, destinations)}'
+            )
             response_code = self.post_thread(incident.channel_id, incident.ts, text)
             return response_code
 
@@ -84,19 +102,26 @@ class Application(ABC):
         pass
 
     def update(self, uuid_, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
-        text = self.message_template.form_message(alert_state)
-        self.update_thread(incident.channel_id, incident.ts, incident_status, text, chain_enabled, status_enabled)
+        body = self.body_template.form_message(alert_state)
+        header = self.header_template.form_message(alert_state)
+        status_icons = self.status_icons_template.form_message(alert_state)
+        self.update_thread(
+            incident.channel_id, incident.ts, incident_status, body, header, status_icons, chain_enabled, status_enabled
+        )
         if updated_status:
             logger.info(f'Incident \'{uuid_}\' updated with new status \'{incident_status}\'')
             # post to thread
             if status_enabled and incident_status != 'closed':
-                text = f'status updated: {self._format_text_bold(incident_status)}'
+                body = (
+                    f'>{self.header_template.form_message(incident.last_state)}\n'
+                    f'➤ status: {self._format_text_bold(incident_status)}'
+                )
                 if incident_status == 'unknown':
                     admins_text = self._get_admins_text()
                     italic_admins_text = self._format_text_italic(admins_text)
                     formatted_admins_text = self._format_text_citation(italic_admins_text)
-                    text += f'\n{formatted_admins_text}'
-                self.post_thread(incident.channel_id, incident.ts, text)
+                    body += f'\n➤ admins: {formatted_admins_text}'
+                self.post_thread(incident.channel_id, incident.ts, body)
 
     @abstractmethod
     def _format_text_bold(self, text):
@@ -134,33 +159,36 @@ class Application(ABC):
     def send_message(self, channel_id, text, attachment):
         pass
 
-    def create_thread(self, channel_id, message, status):
-        payload = self._create_thread_payload(channel_id, message, status)
+    def create_thread(self, channel_id, body, header, status_icons, status):
+        payload = self._create_thread_payload(channel_id, body, header, status_icons, status)
         response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
-        sleep(self.post_delay)
+        sleep(self.request_delay)
         response_json = response.json()
         return response_json[self.thread_id_key]
 
     @abstractmethod
-    def _create_thread_payload(self, channel_id, message, status):
+    def _create_thread_payload(self, channel_id, body, header, status_icons, status):
         pass
 
     def post_thread(self, channel_id, id_, text):
         payload = self._post_thread_payload(channel_id, id_, text)
         response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
-        sleep(self.post_delay)
+        sleep(self.request_delay)
         return response.status_code
 
     @abstractmethod
     def _post_thread_payload(self, channel_id, id, text):
         pass
 
-    def update_thread(self, channel_id, id_, status, message, chain_enabled=True, status_enabled=True):
-        payload = self._update_thread_payload(channel_id, id_, message, status, chain_enabled, status_enabled)
+    def update_thread(self, channel_id, id_, body, header, status_icons, status, chain_enabled=True,
+                      status_enabled=True):
+        payload = self._update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
+                                              status_enabled)
         self._update_thread(id_, payload)
 
     @abstractmethod
-    def _update_thread_payload(self, channel_id, id_, message, status, chain_enabled, status_enabled):
+    def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
+                               status_enabled):
         pass
 
     @abstractmethod

@@ -22,7 +22,8 @@ class Webhook:
             response = requests.post(url=self.url, data=self.data)
         return response.status_code
 
-    def render(self, custom_string):
+    @staticmethod
+    def render(custom_string):
         tmplt = Template(custom_string)
         return tmplt.render(env=os.environ)
 

@@ -5,8 +5,8 @@ import requests
 
 from app.im.application import Application
 from app.im.mattermost import mattermost_get_public_channels, mattermost_send_message
-from app.im.mattermost.config import mattermost_headers, mattermost_request_delay, mattermost_bold_text, mattermost_env, \
-    mattermost_admins_template_string
+from app.im.mattermost.config import (mattermost_headers, mattermost_request_delay, mattermost_bold_text,
+                                      mattermost_env, mattermost_admins_template_string)
 from app.im.mattermost.teams import get_team
 from app.im.mattermost.threads import mattermost_get_create_thread_payload, mattermost_get_update_payload
 from app.im.mattermost.user import mattermost_generate_users
@@ -58,14 +58,16 @@ class MattermostApplication(Application):
     def send_message(self, channel_id, text, attachment):
         mattermost_send_message(self.url, channel_id, text, attachment)
 
-    def _create_thread_payload(self, channel_id, message, status):
-        return mattermost_get_create_thread_payload(channel_id, message, status)
+    def _create_thread_payload(self, channel_id, body, header, status_icons, status):
+        return mattermost_get_create_thread_payload(channel_id, body, header, status_icons, status)
 
     def _post_thread_payload(self, channel_id, id_, text):
         return {'channel_id': channel_id, 'root_id': id_, 'message': text}
 
-    def _update_thread_payload(self, channel_id, id_, message, status, chain_enabled, status_enabled):
-        return mattermost_get_update_payload(channel_id, id_, message, status, chain_enabled, status_enabled)
+    def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
+                               status_enabled):
+        return mattermost_get_update_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
+                                             status_enabled)
 
     def _update_thread(self, id_, payload):
         requests.put(

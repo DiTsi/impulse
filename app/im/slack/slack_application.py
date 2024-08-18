@@ -55,14 +55,16 @@ class SlackApplication(Application):
     def send_message(self, channel_id, text, attachment):
         slack_send_message(self.url, channel_id, text, attachment)
 
-    def _create_thread_payload(self, channel_id, message, status):
-        return slack_get_create_thread_payload(channel_id, message, status)
+    def _create_thread_payload(self, channel_id, body, header, status_icons, status):
+        return slack_get_create_thread_payload(channel_id, body, header, status_icons, status)
 
     def _post_thread_payload(self, channel_id, id, text):
         return {'channel': channel_id, 'thread_ts': id, 'text': text}
 
-    def _update_thread_payload(self, channel_id, id_, message, status, chain_enabled, status_enabled):
-        return slack_get_update_payload(channel_id, id_, message, status, chain_enabled, status_enabled)
+    def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
+                               status_enabled):
+        return slack_get_update_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
+                                        status_enabled)
 
     def _update_thread(self, id_, payload):
         requests.post(

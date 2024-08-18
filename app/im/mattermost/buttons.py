@@ -24,6 +24,8 @@ def mattermost_buttons_handler(app, payload, incidents, queue_):
     payload = mattermost_get_button_update_payload(
         message,
         header,
-        status_icons, incident_.status, incident_.chain_enabled,
-                                                   incident_.status_enabled)
+        status_icons,
+        incident_.status,
+        incident_.chain_enabled,
+        incident_.status_enabled)
     return payload, 200

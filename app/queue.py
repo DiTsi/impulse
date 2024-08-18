@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
 
 from app.im.mattermost.config import mattermost_env, mattermost_admins_template_string, mattermost_bold_text
 from app.im.slack.config import slack_env, slack_admins_template_string, slack_bold_text
@@ -15,7 +15,7 @@ class Queue:
         self.lock = False
 
         if check_update:
-            check_update_datetime = datetime.now(UTC)
+            check_update_datetime = datetime.utcnow()
             self.put(check_update_datetime, 'check_update', None, 'first')
 
     def put(self, datetime_, type_, incident_uuid, identifier=None):
@@ -73,7 +73,7 @@ class Queue:
 
     def handle(self):
         if not self.lock:
-            if self.dates[0] < datetime.now(UTC):
+            if self.dates[0] < datetime.utcnow():
                 type_ = self.types[0]
                 incident_uuid = self.incident_uuids[0]
                 identifier = self.identifiers[0]
@@ -126,7 +126,7 @@ def queue_handle_check_update(identifier, queue_, application, latest_tag):
         if current_tag != latest_tag['version']:
             application.new_version_notification(application.default_channel_id, current_tag)
             latest_tag['version'] = current_tag
-    queue_.put(datetime.now(UTC) + timedelta(days=1), 'check_update', None, identifier=None)
+    queue_.put(datetime.utcnow() + timedelta(days=1), 'check_update', None, identifier=None)
 
 
 def queue_handle_step(incidents, uuid_, application, identifier, webhooks):

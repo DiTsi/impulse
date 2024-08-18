@@ -1,4 +1,4 @@
-from app.im.mattermost.config import buttons
+from app.im.slack.config import buttons
 from app.logging import logger
 from config import slack_verification_token
 

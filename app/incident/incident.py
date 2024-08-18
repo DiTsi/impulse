@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime, UTC
+from datetime import datetime
 from typing import List, Dict, Optional
 
 import yaml
@@ -27,7 +27,7 @@ class Incident:
     chain_enabled: bool = False
     status_enabled: bool = False
     status_update_datetime: Optional[datetime] = None
-    updated: datetime = datetime.now(UTC)
+    updated: datetime = datetime.utcnow()
     version: str = INCIDENT_ACTUAL_VERSION
     uuid: str = field(init=False)
     link: str = field(init=False)
@@ -51,7 +51,7 @@ class Incident:
         if not chain or not chain.steps:
             return
 
-        dt = datetime.now(UTC)
+        dt = datetime.utcnow()
         for index, step in enumerate(chain.steps):
             type_, value = next(iter(step.items()))
             if type_ == 'wait':
@@ -132,7 +132,7 @@ class Incident:
         }
 
     def update_status(self, status: str) -> bool:
-        now = datetime.now(UTC)
+        now = datetime.utcnow()
         self.updated = now
         self.status_update_datetime = (
                 now + unix_sleep_to_timedelta(timeouts.get(status))) if status != 'closed' else None

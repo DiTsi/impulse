@@ -27,7 +27,7 @@ class Application(ABC):
         # Application-specific parameters
         self.post_message_url = None
         self.headers = None
-        self.request_delay = None
+        self.post_delay = None
         self.thread_id_key = None
 
     def get_channels(self, channels_list):
@@ -162,7 +162,7 @@ class Application(ABC):
     def create_thread(self, channel_id, body, header, status_icons, status):
         payload = self._create_thread_payload(channel_id, body, header, status_icons, status)
         response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
-        sleep(self.request_delay)
+        sleep(self.post_delay)
         response_json = response.json()
         return response_json[self.thread_id_key]
 
@@ -173,7 +173,7 @@ class Application(ABC):
     def post_thread(self, channel_id, id_, text):
         payload = self._post_thread_payload(channel_id, id_, text)
         response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
-        sleep(self.request_delay)
+        sleep(self.post_delay)
         return response.status_code
 
     @abstractmethod

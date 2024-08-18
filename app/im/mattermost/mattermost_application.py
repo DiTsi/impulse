@@ -44,7 +44,7 @@ class MattermostApplication(Application):
         return f'_{text}_'
 
     def _format_text_citation(self, text):
-        return f'|{text}'
+        return f'_{text}_'
 
     def _format_text_link(self, text, url):
         return f"([{text}]({url}))"

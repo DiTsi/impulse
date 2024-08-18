@@ -83,7 +83,7 @@ class Application(ABC):
         if notify_type == 'user':
             unit = self.users[identifier]
             text = (
-                f'>{self.header_template.form_message(incident.last_state)}\n'
+                f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
                 f'{unit.mention_text(destinations)}'
             )
             response_code = self.post_thread(incident.channel_id, incident.ts, text)
@@ -91,7 +91,7 @@ class Application(ABC):
         else:
             unit = self.user_groups[identifier]
             text = (
-                f'{self.header_template.form_message(incident.last_state)}\n'
+                f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
                 f'{unit.mention_text(self.type, destinations)}'
             )
             response_code = self.post_thread(incident.channel_id, incident.ts, text)
@@ -113,7 +113,7 @@ class Application(ABC):
             # post to thread
             if status_enabled and incident_status != 'closed':
                 body = (
-                    f'>{self.header_template.form_message(incident.last_state)}\n'
+                    f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
                     f'➤ status: {self._format_text_bold(incident_status)}'
                 )
                 if incident_status == 'unknown':

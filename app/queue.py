@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
+from app.im.mattermost.config import mattermost_env, mattermost_admins_template_string, mattermost_bold_text
+from app.im.slack.config import slack_env, slack_admins_template_string, slack_bold_text
 from app.logging import logger
-from .im import slack_env, slack_admins_template_string, mattermost_env, mattermost_admins_template_string, \
-    slack_bold_text, mattermost_bold_text
-from .update import get_latest_tag
+from app.update import get_latest_tag
 
 
 class Queue:
@@ -145,7 +145,7 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
             text = f'➤ webhook **{mattermost_bold_text(webhook_name)}**: '
         if webhook:
             r_code = webhook.push()
-            incident_.chain_update(uuid_, identifier, done=True, result=r_code)
+            incident_.chain_update(identifier, done=True, result=r_code)
             if application.type == 'slack':
                 text += f'{r_code}'
                 if r_code >= 400:
@@ -171,10 +171,10 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
                          f'➤ {admins_text}')
             _ = application.post_thread(incident_.channel_id, incident_.ts, text)
             logger.warning(f'Webhook \'{webhook_name}\' not found in impulse.yml')
-            incident_.chain_update(uuid_, identifier, done=True, result=None)
+            incident_.chain_update(identifier, done=True, result=None)
     else:
         r_code = application.notify(incident_, step['type'], step['identifier'])
-        incident_.chain_update(uuid_, identifier, done=True, result=r_code)
+        incident_.chain_update(identifier, done=True, result=r_code)
 
 
 def queue_handle_status_update(incidents, uuid, queue_, application):

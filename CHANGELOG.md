@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.2
+Changes:
+- Increase limit from 60 to 1000 for Mattermost API `/api/v4/teams/<team_id>/channels`
+
 ## v1.0.1
 Changes:
 - Increase limit from 100 to 1000 for Slack API `api/conversations.list`

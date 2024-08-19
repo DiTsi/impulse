@@ -10,6 +10,7 @@ def mattermost_get_public_channels(url, team):
     try:
         response = requests.get(
             f"{url}/api/v4/teams/{team['id']}/channels",
+            params={'per_page': 1000},
             headers=mattermost_headers
         )
         sleep(mattermost_request_delay)

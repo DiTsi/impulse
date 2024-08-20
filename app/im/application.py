@@ -8,6 +8,7 @@ from app.im.chain import generate_chains
 from app.im.groups import generate_user_groups
 from app.im.template import JinjaTemplate
 from app.logging import logger
+from app.text_manager import TextManager
 
 
 class Application(ABC):
@@ -108,14 +109,15 @@ class Application(ABC):
             logger.info(f'Incident \'{uuid_}\' updated with new status \'{incident_status}\'')
             # post to thread
             if status_enabled and incident_status != 'closed':
-                body = (
-                    f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
-                    f'➤ status: {self.format_text_bold(incident_status)}'
-                )
+                body = TextManager.get_template('status_update', self._format_text_citation(
+                    self.header_template.form_message(incident.last_state)),
+                                                self._format_text_bold(incident_status))
                 if incident_status == 'unknown':
                     admins_text = self.get_admins_text()
                     italic_admins_text = self._format_text_italic(admins_text)
-                    body += f'\n➤ admins: {italic_admins_text}'
+                    body = TextManager.get_template('unknown_status', self._format_text_citation(
+                        self.header_template.form_message(incident.last_state)),
+                                                    self._format_text_bold(incident_status), italic_admins_text)
                 self._post_thread(incident.channel_id, incident.ts, body)
 
     def new_version_notification(self, channel_id, new_tag):
@@ -124,8 +126,7 @@ class Application(ABC):
         new_version_text = self.format_text_bold(f'New IMPulse version available: {new_tag}')
         changelog_link_text = self._format_text_link("CHANGELOG.md",
                                                      "https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md")
-        text = (f'{new_version_text} {changelog_link_text}'
-                f'\n\n{release_notes}')
+        text = TextManager.get_template('new_version', new_version_text, changelog_link_text, release_notes)
         admins_text = self.get_admins_text()
         italic_admins_text = self._format_text_italic(admins_text)
         self.send_message(channel_id, text, italic_admins_text)

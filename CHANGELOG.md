@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.3
+Changes:
+- Increase pagination limits for Mattermost API requests
+
 ## v1.0.2
 Changes:
 - Increase limit from 60 to 1000 for Mattermost API `/api/v4/teams/<team_id>/channels`

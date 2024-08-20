@@ -31,7 +31,7 @@ class User:
 def mattermost_get_users(url):
     response = requests.get(
         f'{url}/api/v4/users',
-        params={'limit': 200, 'active': True},
+        params={'per_page': 200, 'active': True},
         headers=mattermost_headers
     )
     sleep(mattermost_request_delay)

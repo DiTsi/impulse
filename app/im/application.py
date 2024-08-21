@@ -114,17 +114,17 @@ class Application(ABC):
             if status_enabled and incident_status != 'closed':
                 body = (
                     f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
-                    f'➤ status: {self._format_text_bold(incident_status)}'
+                    f'➤ status: {self.format_text_bold(incident_status)}'
                 )
                 if incident_status == 'unknown':
-                    admins_text = self._get_admins_text()
+                    admins_text = self.get_admins_text()
                     italic_admins_text = self._format_text_italic(admins_text)
                     formatted_admins_text = self._format_text_citation(italic_admins_text)
                     body += f'\n➤ admins: {formatted_admins_text}'
                 self.post_thread(incident.channel_id, incident.ts, body)
 
     @abstractmethod
-    def _format_text_bold(self, text):
+    def format_text_bold(self, text):
         pass
 
     @abstractmethod
@@ -140,18 +140,18 @@ class Application(ABC):
         pass
 
     @abstractmethod
-    def _get_admins_text(self):
+    def get_admins_text(self):
         pass
 
     def new_version_notification(self, channel_id, new_tag):
         r = requests.get(f'https://api.github.com/repos/DiTsi/impulse/releases/tags/{new_tag}')
         release_notes = r.json().get('body')
-        new_version_text = self._format_text_bold(f'New IMPulse version available: {new_tag}')
+        new_version_text = self.format_text_bold(f'New IMPulse version available: {new_tag}')
         changelog_link_text = self._format_text_link("CHANGELOG.md",
                                                      "https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md")
         text = (f'{new_version_text} {changelog_link_text}'
                 f'\n\n{release_notes}')
-        admins_text = self._get_admins_text()
+        admins_text = self.get_admins_text()
         italic_admins_text = self._format_text_italic(admins_text)
         self.send_message(channel_id, text, italic_admins_text)
 

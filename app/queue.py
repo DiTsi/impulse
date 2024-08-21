@@ -2,8 +2,6 @@ from collections import namedtuple
 from datetime import datetime, timedelta
 from threading import Lock
 
-from app.im.mattermost.config import mattermost_env, mattermost_admins_template_string, mattermost_bold_text
-from app.im.slack.config import slack_env, slack_admins_template_string, slack_bold_text
 from app.logging import logger
 from app.update import get_latest_tag
 
@@ -78,28 +76,30 @@ class Queue:
             ]
 
 
-def queue_handle(incidents, queue_, application, webhooks, latest_tag):
-    if len(queue_.dates) == 0:
+def queue_handle(incidents, queue, application, webhooks, latest_tag):
+    if not queue.items:
         return
-    type_, uuid_, identifier = queue_.handle()
-    if type_ is not None:
-        if type_ == 'update_status':
-            queue_handle_status_update(incidents, uuid_, queue_, application)
-        elif type_ == 'chain_step':
-            queue_handle_step(incidents, uuid_, application, identifier, webhooks)
-        elif type_ == 'check_update':
-            queue_handle_check_update(identifier, queue_, application, latest_tag)
+
+    type_, uuid_, identifier = queue.handle()
+    if type_ is None:
+        return
+
+    if type_ == 'update_status':
+        queue_handle_status_update(incidents, uuid_, queue, application)
+    elif type_ == 'chain_step':
+        queue_handle_step(incidents, uuid_, application, identifier, webhooks)
+    elif type_ == 'check_update':
+        queue_handle_check_update(identifier, queue, application, latest_tag)
 
 
-def queue_handle_check_update(identifier, queue_, application, latest_tag):
+def queue_handle_check_update(identifier, queue, application, latest_tag):
     current_tag = get_latest_tag()
-    if identifier == 'first':
+    if identifier != 'first' and current_tag != latest_tag['version']:
+        application.new_version_notification(application.default_channel_id, current_tag)
         latest_tag['version'] = current_tag
-    else:
-        if current_tag != latest_tag['version']:
-            application.new_version_notification(application.default_channel_id, current_tag)
-            latest_tag['version'] = current_tag
-    queue_.put(datetime.utcnow() + timedelta(days=1), 'check_update', None, identifier=None)
+
+    # Always schedule the next check update
+    queue.put(datetime.utcnow() + timedelta(days=1), 'check_update', None, identifier=None)
 
 
 def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
@@ -108,40 +108,21 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
     if step['type'] == 'webhook':
         webhook_name = step['identifier']
         webhook = webhooks.get(webhook_name)
-        if application.type == 'slack':
-            admins = [a.slack_id for a in application.admin_users]
-        else:
-            admins = [a.username for a in application.admin_users]
-        if application.type == 'slack':
-            text = f'➤ webhook *{slack_bold_text(webhook_name)}*: '
-        else:
-            text = f'➤ webhook **{mattermost_bold_text(webhook_name)}**: '
+        text = f'➤ webhook {application.format_text_bold(webhook_name)}: '
         if webhook:
             r_code = webhook.push()
             incident_.chain_update(identifier, done=True, result=r_code)
-            if application.type == 'slack':
-                text += f'{r_code}'
-                if r_code >= 400:
-                    admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins)
-                    text += f'➤ admins: {admins_text}'
-            else:
-                text += f'{r_code}'
-                if r_code >= 400:
-                    admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins)
-                    text += f'➤ admins: {admins_text}'
-                _ = application.post_thread(incident_.channel_id, incident_.ts, text)
-                incident_.chain_update(uuid_, identifier, done=True, result=None)
+            text += f'{r_code}'
+            admins_text = application.get_admins_text()
+            text += f'\n➤ admins: {admins_text}'
+            _ = application.post_thread(incident_.channel_id, incident_.ts, text)
+            incident_.chain_update(identifier, done=True, result=None)
             if r_code >= 400:
                 logger.warning(f'Webhook \'{webhook_name}\' response code is {r_code}')
         else:
-            if application.type == 'slack':
-                admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins)
-                text += (f'{slack_bold_text("not found in `impulse.yml`")}\n'
-                         f'➤ {admins_text}')
-            else:
-                admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins)
-                text += (f'{mattermost_bold_text("not found in `impulse.yml`")}\n'
-                         f'➤ {admins_text}')
+            admins_text = application.get_admins_text()
+            text += (f'{application.format_text_bold("not found in `impulse.yml`")}\n'
+                     f'➤ {admins_text}')
             _ = application.post_thread(incident_.channel_id, incident_.ts, text)
             logger.warning(f'Webhook \'{webhook_name}\' not found in impulse.yml')
             incident_.chain_update(identifier, done=True, result=None)
@@ -150,28 +131,33 @@ def queue_handle_step(incidents, uuid_, application, identifier, webhooks):
         incident_.chain_update(identifier, done=True, result=r_code)
 
 
-def queue_handle_status_update(incidents, uuid, queue_, application):
+def queue_handle_status_update(incidents, uuid, queue, application):
     incident_ = incidents.by_uuid[uuid]
     status_updated = incident_.set_next_status()
+
     application.update(
-        uuid, incident_, incident_.status, incident_.last_state, status_updated,
-        incident_.chain_enabled, incident_.status_enabled
+        uuid, incident_, incident_.status, incident_.last_state,
+        status_updated, incident_.chain_enabled, incident_.status_enabled
     )
+
     if incident_.status == 'closed':
         incidents.del_by_uuid(uuid)
-        queue_.delete_by_id(uuid)
+        queue.delete_by_id(uuid)
     elif incident_.status == 'unknown':
-        queue_.update(uuid, incident_.status_update_datetime, incident_.status)
+        queue.update(uuid, incident_.status_update_datetime, incident_.status)
 
 
 def recreate_queue(incidents, check_update):
-    logger.debug(f'Creating Queue')
-    queue_ = Queue(check_update)
-    if bool(incidents.by_uuid):
-        for uuid_, i in incidents.by_uuid.items():
-            queue_.append(uuid_, i.get_chain())
-            queue_.put(i.status_update_datetime, 'update_status', uuid_)
-        logger.debug(f'Queue restored')
+    logger.debug('Creating Queue')
+    queue = Queue(check_update)
+
+    for uuid_, incident in incidents.by_uuid.items():
+        queue.append(uuid_, incident.get_chain())
+        queue.put(incident.status_update_datetime, 'update_status', uuid_)
+
+    if queue.items:
+        logger.debug('Queue restored with incidents')
     else:
-        logger.debug(f'Empty Queue created')
-    return queue_
+        logger.debug('Empty Queue created')
+
+    return queue

@@ -1,108 +1,81 @@
+from collections import namedtuple
 from datetime import datetime, timedelta
+from threading import Lock
 
 from app.im.mattermost.config import mattermost_env, mattermost_admins_template_string, mattermost_bold_text
 from app.im.slack.config import slack_env, slack_admins_template_string, slack_bold_text
 from app.logging import logger
 from app.update import get_latest_tag
 
+QueueItem = namedtuple('QueueItem', ['datetime', 'type', 'incident_uuid', 'identifier'])
+
 
 class Queue:
     def __init__(self, check_update):
-        self.dates = []
-        self.types = []
-        self.incident_uuids = []
-        self.identifiers = []
-        self.lock = False
+        self.items = []
+        self.lock = Lock()
 
         if check_update:
             check_update_datetime = datetime.utcnow()
             self.put(check_update_datetime, 'check_update', None, 'first')
 
-    def put(self, datetime_, type_, incident_uuid, identifier=None):
-        for i in range(len(self.dates)):
-            if datetime_ < self.dates[i]:
-                self.dates.insert(i, datetime_)
-                self.types.insert(i, type_)
-                self.incident_uuids.insert(i, incident_uuid)
-                self.identifiers.insert(i, identifier)
-                return
-        self.dates.append(datetime_)
-        self.types.append(type_)
-        self.incident_uuids.append(incident_uuid)
-        self.identifiers.append(identifier)
+    def put(self, datetime_, type_, incident_uuid=None, identifier=None):
+        new_item = QueueItem(datetime_, type_, incident_uuid, identifier)
+        with self.lock:
+            for i, item in enumerate(self.items):
+                if datetime_ < item.datetime:
+                    self.items.insert(i, new_item)
+                    return
+            self.items.append(new_item)
 
     def delete(self, index):
-        self.lock = True
-        del self.dates[index]
-        del self.types[index]
-        del self.incident_uuids[index]
-        del self.identifiers[index]
-        self.lock = False
+        with self.lock:
+            del self.items[index]
 
     def delete_by_id(self, uuid, delete_steps=True, delete_status=True):
-        self.lock = True
-        ids_to_delete = list()
-        for i in range(len(self.dates)):
-            if self.incident_uuids[i] == uuid:
-                if delete_steps and self.types[i] == 'chain_step':
-                    ids_to_delete.append(i)
-                if delete_status and self.types[i] == 'update_status':
-                    ids_to_delete.append(i)
-        for i in ids_to_delete:
-            self.delete(i)
-        self.lock = False
+        with self.lock:
+            self.items = [
+                item for item in self.items
+                if not (item.incident_uuid == uuid and (
+                        (delete_steps and item.type == 'chain_step') or
+                        (delete_status and item.type == 'update_status')
+                ))
+            ]
 
     def append(self, uuid, incident_chain):
-        self.lock = True
-        for i in range(len(incident_chain)):
-            s = incident_chain[i]
-            if not s['done']:
-                self.put(s['datetime'], 'chain_step', uuid, i)
-        self.lock = False
+        with self.lock:
+            for i, s in enumerate(incident_chain):
+                if not s['done']:
+                    self.put(s['datetime'], 'chain_step', uuid, i)
 
     def update(self, uuid_, incident_status_change, status):
-        self.lock = True
-        if uuid_ not in self.incident_uuids:
-            self.put(incident_status_change, 'update_status', uuid_)
-        else:
-            self.delete_by_id(uuid_, delete_steps=False, delete_status=True)
-            self.put(incident_status_change, 'update_status', uuid_)
-        if status == 'resolved':
-            self.delete_by_id(uuid_, delete_steps=True, delete_status=False)
-        self.lock = False
+        with self.lock:
+            if uuid_ not in [item.incident_uuid for item in self.items]:
+                self.put(incident_status_change, 'update_status', uuid_)
+            else:
+                self.delete_by_id(uuid_, delete_steps=False, delete_status=True)
+                self.put(incident_status_change, 'update_status', uuid_)
+
+            if status == 'resolved':
+                self.delete_by_id(uuid_, delete_steps=True, delete_status=False)
 
     def handle(self):
-        if not self.lock:
-            if self.dates[0] < datetime.utcnow():
-                type_ = self.types[0]
-                incident_uuid = self.incident_uuids[0]
-                identifier = self.identifiers[0]
-                self.delete(0)
-                return type_, incident_uuid, identifier
+        with self.lock:
+            if self.items and self.items[0].datetime < datetime.utcnow():
+                item = self.items.pop(0)
+                return item.type, item.incident_uuid, item.identifier
         return None, None, None
 
     def serialize(self):
-        result = list()
-        for i in range(len(self.dates)):
-            if self.types[i] == 'update_status':
-                result.append({
-                    'datetime': self.dates[i],
-                    'type': self.types[i],
-                    'incident_uuid': self.incident_uuids[i]
-                })
-            elif self.types[i] == 'chain_step':
-                result.append({
-                    'datetime': self.dates[i],
-                    'type': self.types[i],
-                    'incident_uuid': self.incident_uuids[i],
-                    'step_number': self.identifiers[i]
-                })
-            elif self.types[i] == 'check_update':
-                result.append({
-                    'datetime': self.dates[i],
-                    'type': self.types[i]
-                })
-        return result
+        with self.lock:
+            return [
+                {
+                    'datetime': item.datetime,
+                    'type': item.type,
+                    'incident_uuid': item.incident_uuid,
+                    'identifier': item.identifier
+                } for item in self.items
+            ]
 
 
 def queue_handle(incidents, queue_, application, webhooks, latest_tag):

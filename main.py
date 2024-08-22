@@ -1,21 +1,20 @@
 import json
+from datetime import datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask, redirect, url_for
 
 from app import buttons_handler
-from app.alerts import alert_handle
 from app.im.helpers import get_application
 from app.incident.incidents import Incidents
-from app.queue import recreate_queue, queue_handle
+from app.queue.manager import QueueManager
+from app.queue.queue import Queue
 from app.route import generate_route
 from app.webhook import generate_webhooks
 from config import settings, check_updates
 
 
 app = Flask(__name__)
-latest_tag = {'version': None}
-
 route_dict = settings.get('route')
 app_dict = settings.get('application')
 webhooks_dict = settings.get('webhooks')
@@ -28,13 +27,16 @@ application = get_application(
 )
 webhooks = generate_webhooks(webhooks_dict)
 incidents = Incidents.create_or_load(application.type, application.url, application.team)
-queue = recreate_queue(incidents, check_updates)
+queue = Queue.recreate_queue(incidents, check_updates)
+
+queue_manager = QueueManager(queue, application, incidents, webhooks, route)
+
+# run scheduler
 scheduler = BackgroundScheduler()
 scheduler.add_job(
-    func=queue_handle,
+    func=queue_manager.queue_handle,
     trigger="interval",
-    seconds=1.1,
-    args=[incidents, queue, application, webhooks, latest_tag]
+    seconds=1.1
 )
 scheduler.start()
 
@@ -52,7 +54,7 @@ def route_queue_get():
 def route_alert_post():
     if request.method == 'POST':
         alert_state = request.json
-        alert_handle(application, route, incidents, queue, alert_state)
+        queue.put(datetime.utcnow(), 'alert', None, None, alert_state)
         return alert_state, 200
     else:
         return redirect(url_for('route_incidents_get'))

@@ -12,8 +12,35 @@ from app.route import generate_route
 from app.webhook import generate_webhooks
 from config import settings, check_updates
 
+
 app = Flask(__name__)
-incidents = Incidents([])
+latest_tag = {'version': None}
+
+route_dict = settings.get('route')
+app_dict = settings.get('application')
+webhooks_dict = settings.get('webhooks')
+
+route = generate_route(route_dict)
+application = get_application(
+    app_dict,
+    route.get_uniq_channels(),
+    route.channel
+)
+webhooks = generate_webhooks(webhooks_dict)
+incidents = Incidents.create_or_load(application.type, application.url, application.team)
+queue = recreate_queue(incidents, check_updates)
+scheduler = BackgroundScheduler()
+scheduler.add_job(
+    func=queue_handle,
+    trigger="interval",
+    seconds=1.1,
+    args=[incidents, queue, application, webhooks, latest_tag]
+)
+scheduler.start()
+
+
+def create_app():
+    return app
 
 
 @app.route('/queue', methods=['GET'])
@@ -46,31 +73,5 @@ def route_incidents_get():
 
 
 if __name__ == '__main__':
-    latest_tag = {'version': None}
-
-    route_dict = settings.get('route')
-    app_dict = settings.get('application')
-    webhooks_dict = settings.get('webhooks')
-
-    route = generate_route(route_dict)
-    application = get_application(
-        app_dict,
-        route.get_uniq_channels(),
-        route.channel
-    )
-    webhooks = generate_webhooks(webhooks_dict)
-
-    incidents = Incidents.create_or_load(application.type, application.url, application.team)
-    queue = recreate_queue(incidents, check_updates)
-
-    # run scheduler
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(
-        func=queue_handle,
-        trigger="interval",
-        seconds=1.1,
-        args=[incidents, queue, application, webhooks, latest_tag]
-    )
-    scheduler.start()
-
+    app = create_app()
     app.run(host='0.0.0.0', port=5000)

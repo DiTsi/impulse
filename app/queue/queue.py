@@ -19,11 +19,7 @@ class Queue:
     def put(self, datetime_, type_, incident_uuid=None, identifier=None, data=None):
         new_item = QueueItem(datetime_, type_, incident_uuid, identifier, data)
         with self.lock:
-            for i, item in enumerate(self.items):
-                if datetime_ < item.datetime:
-                    self.items.insert(i, new_item)
-                    return
-            self.items.append(new_item)
+            self._insert_item_sorted(new_item)
 
     def delete(self, index):
         with self.lock:
@@ -31,30 +27,44 @@ class Queue:
 
     def delete_by_id(self, uuid, delete_steps=True, delete_status=True):
         with self.lock:
-            self.items = [
-                item for item in self.items
-                if not (item.incident_uuid == uuid and (
-                        (delete_steps and item.type == 'chain_step') or
-                        (delete_status and item.type == 'update_status')
-                ))
-            ]
+            self._perform_delete(uuid, delete_steps, delete_status)
+
+    def _perform_delete(self, uuid, delete_steps=True, delete_status=True):
+        self.items = [
+            item for item in self.items
+            if not (item.incident_uuid == uuid and (
+                    (delete_steps and item.type == 'chain_step') or
+                    (delete_status and item.type == 'update_status')
+            ))
+        ]
 
     def append(self, uuid, incident_chain):
+        new_items = []
+        for i, s in enumerate(incident_chain):
+            if not s['done']:
+                new_items.append(QueueItem(s['datetime'], 'chain_step', uuid, i, None))
+
         with self.lock:
-            for i, s in enumerate(incident_chain):
-                if not s['done']:
-                    self.put(s['datetime'], 'chain_step', uuid, i)
+            for new_item in new_items:
+                self._insert_item_sorted(new_item)
+
+    def _insert_item_sorted(self, new_item):
+        for i, item in enumerate(self.items):
+            if new_item.datetime < item.datetime:
+                self.items.insert(i, new_item)
+                return
+        self.items.append(new_item)
 
     def update(self, uuid_, incident_status_change, status):
         with self.lock:
             if uuid_ not in [item.incident_uuid for item in self.items]:
-                self.put(incident_status_change, 'update_status', uuid_)
+                self._insert_item_sorted(QueueItem(incident_status_change, 'update_status', uuid_, None, None))
             else:
-                self.delete_by_id(uuid_, delete_steps=False, delete_status=True)
-                self.put(incident_status_change, 'update_status', uuid_)
+                self._perform_delete(uuid_, delete_steps=False, delete_status=True)
+                self._insert_item_sorted(QueueItem(incident_status_change, 'update_status', uuid_, None, None))
 
             if status == 'resolved':
-                self.delete_by_id(uuid_, delete_steps=True, delete_status=False)
+                self._perform_delete(uuid_, delete_steps=True, delete_status=False)
 
     def handle(self):
         with self.lock:

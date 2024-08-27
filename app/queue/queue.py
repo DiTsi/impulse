@@ -8,6 +8,8 @@ QueueItem = namedtuple('QueueItem', ['datetime', 'type', 'incident_uuid', 'ident
 
 
 class Queue:
+    __slots__ = ['items', 'lock']
+
     def __init__(self, check_update):
         self.items = []
         self.lock = Lock()

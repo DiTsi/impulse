@@ -34,7 +34,7 @@ class SlackApplication(Application):
     def get_notification_destinations(self):
         return [a.slack_id for a in self.admin_users]
 
-    def _format_text_bold(self, text):
+    def format_text_bold(self, text):
         return slack_bold_text(text)
 
     def _format_text_italic(self, text):
@@ -46,7 +46,7 @@ class SlackApplication(Application):
     def _format_text_link(self, text, url):
         return f"(<{url}|{text}>)"
 
-    def _get_admins_text(self):
+    def get_admins_text(self):
         admins_text = slack_env.from_string(slack_admins_template_string).render(
             users=self.get_notification_destinations()
         )

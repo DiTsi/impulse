@@ -18,9 +18,9 @@ def mattermost_buttons_handler(app, payload, incidents, queue_):
         else:
             incident_.status_enabled = True
     incident_.dump()
-    status_icons = app.status_icons_template.form_message(incident_.last_state)
-    header = app.header_template.form_message(incident_.last_state)
-    message = app.body_template.form_message(incident_.last_state)
+    status_icons = app.status_icons_template.form_message(incident_.last_state, incident_)
+    header = app.header_template.form_message(incident_.last_state, incident_)
+    message = app.body_template.form_message(incident_.last_state, incident_)
     payload = mattermost_get_button_update_payload(
         message,
         header,

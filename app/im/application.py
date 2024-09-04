@@ -72,7 +72,7 @@ class Application(ABC):
             unit = self.user_groups[identifier]
             unit_text = unit.mention_text(self.type, destinations)
         text = (
-            f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
+            f'{self._format_text_citation(self.header_template.form_message(incident.last_state, incident))}\n'
             f'{unit_text}'
         )
         response_code = self._post_thread(incident.channel_id, incident.ts, text)
@@ -93,16 +93,16 @@ class Application(ABC):
             formatted_admins_text = self._format_text_citation(italic_admins_text)
             base_text += f'\n➤ admins: {formatted_admins_text}'
         text = (
-            f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
+            f'{self._format_text_citation(self.header_template.form_message(incident.last_state, incident))}\n'
             f'{base_text}'
         )
 
         return self._post_thread(incident.channel_id, incident.ts, text)
 
     def update(self, uuid_, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
-        body = self.body_template.form_message(alert_state)
-        header = self.header_template.form_message(alert_state)
-        status_icons = self.status_icons_template.form_message(alert_state)
+        body = self.body_template.form_message(alert_state, incident)
+        header = self.header_template.form_message(alert_state, incident)
+        status_icons = self.status_icons_template.form_message(alert_state, incident)
         self.update_thread(
             incident.channel_id, incident.ts, incident_status, body, header, status_icons, chain_enabled, status_enabled
         )
@@ -111,7 +111,7 @@ class Application(ABC):
             # post to thread
             if status_enabled and incident_status != 'closed':
                 body = (
-                    f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
+                    f'{self._format_text_citation(self.header_template.form_message(incident.last_state, incident))}\n'
                     f'➤ status: {self.format_text_bold(incident_status)}'
                 )
                 if incident_status == 'unknown':

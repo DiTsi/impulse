@@ -1,21 +1,28 @@
-{%- set commonLabels = payload.get("commonLabels", {}) -%}
-{%- set annotations = payload.get("commonAnnotations", {}) -%}
+{%- set commonAnnotations = payload.get("commonAnnotations", {}) -%}
 {%- set groupLabels = payload.get("groupLabels", {}) -%}
 {%- set commonLabels = payload.get("commonLabels", {}) -%}
-{%- set severity = groupLabels.severity -%}
 {%- set alerts = payload.get("alerts", {}) -%}
-{%- set severity_emoji = {"critical": ":rotating_light:", "warning": ":warning:" }[severity] | default(":question:") -%}
-**{{ annotations.summary }}**
-{%- if annotations.description %}_{{ annotations.description }}_{% endif -%}
+{%- if alerts[0].generatorURL %}{% set url = alerts[0].generatorURL %}{% endif -%}
+{%- if commonAnnotations.summary %}**{{ commonAnnotations.summary }}**{% endif %} {% if url %}[[link]({{ url }})]{% endif -%}
+{%- if commonAnnotations.description %}_{{ commonAnnotations.description }}_{% endif -%}
+
+{%- if alerts | length > 1 %}
+**Instances:**
+{%- for a in alerts %}
+    {{ a.labels.instance }}  {%- for l in a.labels.keys() if l != 'alertname' and l != 'instance' and l not in commonLabels.keys() -%}{{l}}=`{{ a.labels[l] }}`{% if not loop.last %},  {% endif %}{% if a.annotations.value %}  (value={{ a.annotations.value }}){% endif %}{% endfor %}
+{%- endfor %}
+{%- else %}
 {%- if alerts[0].labels.instance %}
 **Instance:** {{ alerts[0].labels.instance }}  {%- for l in alerts[0].labels.keys() if l != 'alertname' and l != 'instance' and l not in commonLabels.keys() -%}{{l}}=`{{ alerts[0].labels[l] }}`{% if not loop.last %},  {% endif %}{% endfor %}
 {%- endif %}
-{%- if annotations.value %}
-**Value:** {{ annotations.value }}
+{%- endif -%}
+
+{%- if commonAnnotations.value %}
+**Value:** {{ commonAnnotations.value }}
 {%- endif %}
 {%- if commonLabels | length > 0 %}
 **Labels:**
 {%- for k, v in commonLabels.items() if k != 'alertname' and k != 'instance' %}
-   {{ k }}=`{{ v }}`
+    {{ k }}=`{{ v }}`
 {%- endfor %}
 {%- endif %}

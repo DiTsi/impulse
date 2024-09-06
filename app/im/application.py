@@ -45,7 +45,7 @@ class Application(ABC):
         return self._get_url(app_config)
 
     def get_team_name(self, app_config):
-        logger.debug(f'Get {self.type.capitalize()} team name')
+        logger.debug(f'Get {self.type.capitalize()} team name') #! disable for Slack
         return self._get_team_name(app_config)
 
     def generate_users(self, users_dict):
@@ -78,17 +78,16 @@ class Application(ABC):
         response_code = self._post_thread(incident.channel_id, incident.ts, text)
         return response_code
 
-    def notify_webhook(self, incident, base_text, response_code=None):
-        if response_code is not None:
+    def notify_webhook(self, incident, base_text, result, response_code=None):
+        if result == 'ok':
             base_text += f'{response_code}'
             if response_code >= 400:
                 admins_text = self.get_admins_text()
                 base_text += f'\n➤ admins: {admins_text}'
         else:
+            base_text += f'{result}'
             admins_text = self.get_admins_text()
-            base_text += (f'{self.format_text_bold("not found in `impulse.yml`")}\n'
-                          f'➤ {admins_text}')
-
+            base_text += f'\n➤ admins: {admins_text}'
         text = (
             f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
             f'{base_text}'

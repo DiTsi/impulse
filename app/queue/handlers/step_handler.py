@@ -24,15 +24,14 @@ class StepHandler(BaseHandler):
             webhook_name = step['identifier']
             webhook = self.webhooks.get(webhook_name)
             text = f'➤ webhook {self.app.format_text_bold(webhook_name)}: '
-            if webhook:
-                r_code = webhook.push()
-                self.app.notify_webhook(incident, text, response_code=r_code)
+            if webhook is not None:
+                result, r_code = webhook.push()
+                self.app.notify_webhook(incident, text, result, response_code=r_code)
                 incident.chain_update(identifier, done=True, result=r_code)
-                if r_code >= 400:
-                    logger.warning(f'Webhook \'{webhook_name}\' response code is {r_code}')
+                logger.info(f'Notify webhook \'{webhook_name}\' result: \'{result}\', response code is {r_code}')
             else:
-                self.app.notify_webhook(incident, text)
-                logger.warning(f'Webhook \'{webhook_name}\' not found in impulse.yml')
+                self.app.notify_webhook(incident, text, 'not found in impulse.yml')
+                logger.info(f'Webhook \'{webhook_name}\' not found in impulse.yml')
                 incident.chain_update(identifier, done=True, result=None)
         else:
             r_code = self.app.notify(incident, step['type'], step['identifier'])

@@ -17,10 +17,16 @@ class Webhook:
         if self.auth is not None:
             u, p = self.auth.split(':')
             auth = HTTPBasicAuth(self.render(u), self.render(p))
-            response = requests.post(url=self.url, data=self.data, auth=auth)
+            try:
+                response = requests.post(url=self.url, data=self.data, auth=auth, timeout=0.8)
+            except requests.exceptions.ConnectionError:
+                return f'Connection Error', None
         else:
-            response = requests.post(url=self.url, data=self.data)
-        return response.status_code
+            try:
+                response = requests.post(url=self.url, data=self.data, timeout=0.8)
+            except requests.exceptions.ConnectionError:
+                return f'Connection Error', None
+        return 'ok', response.status_code
 
     @staticmethod
     def render(custom_string):

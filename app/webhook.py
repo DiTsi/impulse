@@ -18,12 +18,12 @@ class Webhook:
             u, p = self.auth.split(':')
             auth = HTTPBasicAuth(self.render(u), self.render(p))
             try:
-                response = requests.post(url=self.url, data=self.data, auth=auth, timeout=0.8)
+                response = requests.post(url=self.url, data=self.data, auth=auth, timeout=1.0)
             except requests.exceptions.ConnectionError:
                 return f'Connection Error', None
         else:
             try:
-                response = requests.post(url=self.url, data=self.data, timeout=0.8)
+                response = requests.post(url=self.url, data=self.data, timeout=1.0)
             except requests.exceptions.ConnectionError:
                 return f'Connection Error', None
         return 'ok', response.status_code

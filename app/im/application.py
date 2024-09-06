@@ -83,11 +83,15 @@ class Application(ABC):
             base_text += f'{response_code}'
             if response_code >= 400:
                 admins_text = self.get_admins_text()
-                base_text += f'\n➤ admins: {admins_text}'
+                italic_admins_text = self._format_text_italic(admins_text)
+                formatted_admins_text = self._format_text_citation(italic_admins_text)
+                base_text += f'\n➤ admins: {formatted_admins_text}'
         else:
             base_text += f'{result}'
             admins_text = self.get_admins_text()
-            base_text += f'\n➤ admins: {admins_text}'
+            italic_admins_text = self._format_text_italic(admins_text)
+            formatted_admins_text = self._format_text_citation(italic_admins_text)
+            base_text += f'\n➤ admins: {formatted_admins_text}'
         text = (
             f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
             f'{base_text}'

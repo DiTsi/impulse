@@ -24,22 +24,14 @@ class StepHandler(BaseHandler):
             webhook_name = step['identifier']
             webhook = self.webhooks.get(webhook_name)
             text = f'➤ webhook {self.app.format_text_bold(webhook_name)}: '
-            if webhook:
-                r_code = webhook.push()
+            if webhook is not None:
+                result, r_code = webhook.push()
+                self.app.notify_webhook(incident, text, result, response_code=r_code)
                 incident.chain_update(identifier, done=True, result=r_code)
-                text += f'{r_code}'
-                admins_text = self.app.get_admins_text()
-                text += f'\n➤ admins: {admins_text}'
-                _ = self.app.post_thread(incident.channel_id, incident.ts, text)
-                incident.chain_update(identifier, done=True, result=None)
-                if r_code >= 400:
-                    logger.warning(f'Webhook \'{webhook_name}\' response code is {r_code}')
+                logger.info(f'Notify webhook \'{webhook_name}\' result: \'{result}\', response code is {r_code}')
             else:
-                admins_text = self.app.get_admins_text()
-                text += (f'{self.app.format_text_bold("not found in `impulse.yml`")}\n'
-                         f'➤ {admins_text}')
-                _ = self.app.post_thread(incident.channel_id, incident.ts, text)
-                logger.warning(f'Webhook \'{webhook_name}\' not found in impulse.yml')
+                self.app.notify_webhook(incident, text, 'not found in impulse.yml')
+                logger.info(f'Webhook \'{webhook_name}\' not found in impulse.yml')
                 incident.chain_update(identifier, done=True, result=None)
         else:
             r_code = self.app.notify(incident, step['type'], step['identifier'])

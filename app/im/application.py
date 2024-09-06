@@ -11,6 +11,7 @@ from app.logging import logger
 
 
 class Application(ABC):
+
     def __init__(self, app_config, channels_list, default_channel):
         self.type = app_config['type']
         self.url = self.get_url(app_config)
@@ -39,33 +40,17 @@ class Application(ABC):
             logger.warning(f'No public channel \'{ch}\' in {self.type.capitalize()}')
         return channels
 
-    @abstractmethod
-    def _get_public_channels(self):
-        pass
-
     def get_url(self, app_config):
         logger.debug(f'Get {self.type.capitalize()} URL')
         return self._get_url(app_config)
 
-    @abstractmethod
-    def _get_url(self, app_config):
-        pass
-
     def get_team_name(self, app_config):
-        logger.debug(f'Get {self.type.capitalize()} team name')
+        logger.debug(f'Get {self.type.capitalize()} team name') #! disable for Slack
         return self._get_team_name(app_config)
-
-    @abstractmethod
-    def _get_team_name(self, app_config):
-        pass
 
     def generate_users(self, users_dict):
         logger.debug(f'Get {self.type.capitalize()} users using API')
         return self._generate_users(users_dict)
-
-    @abstractmethod
-    def _generate_users(self, users_dict):
-        pass
 
     def generate_template(self):
         def read_template(file_key, default_path):
@@ -82,24 +67,37 @@ class Application(ABC):
         destinations = self.get_notification_destinations()
         if notify_type == 'user':
             unit = self.users[identifier]
-            text = (
-                f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
-                f'{unit.mention_text(destinations)}'
-            )
-            response_code = self.post_thread(incident.channel_id, incident.ts, text)
-            return response_code
+            unit_text = unit.mention_text(destinations)
         else:
             unit = self.user_groups[identifier]
-            text = (
-                f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
-                f'{unit.mention_text(self.type, destinations)}'
-            )
-            response_code = self.post_thread(incident.channel_id, incident.ts, text)
-            return response_code
+            unit_text = unit.mention_text(self.type, destinations)
+        text = (
+            f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
+            f'{unit_text}'
+        )
+        response_code = self._post_thread(incident.channel_id, incident.ts, text)
+        return response_code
 
-    @abstractmethod
-    def get_notification_destinations(self):
-        pass
+    def notify_webhook(self, incident, base_text, result, response_code=None):
+        if result == 'ok':
+            base_text += f'{response_code}'
+            if response_code >= 400:
+                admins_text = self.get_admins_text()
+                italic_admins_text = self._format_text_italic(admins_text)
+                formatted_admins_text = self._format_text_citation(italic_admins_text)
+                base_text += f'\n➤ admins: {formatted_admins_text}'
+        else:
+            base_text += f'{result}'
+            admins_text = self.get_admins_text()
+            italic_admins_text = self._format_text_italic(admins_text)
+            formatted_admins_text = self._format_text_citation(italic_admins_text)
+            base_text += f'\n➤ admins: {formatted_admins_text}'
+        text = (
+            f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
+            f'{base_text}'
+        )
+
+        return self._post_thread(incident.channel_id, incident.ts, text)
 
     def update(self, uuid_, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
         body = self.body_template.form_message(alert_state)
@@ -121,7 +119,58 @@ class Application(ABC):
                     italic_admins_text = self._format_text_italic(admins_text)
                     formatted_admins_text = self._format_text_citation(italic_admins_text)
                     body += f'\n➤ admins: {formatted_admins_text}'
-                self.post_thread(incident.channel_id, incident.ts, body)
+                self._post_thread(incident.channel_id, incident.ts, body)
+
+    def new_version_notification(self, channel_id, new_tag):
+        r = requests.get(f'https://api.github.com/repos/DiTsi/impulse/releases/tags/{new_tag}')
+        release_notes = r.json().get('body')
+        new_version_text = self.format_text_bold(f'New IMPulse version available: {new_tag}')
+        changelog_link_text = self._format_text_link("CHANGELOG.md",
+                                                     "https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md")
+        text = (f'{new_version_text} {changelog_link_text}'
+                f'\n\n{release_notes}')
+        admins_text = self.get_admins_text()
+        italic_admins_text = self._format_text_italic(admins_text)
+        self.send_message(channel_id, text, italic_admins_text)
+
+    def create_thread(self, channel_id, body, header, status_icons, status):
+        payload = self._create_thread_payload(channel_id, body, header, status_icons, status)
+        response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
+        sleep(self.post_delay)
+        response_json = response.json()
+        return response_json[self.thread_id_key]
+
+    def update_thread(self, channel_id, id_, status, body, header, status_icons, chain_enabled=True,
+                      status_enabled=True):
+        payload = self._update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
+                                              status_enabled)
+        self._update_thread(id_, payload)
+
+    def _post_thread(self, channel_id, id_, text):
+        payload = self._post_thread_payload(channel_id, id_, text)
+        response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
+        sleep(self.post_delay)
+        return response.status_code
+
+    @abstractmethod
+    def _get_public_channels(self):
+        pass
+
+    @abstractmethod
+    def _get_url(self, app_config):
+        pass
+
+    @abstractmethod
+    def _get_team_name(self, app_config):
+        pass
+
+    @abstractmethod
+    def _generate_users(self, users_dict):
+        pass
+
+    @abstractmethod
+    def get_notification_destinations(self):
+        pass
 
     @abstractmethod
     def format_text_bold(self, text):
@@ -143,48 +192,17 @@ class Application(ABC):
     def get_admins_text(self):
         pass
 
-    def new_version_notification(self, channel_id, new_tag):
-        r = requests.get(f'https://api.github.com/repos/DiTsi/impulse/releases/tags/{new_tag}')
-        release_notes = r.json().get('body')
-        new_version_text = self.format_text_bold(f'New IMPulse version available: {new_tag}')
-        changelog_link_text = self._format_text_link("CHANGELOG.md",
-                                                     "https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md")
-        text = (f'{new_version_text} {changelog_link_text}'
-                f'\n\n{release_notes}')
-        admins_text = self.get_admins_text()
-        italic_admins_text = self._format_text_italic(admins_text)
-        self.send_message(channel_id, text, italic_admins_text)
-
     @abstractmethod
     def send_message(self, channel_id, text, attachment):
         pass
-
-    def create_thread(self, channel_id, body, header, status_icons, status):
-        payload = self._create_thread_payload(channel_id, body, header, status_icons, status)
-        response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
-        sleep(self.post_delay)
-        response_json = response.json()
-        return response_json[self.thread_id_key]
 
     @abstractmethod
     def _create_thread_payload(self, channel_id, body, header, status_icons, status):
         pass
 
-    def post_thread(self, channel_id, id_, text):
-        payload = self._post_thread_payload(channel_id, id_, text)
-        response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
-        sleep(self.post_delay)
-        return response.status_code
-
     @abstractmethod
     def _post_thread_payload(self, channel_id, id, text):
         pass
-
-    def update_thread(self, channel_id, id_, status, body, header, status_icons, chain_enabled=True,
-                      status_enabled=True):
-        payload = self._update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
-                                              status_enabled)
-        self._update_thread(id_, payload)
 
     @abstractmethod
     def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,

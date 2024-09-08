@@ -41,7 +41,7 @@ class SlackApplication(Application):
         return f'_{text}_'
 
     def _format_text_citation(self, text):
-        return f'{text}'
+        return f'>{text}'
 
     def _format_text_link(self, text, url):
         return f"(<{url}|{text}>)"

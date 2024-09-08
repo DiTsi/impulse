@@ -84,14 +84,12 @@ class Application(ABC):
             if response_code >= 400:
                 admins_text = self.get_admins_text()
                 italic_admins_text = self._format_text_italic(admins_text)
-                formatted_admins_text = self._format_text_citation(italic_admins_text)
-                base_text += f'\n➤ admins: {formatted_admins_text}'
+                base_text += f'\n➤ admins: {italic_admins_text}'
         else:
             base_text += f'{result}'
             admins_text = self.get_admins_text()
             italic_admins_text = self._format_text_italic(admins_text)
-            formatted_admins_text = self._format_text_citation(italic_admins_text)
-            base_text += f'\n➤ admins: {formatted_admins_text}'
+            base_text += f'\n➤ admins: {italic_admins_text}'
         text = (
             f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
             f'{base_text}'
@@ -117,8 +115,7 @@ class Application(ABC):
                 if incident_status == 'unknown':
                     admins_text = self.get_admins_text()
                     italic_admins_text = self._format_text_italic(admins_text)
-                    formatted_admins_text = self._format_text_citation(italic_admins_text)
-                    body += f'\n➤ admins: {formatted_admins_text}'
+                    body += f'\n➤ admins: {italic_admins_text}'
                 self._post_thread(incident.channel_id, incident.ts, body)
 
     def new_version_notification(self, channel_id, new_tag):

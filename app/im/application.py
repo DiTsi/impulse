@@ -72,29 +72,32 @@ class Application(ABC):
         else:
             unit = self.user_groups[identifier]
             unit_text = unit.mention_text(self.type, destinations)
-        text = (
-            f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
-            f'{unit_text}'
+        text = TextManager.get_template(
+            'notify_message',
+            header=self._format_text_citation(self.header_template.form_message(incident.last_state)),
+            unit_text=unit_text
         )
         response_code = self._post_thread(incident.channel_id, incident.ts, text)
         return response_code
 
     def notify_webhook(self, incident, base_text, result, response_code=None):
+        italic_admins_text = ''
         if result == 'ok':
             base_text += f'{response_code}'
             if response_code >= 400:
                 admins_text = self.get_admins_text()
                 italic_admins_text = self._format_text_italic(admins_text)
-                base_text += f'\n➤ admins: {italic_admins_text}'
         else:
             base_text += f'{result}'
             admins_text = self.get_admins_text()
             italic_admins_text = self._format_text_italic(admins_text)
-            base_text += f'\n➤ admins: {italic_admins_text}'
-        text = (
-            f'{self._format_text_citation(self.header_template.form_message(incident.last_state))}\n'
-            f'{base_text}'
+        text = TextManager.get_template(
+            'notify_webhook_message',
+            header=self._format_text_citation(self.header_template.form_message(incident.last_state)),
+            notification_text=base_text
         )
+        if italic_admins_text:
+            text += TextManager.get_template('admins', admins=italic_admins_text)
 
         return self._post_thread(incident.channel_id, incident.ts, text)
 
@@ -109,15 +112,20 @@ class Application(ABC):
             logger.info(f'Incident \'{uuid_}\' updated with new status \'{incident_status}\'')
             # post to thread
             if status_enabled and incident_status != 'closed':
-                body = TextManager.get_template('status_update', self._format_text_citation(
-                    self.header_template.form_message(incident.last_state)),
-                                                self._format_text_bold(incident_status))
+                body = TextManager.get_template(
+                    'status_update',
+                    header=self._format_text_citation(self.header_template.form_message(incident.last_state)),
+                    status=self.format_text_bold(incident_status)
+                )
                 if incident_status == 'unknown':
                     admins_text = self.get_admins_text()
                     italic_admins_text = self._format_text_italic(admins_text)
-                    body = TextManager.get_template('unknown_status', self._format_text_citation(
-                        self.header_template.form_message(incident.last_state)),
-                                                    self._format_text_bold(incident_status), italic_admins_text)
+                    body = TextManager.get_template(
+                        'unknown_status',
+                        header=self._format_text_citation( self.header_template.form_message(incident.last_state)),
+                        status=self.format_text_bold(incident_status),
+                        admins=italic_admins_text
+                    )
                 self._post_thread(incident.channel_id, incident.ts, body)
 
     def new_version_notification(self, channel_id, new_tag):
@@ -126,7 +134,10 @@ class Application(ABC):
         new_version_text = self.format_text_bold(f'New IMPulse version available: {new_tag}')
         changelog_link_text = self._format_text_link("CHANGELOG.md",
                                                      "https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md")
-        text = TextManager.get_template('new_version', new_version_text, changelog_link_text, release_notes)
+        text = TextManager.get_template('new_version',
+                                        new_version=new_version_text,
+                                        changelog_link=changelog_link_text,
+                                        release_notes=release_notes)
         admins_text = self.get_admins_text()
         italic_admins_text = self._format_text_italic(admins_text)
         self.send_message(channel_id, text, italic_admins_text)

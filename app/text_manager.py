@@ -5,11 +5,11 @@ class TextTemplate:
     def __init__(self, template):
         self.template = template
 
-    def __call__(self, *args):
+    def __call__(self, **kwargs):
         try:
-            return self.template.format(*args)
-        except IndexError as e:
-            raise ValueError(f"Missing required argument for template: '{self.template}'")
+            return self.template.format(**kwargs)
+        except KeyError as e:
+            raise ValueError(f"Missing required argument '{e.args[0]}' for template: '{self.template}'")
 
     def __str__(self):
         return self.template
@@ -22,11 +22,13 @@ class TextManager:
 
     def __post_init__(self):
         self.templates = {
-            'user_notification': "{}\n{}",
-            'group_notification': "{}\n{}",
-            'status_update': "{}\n➤ status: {}",
-            'unknown_status': "{}\n➤ status: {}\n➤ admins: {}",
-            'new_version': "{} {}\n\n{}",
+            'notify_message': "{header}\n{unit_text}",
+            'webhook_name': "➤ webhook {webhook_name}: ",
+            'notify_webhook_message': "{header}\n{notification_text}",
+            'admins': "\n➤ admins: {admins}",
+            'status_update': "{header}\n➤ status: {status}",
+            'unknown_status': "{header}\n➤ status: {status}\n➤ admins: {admins}",
+            'new_version': "{new_version} {changelog_link}\n\n{release_notes}",
         }
         self._initialize_templates()
 
@@ -41,9 +43,9 @@ class TextManager:
         return cls._instance
 
     @classmethod
-    def get_template(cls, name, *args):
+    def get_template(cls, name, **kwargs):
         instance = cls.get_instance()
         if name in instance.templates:
-            return getattr(instance, name)(*args)
+            return getattr(instance, name)(**kwargs)
         else:
             raise ValueError(f"Template '{name}' does not exist.")

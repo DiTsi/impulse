@@ -25,7 +25,7 @@ class StepHandler(BaseHandler):
             webhook = self.webhooks.get(webhook_name)
             text = f'➤ webhook {self.app.format_text_bold(webhook_name)}: '
             if webhook is not None:
-                result, r_code = webhook.push()
+                result, r_code = webhook.push(incident)
                 self.app.notify_webhook(incident, text, result, response_code=r_code)
                 incident.chain_update(identifier, done=True, result=r_code)
                 logger.info(f'Notify webhook \'{webhook_name}\' result: \'{result}\', response code is {r_code}')

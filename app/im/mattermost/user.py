@@ -17,7 +17,10 @@ class User:
         return self.username
 
     def mention_text(self, admins_usernames):
-        fullname = self.first_name + ' ' + self.last_name
+        if self.first_name == '' and self.last_name == '':
+            fullname = self.username
+        else:
+            fullname = self.first_name + ' ' + self.last_name
         text = f'➤ user {mattermost_bold_text(fullname)}: '
         if self.username:
             text += f'{mattermost_mention_text(self.username)}'

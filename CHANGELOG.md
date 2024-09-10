@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.0
+Changes:
+- Added webhook notifications in instant messengers
+- Huge refactoring
+- Run using WSGI
+
 ## v1.0.1
 Changes:
 - Increase limit from 100 to 1000 for Slack API `api/conversations.list`

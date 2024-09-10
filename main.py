@@ -36,7 +36,7 @@ scheduler = BackgroundScheduler()
 scheduler.add_job(
     func=queue_manager.queue_handle,
     trigger="interval",
-    seconds=1.1
+    seconds=0.25
 )
 scheduler.start()
 

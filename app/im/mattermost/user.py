@@ -58,9 +58,9 @@ def mattermost_generate_users(url, users_dict=None):
         logger.debug(f'Creating users')
         mattermost_users = mattermost_get_users(url)
         for name in users_dict.keys():
-            mattermost_fullname = users_dict[name]['username']
-            first_name, last_name = get_first_and_last_names(mattermost_users, mattermost_fullname)
-            users[name] = User(name, first_name, last_name)
+            mattermost_username = users_dict[name]['username']
+            first_name, last_name = get_first_and_last_names(mattermost_users, mattermost_username)
+            users[name] = User(mattermost_username, first_name, last_name)
         return users
     else:
         logger.debug(f'no users defined in impulse.yml')

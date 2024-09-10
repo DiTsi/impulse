@@ -1,1 +1,1 @@
-from .route import MainRoute, generate_route
+from app.route.route import MainRoute, generate_route

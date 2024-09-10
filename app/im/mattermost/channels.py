@@ -2,8 +2,8 @@ from time import sleep
 
 import requests
 
+from app.im.mattermost.config import mattermost_headers, mattermost_request_delay
 from app.logging import logger
-from .config import mattermost_headers, mattermost_request_delay
 
 
 def mattermost_get_public_channels(url, team):

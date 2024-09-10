@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.1.0
+Changes:
+- Added webhook notifications in instant messengers
+- Huge refactoring
+- Run using WSGI
+- Fix user, user_group notifications for not existing and undefined users
+
 ## v1.0.4
 Changes:
 - Fix Mattermost @mentions

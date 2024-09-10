@@ -1,15 +1,48 @@
 import json
+from datetime import datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask, redirect, url_for
 
-from app import (alert_handle, queue_handle, recreate_queue, Incidents, create_or_load_incidents, generate_webhooks,
-                 generate_route, buttons_handler)
-from app.im import Application
+from app import buttons_handler
+from app.im.helpers import get_application
+from app.incident.incidents import Incidents
+from app.queue.manager import QueueManager
+from app.queue.queue import Queue
+from app.route import generate_route
+from app.webhook import generate_webhooks
 from config import settings, check_updates
 
+
 app = Flask(__name__)
-incidents = Incidents([])
+route_dict = settings.get('route')
+app_dict = settings.get('application')
+webhooks_dict = settings.get('webhooks')
+
+route = generate_route(route_dict)
+application = get_application(
+    app_dict,
+    route.get_uniq_channels(),
+    route.channel
+)
+webhooks = generate_webhooks(webhooks_dict)
+incidents = Incidents.create_or_load(application.type, application.url, application.team)
+queue = Queue.recreate_queue(incidents, check_updates)
+
+queue_manager = QueueManager(queue, application, incidents, webhooks, route)
+
+# run scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(
+    func=queue_manager.queue_handle,
+    trigger="interval",
+    seconds=0.25
+)
+scheduler.start()
+
+
+def create_app():
+    return app
 
 
 @app.route('/queue', methods=['GET'])
@@ -21,7 +54,7 @@ def route_queue_get():
 def route_alert_post():
     if request.method == 'POST':
         alert_state = request.json
-        alert_handle(application, route, incidents, queue, alert_state)
+        queue.put(datetime.utcnow(), 'alert', None, None, alert_state)
         return alert_state, 200
     else:
         return redirect(url_for('route_incidents_get'))
@@ -42,31 +75,5 @@ def route_incidents_get():
 
 
 if __name__ == '__main__':
-    latest_tag = {'version': None}
-
-    route_dict = settings.get('route')
-    app_dict = settings.get('application')
-    webhooks_dict = settings.get('webhooks')
-
-    route = generate_route(route_dict)
-    application = Application(
-        app_dict,
-        route.get_uniq_channels(),
-        route.channel
-    )
-    webhooks = generate_webhooks(webhooks_dict)
-
-    incidents = create_or_load_incidents(application.type, application.url, application.team)
-    queue = recreate_queue(incidents, check_updates)
-
-    # run scheduler
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(
-        func=queue_handle,
-        trigger="interval",
-        seconds=1.1,
-        args=[incidents, queue, application, webhooks, latest_tag]
-    )
-    scheduler.start()
-
+    app = create_app()
     app.run(host='0.0.0.0', port=5000)

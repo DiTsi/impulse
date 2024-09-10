@@ -2,8 +2,8 @@ from time import sleep
 
 import requests
 
+from app.im.slack.config import slack_headers, slack_request_delay
 from app.logging import logger
-from .config import slack_headers, slack_request_delay
 
 
 def slack_get_public_channels(url):

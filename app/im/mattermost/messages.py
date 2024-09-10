@@ -3,8 +3,8 @@ from time import sleep
 
 import requests
 
-from .config import mattermost_headers, mattermost_request_delay
-from ..colors import status_colors
+from app.im.colors import status_colors
+from app.im.mattermost.config import mattermost_headers, mattermost_request_delay
 
 
 def mattermost_send_message(url, channel_id, message, attachment):

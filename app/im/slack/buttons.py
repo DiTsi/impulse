@@ -1,6 +1,6 @@
+from app.im.slack.config import buttons
 from app.logging import logger
 from config import slack_verification_token
-from .config import buttons
 
 
 def reformat_message(original_message, chain_enabled, status_enabled):
@@ -25,7 +25,7 @@ def slack_buttons_handler(payload, incidents, queue_):
         logger.error(f'Unauthorized request to \'/slack\'')
         return {}, 401
 
-    incident_, uuid_ = incidents.get_by_ts(ts=payload['message_ts'])
+    incident_ = incidents.get_by_ts(ts=payload['message_ts'])
     original_message = payload.get('original_message')
     actions = payload.get('actions')
 
@@ -33,10 +33,10 @@ def slack_buttons_handler(payload, incidents, queue_):
         if action['name'] == 'chain':
             if incident_.chain_enabled:
                 incident_.chain_enabled = False
-                queue_.delete_by_id(uuid_, delete_steps=True, delete_status=False)
+                queue_.delete_by_id(incident_.uuid, delete_steps=True, delete_status=False)
             else:
                 incident_.chain_enabled = True
-                queue_.append(uuid_, incident_.chain)
+                queue_.append(incident_.uuid, incident_.chain)
         elif action['name'] == 'status':
             if incident_.status_enabled:
                 incident_.status_enabled = False

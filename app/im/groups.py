@@ -29,30 +29,28 @@ class UserGroup:
             text = f'➤ user_group {slack_bold_text(self.name)}: '
         else:
             text = f'➤ user_group {mattermost_bold_text(self.name)}: '
-        not_found_users = list()
         not_found = False
         for user in self.users:
-            if type_ == 'slack':
-                if user.slack_id:
-                    text += f'{slack_mention_text(user.slack_id)} '
+            if user is not None:
+                if type_ == 'slack':
+                    if user.slack_id is not None:
+                        text += f'{slack_mention_text(user.slack_id)} '
+                    else:
+                        not_found = True
+                        text += f'{user.name} (N/A) '
                 else:
-                    not_found = True
-                    not_found_users.append(user.username)
+                    if user.username is not None:
+                        text += f'{mattermost_mention_text(user.username)} '
+                    else:
+                        not_found = True
+                        text += f'{user.name} (N/A) '
             else:
-                if user.username:
-                    text += f'{mattermost_mention_text(user.username)} '
-                else:
-                    not_found = True
-                    not_found_users.append(user.username)
+                pass
         if not_found:
             if type_ == 'slack':
-                not_found_users_text = slack_env.from_string(slack_users_template_string).render(users=not_found_users)
                 admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins_ids)
             else:
-                not_found_users_text = mattermost_env.from_string(mattermost_users_template_string).render(
-                    users=not_found_users
-                )
                 admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_ids)
-            text += (f'\n>_users [{not_found_users_text}] not found in Slack_'
-                     f'\n>_{admins_text}_')
+            if not_found:
+                text += f'\n➤ admins: _{admins_text}_'
         return text

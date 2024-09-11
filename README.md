@@ -1,7 +1,5 @@
 # IMPulse
 
-
-<!-- <img src="https://docs.impulse.bot/latest/media/slack_tile.png" width="400" /> -->
 ![](https://docs.impulse.bot/latest/media/slack_tile.png)
 
 Software for managing incidents in [instant messaging applications](https://docs.impulse.bot/latest/apps/) based on [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) alerts

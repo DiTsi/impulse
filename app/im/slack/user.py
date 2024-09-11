@@ -49,7 +49,7 @@ def slack_generate_users(url, users_dict=None):
 
     users = dict()
     if users_dict:
-        logger.debug(f'Creating users')
+        logger.info(f'Creating users')
         slack_users = slack_get_users(url)
         for name in users_dict.keys():
             slack_fullname = users_dict[name]['full_name']
@@ -57,5 +57,5 @@ def slack_generate_users(url, users_dict=None):
             users[name] = User(name, slack_id=slack_id)
         return users
     else:
-        logger.debug(f'No users defined in impulse.yml')
+        logger.info(f'No users defined in impulse.yml')
         return users

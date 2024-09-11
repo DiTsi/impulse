@@ -6,6 +6,7 @@ Changes:
 - Huge refactoring
 - Run using WSGI
 - Fix user, user_group notifications for not existing and undefined users
+- Logs refactoring
 
 ## v1.0.4
 Changes:

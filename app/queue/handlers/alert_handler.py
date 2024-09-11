@@ -27,7 +27,7 @@ class AlertHandler(BaseHandler):
         if incident_ is None:
             self._handle_create(alert_state)
         else:
-            logger.debug(f'New Alertmanager event for incident {incident_.uuid}')
+            logger.debug(f'New Alertmanager event for incident {incident_.uuid}:')
             logger.debug(f'{alert_state}')
             self._handle_update(incident_.uuid, incident_, alert_state)
 
@@ -72,6 +72,7 @@ class AlertHandler(BaseHandler):
 
         logger.info(f'Incident \'{incident_.uuid}\' created. Link: {incident_.link}')
         [logger.info(f'  {i}: {alert_state["groupLabels"][i]}') for i in alert_state['groupLabels'].keys()]
+        logger.debug(f'{alert_state}')
 
         self.queue.put(status_update_datetime, 'update_status', incident_.uuid)
 

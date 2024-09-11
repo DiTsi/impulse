@@ -39,11 +39,11 @@ class Incidents:
     def create_or_load(cls, application_type, application_url, application_team):
         # Ensure the incidents directory exists or create it
         if not os.path.exists(incidents_path):
-            logger.debug('Creating incidents directory')
+            logger.info('Creating incidents directory')
             os.makedirs(incidents_path)
-            logger.debug('Created incidents directory')
+            logger.info('Created incidents directory')
         else:
-            logger.debug('Loading incidents from disk')
+            logger.info('Loading incidents from disk')
 
         incidents = cls([])
 
@@ -68,6 +68,6 @@ class Incidents:
 
     @staticmethod
     def update_incident(incident: Incident):
-        logger.debug(f'Updating incident with uuid {incident.uuid} to version {INCIDENT_ACTUAL_VERSION}')
+        logger.info(f'Updating incident with uuid {incident.uuid} to version {INCIDENT_ACTUAL_VERSION}')
         incident.version = INCIDENT_ACTUAL_VERSION
         incident.dump()

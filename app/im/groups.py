@@ -8,14 +8,14 @@ from app.logging import logger
 def generate_user_groups(user_groups_dict=None, users=None):
     user_groups = dict()
     if user_groups_dict:
-        logger.debug(f'creating user_groups')
+        logger.info(f'Creating user_groups')
         for name in user_groups_dict.keys():
             user_names = user_groups_dict[name]['users']
             user_objects = [users.get(user_name) for user_name in user_names]
             user_groups[name] = UserGroup(name, user_objects)
-        logger.debug(f'user_groups created')
+        logger.info(f'user_groups created')
     else:
-        logger.debug(f'No user_groups defined in impulse.yml. Continue with empty user_groups')
+        logger.info(f'No user_groups defined in impulse.yml. Continue with empty user_groups')
     return user_groups
 
 

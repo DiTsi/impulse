@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -32,6 +33,7 @@ queue = Queue.recreate_queue(incidents, check_updates)
 queue_manager = QueueManager(queue, application, incidents, webhooks, route)
 
 # run scheduler
+logging.getLogger("apscheduler.scheduler").setLevel(logging.ERROR)
 scheduler = BackgroundScheduler()
 scheduler.add_job(
     func=queue_manager.queue_handle,

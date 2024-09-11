@@ -33,7 +33,7 @@ class Application(ABC):
         self.thread_id_key = None
 
     def get_channels(self, channels_list):
-        logger.debug(f'Get {self.type.capitalize()} channels using API')
+        logger.info(f'Get {self.type.capitalize()} channels using API')
         public_channels = self._get_public_channels()
         channels = {ch: public_channels[ch] for ch in channels_list if ch in public_channels}
         missing_channels = set(channels_list) - set(channels.keys())
@@ -42,15 +42,15 @@ class Application(ABC):
         return channels
 
     def get_url(self, app_config):
-        logger.debug(f'Get {self.type.capitalize()} URL')
+        logger.info(f'Get {self.type.capitalize()} URL')
         return self._get_url(app_config)
 
     def get_team_name(self, app_config):
-        logger.debug(f'Get {self.type.capitalize()} team name') #! disable for Slack
+        logger.info(f'Get {self.type.capitalize()} team name') #! disable for Slack
         return self._get_team_name(app_config)
 
     def generate_users(self, users_dict):
-        logger.debug(f'Get {self.type.capitalize()} users using API')
+        logger.info(f'Get {self.type.capitalize()} users using API')
         return self._generate_users(users_dict)
 
     def generate_template(self):

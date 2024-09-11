@@ -88,7 +88,7 @@ class Queue:
 
     @classmethod
     def recreate_queue(cls, incidents, check_update):
-        logger.debug('Creating Queue')
+        logger.info('Creating Queue')
         queue = cls(check_update)
 
         for uuid_, incident in incidents.by_uuid.items():
@@ -96,8 +96,8 @@ class Queue:
             queue.put(incident.status_update_datetime, 'update_status', uuid_)
 
         if queue.items:
-            logger.debug('Queue restored with incidents')
+            logger.info('Queue restored with incidents')
         else:
-            logger.debug('Empty Queue created')
+            logger.info('Empty Queue created')
 
         return queue

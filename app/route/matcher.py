@@ -9,7 +9,7 @@ class Matcher:
     def __init__(self, string):
         m = Matcher.re_type.match(string)
         if not m:
-            logger.debug(f'Cannot use matcher \"{string}\"')
+            logger.warning(f'Cannot use matcher \"{string}\"')
         self.type = m.group('type')
         self.label = m.group('label')
         self.expr = m.group('expr')

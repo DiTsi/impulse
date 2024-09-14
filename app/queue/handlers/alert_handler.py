@@ -70,7 +70,7 @@ class AlertHandler(BaseHandler):
         )
         self.incidents.add(incident_)
 
-        logger.info(f'Incident \'{incident_.uuid}\' created. Link: {incident_.link}')
+        logger.info(f'Incident {incident_.uuid} created. Link: {incident_.link}')
         [logger.info(f'  {i}: {alert_state["groupLabels"][i]}') for i in alert_state['groupLabels'].keys()]
         logger.debug(f'{alert_state}')
 

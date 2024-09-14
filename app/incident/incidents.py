@@ -26,7 +26,7 @@ class Incidents:
         if incident:
             try:
                 os.remove(f'{incidents_path}/{uuid_}.yml')
-                logger.info(f'Incident \'{uuid_}\' closed. Link: {incident.link}')
+                logger.info(f'Incident {uuid_} closed. Link: {incident.link}')
             except FileNotFoundError:
                 logger.error(f'Failed to delete incident file for uuid: {uuid_}. File not found.')
         else:

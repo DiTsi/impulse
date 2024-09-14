@@ -78,6 +78,7 @@ class Application(ABC):
             unit_text=unit_text
         )
         response_code = self._post_thread(incident.channel_id, incident.ts, text)
+        logger.info(f'Incident {incident.uuid} -> chain step {notify_type} \'{identifier}\'')
         return response_code
 
     def notify_webhook(self, incident, base_text, result, response_code=None):
@@ -109,7 +110,7 @@ class Application(ABC):
             incident.channel_id, incident.ts, incident_status, body, header, status_icons, chain_enabled, status_enabled
         )
         if updated_status:
-            logger.info(f'Incident \'{uuid_}\' updated with new status \'{incident_status}\'')
+            logger.info(f'Incident {uuid_} updated with new status \'{incident_status}\'')
             # post to thread
             if status_enabled and incident_status != 'closed':
                 body = TextManager.get_template(

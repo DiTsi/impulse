@@ -32,10 +32,10 @@ class StepHandler(BaseHandler):
                 result, r_code = webhook.push()
                 self.app.notify_webhook(incident, text, result, response_code=r_code)
                 incident.chain_update(identifier, done=True, result=r_code)
-                logger.info(f'Notify webhook \'{webhook_name}\' result: \'{result}\', response code is {r_code}')
+                logger.info(f'Incident {incident.uuid} -> chain step webhook \'{webhook_name}\': {result}, response code {r_code}')
             else:
                 self.app.notify_webhook(incident, text, 'not found in impulse.yml')
-                logger.info(f'Webhook \'{webhook_name}\' not found in impulse.yml')
+                logger.warning(f'Incident {incident.uuid} -> chain step webhook \'{webhook_name}\': undefined in impulse.yml')
                 incident.chain_update(identifier, done=True, result=None)
         else:
             r_code = self.app.notify(incident, step['type'], step['identifier'])

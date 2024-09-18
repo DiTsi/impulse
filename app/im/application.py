@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 from time import sleep
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3 import Retry
 
 from app.im.chain import generate_chains
 from app.im.groups import generate_user_groups
@@ -14,15 +16,11 @@ from app.text_manager import TextManager
 class Application(ABC):
 
     def __init__(self, app_config, channels_list, default_channel):
+        self.http = self._setup_http()
         self.type = app_config['type']
         self.url = self.get_url(app_config)
         self.team = self.get_team_name(app_config)
-        self.channels = self.get_channels(channels_list)
-        self.default_channel_id = self.channels[default_channel]['id']
         self.chains = generate_chains(app_config.get('chains', dict()))
-        self.users = self.generate_users(app_config.get('users'))
-        self.user_groups = generate_user_groups(app_config.get('user_groups'), self.users)
-        self.admin_users = [self.users[admin] for admin in app_config['admin_users']]
         self.templates = app_config.get('template_files', dict())
         self.body_template, self.header_template, self.status_icons_template = self.generate_template()
 
@@ -31,6 +29,13 @@ class Application(ABC):
         self.headers = None
         self.post_delay = None
         self.thread_id_key = None
+        self._initialize_specific_params()
+
+        self.channels = self.get_channels(channels_list)
+        self.default_channel_id = self.channels[default_channel]['id']
+        self.users = self._generate_users(app_config.get('users'))
+        self.user_groups = generate_user_groups(app_config.get('user_groups'), self.users)
+        self.admin_users = [self.users[admin] for admin in app_config['admin_users']]
 
     def get_channels(self, channels_list):
         logger.info(f'Get {self.type.capitalize()} channels using API')
@@ -46,12 +51,22 @@ class Application(ABC):
         return self._get_url(app_config)
 
     def get_team_name(self, app_config):
-        logger.info(f'Get {self.type.capitalize()} team name') #! disable for Slack
         return self._get_team_name(app_config)
 
-    def generate_users(self, users_dict):
-        logger.info(f'Get {self.type.capitalize()} users using API')
-        return self._generate_users(users_dict)
+    def _generate_users(self, users_dict):
+        if not users_dict:
+            logger.info('No users defined in impulse.yml')
+            return {}
+
+        logger.info(f'Creating {self.type.capitalize()} users')
+        users_list = self._get_users()
+
+        users = {}
+        for name, user_info in users_dict.items():
+            user_details = self.get_user_details(users_list, user_info)
+            users[name] = self.create_user(name, user_details)
+
+        return users
 
     def generate_template(self):
         def read_template(file_key, default_path):
@@ -124,7 +139,7 @@ class Application(ABC):
                     italic_admins_text = self._format_text_italic(admins_text)
                     body = TextManager.get_template(
                         'unknown_status',
-                        header=self._format_text_citation( self.header_template.form_message(incident.last_state)),
+                        header=self._format_text_citation(self.header_template.form_message(incident.last_state)),
                         status=self.format_text_bold(incident_status),
                         admins=italic_admins_text
                     )
@@ -163,6 +178,24 @@ class Application(ABC):
         sleep(self.post_delay)
         return response.status_code
 
+    @staticmethod
+    def _setup_http():
+        retry_strategy = Retry(
+            total=3,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["GET"],
+            backoff_factor=2
+        )
+
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        http = requests.Session()
+        http.mount("https://", adapter)
+        return http
+
+    @abstractmethod
+    def _initialize_specific_params(self):
+        pass
+
     @abstractmethod
     def _get_public_channels(self):
         pass
@@ -173,10 +206,6 @@ class Application(ABC):
 
     @abstractmethod
     def _get_team_name(self, app_config):
-        pass
-
-    @abstractmethod
-    def _generate_users(self, users_dict):
         pass
 
     @abstractmethod
@@ -212,7 +241,7 @@ class Application(ABC):
         pass
 
     @abstractmethod
-    def _post_thread_payload(self, channel_id, id, text):
+    def _post_thread_payload(self, channel_id, id_, text):
         pass
 
     @abstractmethod
@@ -222,4 +251,19 @@ class Application(ABC):
 
     @abstractmethod
     def _update_thread(self, id_, payload):
+        pass
+
+    @abstractmethod
+    def _get_users(self):
+        """Fetch users from the external system. Must be implemented by subclasses."""
+        pass
+
+    @abstractmethod
+    def get_user_details(self, s_users, user_info):
+        """Fetch user-specific details (ID, name, etc.) from the system. Must be implemented by subclasses."""
+        pass
+
+    @abstractmethod
+    def create_user(self, name, user_details):
+        """Create a user object specific to the application (Slack/Mattermost)."""
         pass

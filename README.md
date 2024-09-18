@@ -16,6 +16,8 @@ See [https://docs.impulse.bot](https://docs.impulse.bot)
 ## Quick Start
 *Docker installation for Slack. For details see [documentation](https://docs.impulse.bot)*
 
+### Run
+
 1. Create bot with [instructions](https://docs.impulse.bot/latest/apps/#slack)
 2. Create directories
     ```bash
@@ -35,3 +37,11 @@ See [https://docs.impulse.bot](https://docs.impulse.bot)
     ```bash
     docker-compose up -d
     ```
+
+### Test
+
+To ensure IMPulse works fine send test alert:
+
+```bash
+curl -XPOST -H "Content-Type: application/json" http://localhost:5000/ -d '{"receiver":"webhook-alerts","status":"firing","alerts":[{"status":"firing","labels":{"alertname":"InstanceDown4","instance":"localhost:9100","job":"node","severity":"warning"},"annotations":{"summary":"Instanceunavailable"},"startsAt":"2024-07-28T19:26:43.604Z","endsAt":"0001-01-01T00:00:00Z","generatorURL":"http://eva:9090/graph?g0.expr=up+%3D%3D+0&g0.tab=1","fingerprint":"a7ddb1de342424cb"}],"groupLabels":{"alertname":"InstanceDown"},"commonLabels":{"alertname":"InstanceDown","instance":"localhost:9100","job":"node","severity":"warning"},"commonAnnotations":{"summary":"Instanceunavailable"},"externalURL":"http://eva:9093","version":"4","groupKey":"{}:{alertname=\"InstanceDown\"}","truncatedAlerts":0}'
+```

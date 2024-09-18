@@ -74,7 +74,7 @@ class Application(ABC):
             unit_text = unit.mention_text(self.type, destinations)
         text = TextManager.get_template(
             'notify_message',
-            header=self._format_text_citation(self.header_template.form_message(incident.last_state)),
+            header=self._format_text_citation(self.header_template.form_message(incident.last_state, incident)),
             unit_text=unit_text
         )
         response_code = self._post_thread(incident.channel_id, incident.ts, text)
@@ -94,18 +94,19 @@ class Application(ABC):
             italic_admins_text = self._format_text_italic(admins_text)
         text = TextManager.get_template(
             'notify_webhook_message',
-            header=self._format_text_citation(self.header_template.form_message(incident.last_state)),
+            header=self._format_text_citation(self.header_template.form_message(incident.last_state, incident)),
             notification_text=base_text
         )
+
         if italic_admins_text:
             text += TextManager.get_template('admins', admins=italic_admins_text)
 
         return self._post_thread(incident.channel_id, incident.ts, text)
 
     def update(self, uuid_, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
-        body = self.body_template.form_message(alert_state)
-        header = self.header_template.form_message(alert_state)
-        status_icons = self.status_icons_template.form_message(alert_state)
+        body = self.body_template.form_message(alert_state, incident)
+        header = self.header_template.form_message(alert_state, incident)
+        status_icons = self.status_icons_template.form_message(alert_state, incident)
         self.update_thread(
             incident.channel_id, incident.ts, incident_status, body, header, status_icons, chain_enabled, status_enabled
         )
@@ -115,7 +116,7 @@ class Application(ABC):
             if status_enabled and incident_status != 'closed':
                 body = TextManager.get_template(
                     'status_update',
-                    header=self._format_text_citation(self.header_template.form_message(incident.last_state)),
+                    header=self._format_text_citation(self.header_template.form_message(incident.last_state, incident)),
                     status=self.format_text_bold(incident_status)
                 )
                 if incident_status == 'unknown':

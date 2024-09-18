@@ -18,7 +18,7 @@ See [https://docs.impulse.bot](https://docs.impulse.bot)
 
 ### Run
 
-1. Create bot with [instructions](https://docs.impulse.bot/latest/apps/#slack)
+1. Create bot with [instructions](https://docs.impulse.bot/latest/slack)
 2. Create directories
     ```bash
     mkdir impulse impulse/config impulse/data

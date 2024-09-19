@@ -1,16 +1,11 @@
 .vscode
 .idea
 .env
-.venv
 
-impulse.yml
 __pycache__
 
 venv
 env
 
+impulse.yml
 data
-incidents
-response.json
-response_example.json
-ngrok.sh

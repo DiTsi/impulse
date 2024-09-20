@@ -29,7 +29,7 @@ See [https://docs.impulse.bot](https://docs.impulse.bot)
     wget -O docker-compose.yml https://raw.githubusercontent.com/DiTsi/impulse/master/docker-compose.yml
     wget -O config/impulse.yml https://raw.githubusercontent.com/DiTsi/impulse/master/impulse.slack.yml
     ```
-4. Modify `config/impulse.yml` with actual data
+4. Modify uncommented lines in `config/impulse.yml` with actual data
 
 5. Replace `<release_tag>` in `docker-compose.yml` to one of the [release tags](https://github.com/DiTsi/impulse/releases) and set environment variables `SLACK_BOT_USER_OAUTH_TOKEN` and `SLACK_VERIFICATION_TOKEN`
 

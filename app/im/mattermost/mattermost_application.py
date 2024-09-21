@@ -2,7 +2,6 @@ import json
 from time import sleep
 
 import requests
-from tomlkit import value
 
 from app.im.application import Application
 from app.im.colors import status_colors
@@ -82,7 +81,7 @@ class MattermostApplication(Application):
 
     def _get_users(self, users):
         usernames = [u['username'] for k, u in users.items()]
-        logger.info(f'Get users from Mattermost, usernames: {usernames}')
+        logger.info(f'Get users from Mattermost')
         try:
             response = self.http.post(
                 f'{self.url}/api/v4/users/usernames',

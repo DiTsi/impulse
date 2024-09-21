@@ -59,7 +59,7 @@ class Application(ABC):
             return {}
 
         logger.info(f'Creating {self.type.capitalize()} users')
-        users_list = self._get_users()
+        users_list = self._get_users(users_dict)
 
         users = {}
         for name, user_info in users_dict.items():
@@ -254,7 +254,7 @@ class Application(ABC):
         pass
 
     @abstractmethod
-    def _get_users(self):
+    def _get_users(self, users):
         """Fetch users from the external system. Must be implemented by subclasses."""
         pass
 

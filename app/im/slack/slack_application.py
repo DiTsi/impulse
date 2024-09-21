@@ -60,15 +60,15 @@ class SlackApplication(Application):
         full_names = [u['full_name'] for k, u in users.items()]
         filtered_users = []
         request_data = {
-            'limit': 200,
-            'headers': self.headers
+            'limit': 50,
         }
-        logger.info(f'Get users from Slack, full names: {full_names}')
+        logger.info(f'Get users from Slack')
         try:
             while len(filtered_users) < len(full_names):
                 response = self.http.get(
                     f'{self.url}/api/users.list',
-                    **request_data
+                    data=request_data,
+                    headers=self.headers
                 )
                 response.raise_for_status()
                 sleep(slack_request_delay)

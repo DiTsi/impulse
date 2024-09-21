@@ -79,11 +79,13 @@ class MattermostApplication(Application):
         logger.warning(f"User '{username}' not found in Mattermost")
         return {'username': username, 'first_name': None, 'last_name': None}
 
-    def _get_users(self):
+    def _get_users(self, users):
+        usernames = [u['username'] for k, u in users.items()]
+        logger.info(f'Get users from Mattermost')
         try:
-            response = self.http.get(
-                f'{self.url}/api/v4/users',
-                params={'per_page': 200, 'active': True},
+            response = self.http.post(
+                f'{self.url}/api/v4/users/usernames',
+                data=json.dumps(usernames),
                 headers=self.headers
             )
             response.raise_for_status()

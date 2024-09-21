@@ -56,16 +56,31 @@ class SlackApplication(Application):
         logger.warning(f"User '{full_name}' not found in Slack")
         return {'name': user_info.get('name'), 'slack_id': None}
 
-    def _get_users(self):
+    def _get_users(self, users):
+        full_names = [u['full_name'] for k, u in users.items()]
+        filtered_users = []
+        request_data = {
+            'limit': 50,
+        }
+        logger.info(f'Get users from Slack')
         try:
-            response = self.http.get(
-                f'{self.url}/api/users.list',
-                headers=self.headers
-            )
-            response.raise_for_status()
-            sleep(slack_request_delay)
-            json_data = response.json()
-            return json_data['members']
+            while len(filtered_users) < len(full_names):
+                response = self.http.get(
+                    f'{self.url}/api/users.list',
+                    data=request_data,
+                    headers=self.headers
+                )
+                response.raise_for_status()
+                sleep(slack_request_delay)
+                json_data = response.json()
+                for user in json_data.get('members', []):
+                    if user.get('real_name') in full_names:
+                        filtered_users.append(user)
+                cursor = json_data.get('response_metadata', {}).get('next_cursor')
+                request_data.update({'cursor': cursor})
+                if not cursor:
+                    break
+            return filtered_users
         except requests.exceptions.RequestException as e:
             logger.error(f'Incorrect Slack response. Reason: {e}')
             raise UserGenerationError(f'Failed to retrieve users: {e}')

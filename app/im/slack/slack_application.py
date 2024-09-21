@@ -67,7 +67,7 @@ class SlackApplication(Application):
             while len(filtered_users) < len(full_names):
                 response = self.http.get(
                     f'{self.url}/api/users.list',
-                    data=request_data,
+                    params=request_data,
                     headers=self.headers
                 )
                 response.raise_for_status()

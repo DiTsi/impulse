@@ -82,11 +82,12 @@ class Application(ABC):
     def notify(self, incident, notify_type, identifier):
         destinations = self.get_notification_destinations()
         if notify_type == 'user':
-            unit = self.users[identifier]
-            unit_text = unit.mention_text(destinations)
+            unit = self.users.get(identifier)
+            unit_text = unit.mention_text(destinations) if unit else self._unit_not_found_text(notify_type, identifier)
         else:
-            unit = self.user_groups[identifier]
-            unit_text = unit.mention_text(self.type, destinations)
+            unit = self.user_groups.get(identifier)
+            unit_text = unit.mention_text(self.type, destinations) if unit else self._unit_not_found_text(notify_type,
+                                                                                                          identifier)
         text = TextManager.get_template(
             'notify_message',
             header=self._format_text_citation(self.header_template.form_message(incident.last_state, incident)),
@@ -177,6 +178,17 @@ class Application(ABC):
         response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
         sleep(self.post_delay)
         return response.status_code
+
+    def _unit_not_found_text(self, unit_type, identifier):
+        logger.error(f'{unit_type.capitalize()} \'{identifier}\' not found in impulse.yml')
+        admins_text = self.get_admins_text()
+        italic_admins_text = self._format_text_italic(admins_text)
+        return TextManager.get_template(
+            'unit_not_defined',
+            unit_type=unit_type.capitalize(),
+            identifier=self.format_text_bold(identifier),
+            admins=italic_admins_text
+        )
 
     @staticmethod
     def _setup_http():

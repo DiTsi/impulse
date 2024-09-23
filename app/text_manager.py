@@ -29,6 +29,7 @@ class TextManager:
             'status_update': "{header}\n➤ status: {status}",
             'unknown_status': "{header}\n➤ status: {status}\n➤ admins: {admins}",
             'new_version': "{new_version} {changelog_link}\n\n{release_notes}",
+            'unit_not_defined': "{unit_type} {identifier} not defined in impulse.yml. \n➤ admins: {admins}",
         }
         self._initialize_templates()
 

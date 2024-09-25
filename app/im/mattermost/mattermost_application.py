@@ -97,6 +97,7 @@ class MattermostApplication(Application):
 
     def create_user(self, name, user_details):
         return User(
+            name=name,
             username=user_details['username'],
             first_name=user_details.get('first_name', ''),
             last_name=user_details.get('last_name', '')

@@ -50,7 +50,7 @@ class SlackApplication(Application):
         user = next((u for u in s_users if u.get('real_name') == full_name), None)
         if user:
             return {
-                'name': user_info.get('name'),
+                'name': user_info.get('full_name'),
                 'slack_id': user.get('id')
             }
         logger.warning(f"User '{full_name}' not found in Slack")
@@ -88,7 +88,7 @@ class SlackApplication(Application):
     def create_user(self, name, user_details):
         # Create an instance of the Slack User
         return User(
-            name=user_details['name'],
+            name=name,
             slack_id=user_details.get('slack_id')
         )
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.2.0
+Changes:
+- Ability to use incident object attributes in [templates](https://docs.impulse.bot/latest/templates/) and [webhooks](https://docs.impulse.bot/latest/webhooks/)
+- Templates refactoring
+- Added runbook link in message template ([docs](https://docs.impulse.bot/latest/templates/#source-and-runbook-links))
+- Fix user notifications for undefined users
+
 ## v1.1.0
 Changes:
 - Added webhook notifications in instant messengers

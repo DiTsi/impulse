@@ -19,6 +19,6 @@ class User:
         else:
             text = f'➤ user {mattermost_bold_text(self.name)}: '
             admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_usernames)
-            text += (f'**not found in Mattermost**\n'
+            text += (f'not found in Mattermost\n'
                      f'➤ admins: {admins_text}')
         return text

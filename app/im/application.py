@@ -185,7 +185,7 @@ class Application(ABC):
         italic_admins_text = self._format_text_italic(admins_text)
         return TextManager.get_template(
             'unit_not_defined',
-            unit_type=unit_type.capitalize(),
+            unit_type=unit_type,
             identifier=self.format_text_bold(identifier),
             admins=italic_admins_text
         )

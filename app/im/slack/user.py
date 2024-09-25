@@ -21,6 +21,6 @@ class User:
             text += f'{slack_mention_text(self.slack_id)}'
         else:
             admins_text = slack_env.from_string(slack_admins_template_string).render(users=admins_ids)
-            text += (f'*not found in Slack*\n'
+            text += (f'not found in Slack\n'
                      f'➤ admins: {admins_text}')
         return text

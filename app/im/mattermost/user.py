@@ -8,7 +8,8 @@ from app.logging import logger
 
 
 class User:
-    def __init__(self, username, first_name, last_name):
+    def __init__(self, name, username, first_name, last_name):
+        self.name = name
         self.username = username
         self.first_name = first_name
         self.last_name = last_name
@@ -18,16 +19,12 @@ class User:
 
     def mention_text(self, admins_usernames):
         if self.first_name is not None:
-            if self.first_name == '' and self.last_name == '':
-                fullname = self.username
-            else:
-                fullname = self.first_name + ' ' + self.last_name
-            text = f'➤ user {mattermost_bold_text(fullname)}: '
+            text = f'➤ user {mattermost_bold_text(self.name)}: '
             text += f'{mattermost_mention_text(self.username)}'
         else:
             text = f'➤ user {mattermost_bold_text(self.username)}: '
             admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_usernames)
-            text += (f'**not found in Mattermost**\n'
+            text += (f'not found in Mattermost\n'
                      f'➤ admins: {admins_text}')
         return text
 
@@ -61,7 +58,7 @@ def mattermost_generate_users(url, users_dict=None):
         for name in users_dict.keys():
             mattermost_username = users_dict[name]['username']
             first_name, last_name = get_first_and_last_names(mattermost_users, mattermost_username)
-            users[name] = User(mattermost_username, first_name, last_name)
+            users[name] = User(name, mattermost_username, first_name, last_name)
         return users
     else:
         logger.info(f'No users defined in impulse.yml')

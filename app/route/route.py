@@ -67,7 +67,7 @@ class Route(MainRoute):
 
 
 def generate_route(route_dict):
-    logger.info(f'Creating Route')
+    logger.info(f'Creating route')
     main_channel_name = route_dict['channel']
     main_chain = route_dict.get('chain')
     routes = route_dict.get('routes')

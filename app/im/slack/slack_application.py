@@ -42,7 +42,6 @@ class SlackApplication(Application):
         return 'https://slack.com'
 
     def _get_team_name(self, app_config):
-        logger.info(f'Skip getting team name for {self.type.capitalize()}')
         return None
 
     def get_user_details(self, s_users, user_info):

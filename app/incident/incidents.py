@@ -41,9 +41,7 @@ class Incidents:
         if not os.path.exists(incidents_path):
             logger.info('Creating incidents directory')
             os.makedirs(incidents_path)
-            logger.info('Created incidents directory')
-        else:
-            logger.info('Loading incidents from disk')
+        logger.info('Loading existing incidents')
 
         incidents = cls([])
 

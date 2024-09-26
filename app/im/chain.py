@@ -11,9 +11,8 @@ class Chain:
 
 
 def generate_chains(chains_dict):
-    logger.info(f'Creating Chains')
+    logger.info(f'Creating chains')
     chains = {
         name: Chain(name, chains_dict[name]) for name in chains_dict.keys()
     }
-    logger.info(f'Chains created')
     return chains

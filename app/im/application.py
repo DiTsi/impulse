@@ -47,7 +47,6 @@ class Application(ABC):
         return channels
 
     def get_url(self, app_config):
-        logger.info(f'Get {self.type.capitalize()} URL')
         return self._get_url(app_config)
 
     def get_team_name(self, app_config):
@@ -58,7 +57,7 @@ class Application(ABC):
             logger.info('No users defined in impulse.yml')
             return {}
 
-        logger.info(f'Creating {self.type.capitalize()} users')
+        logger.info(f'Creating users')
         users_list = self._get_users(users_dict)
 
         users = {}

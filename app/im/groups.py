@@ -13,7 +13,6 @@ def generate_user_groups(user_groups_dict=None, users=None):
             user_names = user_groups_dict[name]['users']
             user_objects = [users.get(user_name) for user_name in user_names]
             user_groups[name] = UserGroup(name, user_objects)
-        logger.info(f'user_groups created')
     else:
         logger.info(f'No user_groups defined in impulse.yml. Continue with empty user_groups')
     return user_groups

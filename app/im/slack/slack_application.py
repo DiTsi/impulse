@@ -53,7 +53,13 @@ class SlackApplication(Application):
             return {}
 
     def _get_url(self, app_config):
-        return 'https://slack.com'
+        response = self.http.get(
+            f'https://slack.com/api/auth.test',
+            headers=slack_headers
+        )
+        sleep(slack_request_delay)
+        json_ = response.json()
+        return json_.get('url')
 
     def _get_team_name(self, app_config):
         return None

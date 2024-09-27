@@ -44,7 +44,7 @@ class Incident:
 
     def generate_link(self) -> str:
         if self.config.application_type == 'slack':
-            return f'{self.config.application_url}/archives/{self.channel_id}/p{self.ts.replace(".", "")}'
+            return f'{self.config.application_url}' + f'archives/{self.channel_id}/p{self.ts.replace(".", "")}'
         return f'{self.config.application_url}/{self.config.application_team.lower()}/pl/{self.ts}'
 
     def generate_chain(self, chain=None):

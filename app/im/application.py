@@ -40,7 +40,9 @@ class Application(ABC):
     def get_channels(self, channels_list):
         logger.info(f'Get {self.type.capitalize()} channels using API')
         public_channels = self._get_public_channels()
-        channels = {ch: public_channels[ch] for ch in channels_list if ch in public_channels}
+        private_channels = self._get_private_channels()
+        all_channels = public_channels | private_channels
+        channels = {ch: all_channels[ch] for ch in channels_list if ch in all_channels}
         missing_channels = set(channels_list) - set(channels.keys())
         for ch in missing_channels:
             logger.warning(f'No public channel \'{ch}\' in {self.type.capitalize()}')
@@ -209,6 +211,10 @@ class Application(ABC):
 
     @abstractmethod
     def _get_public_channels(self):
+        pass
+
+    @abstractmethod
+    def _get_private_channels(self):
         pass
 
     @abstractmethod

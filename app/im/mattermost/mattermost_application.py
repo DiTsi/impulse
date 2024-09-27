@@ -31,6 +31,21 @@ class MattermostApplication(Application):
             return {}
         return self._get_channels(team)
 
+    def _get_private_channels(self) -> dict:
+        try:
+            response = self.http.get(
+                f"{self.url}/api/v4/channels",
+                params={'per_page': 1000},
+                headers=self.headers
+            )
+            response.raise_for_status()
+            sleep(self.post_delay)
+            data = response.json()
+            return {c.get('name'): c for c in data}
+        except requests.exceptions.RequestException as e:
+            logger.error(f'Failed to retrieve channel list: {e}')
+            return {}
+
     def _get_channels(self, team):
         try:
             response = self.http.get(

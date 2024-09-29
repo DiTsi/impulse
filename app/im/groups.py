@@ -1,7 +1,7 @@
 from app.im.mattermost.config import mattermost_env, mattermost_admins_template_string, \
-    mattermost_users_template_string, mattermost_bold_text, mattermost_mention_text
+    mattermost_bold_text, mattermost_mention_text
 from app.im.slack.config import slack_env, slack_bold_text, slack_mention_text
-from app.im.slack.config import slack_users_template_string, slack_admins_template_string
+from app.im.slack.config import slack_admins_template_string
 from app.logging import logger
 
 
@@ -51,5 +51,5 @@ class UserGroup:
             else:
                 admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_ids)
             if not_found:
-                text += f'\n➤ admins: _{admins_text}_'
+                text += f'\n➤ admins: {admins_text}'
         return text

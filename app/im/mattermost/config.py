@@ -43,5 +43,4 @@ def mattermost_mention_text(value):
 mattermost_env = Environment()
 mattermost_env.filters['mattermost_bold_text'] = mattermost_bold_text
 mattermost_env.filters['mattermost_mention_text'] = mattermost_mention_text
-mattermost_users_template_string = "{{ users | map('mattermost_bold_text') | join(', ') }}"
 mattermost_admins_template_string = "{{ users | map('mattermost_mention_text') | join(', ') }}"

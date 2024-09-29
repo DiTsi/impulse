@@ -99,24 +99,22 @@ class Application(ABC):
         return response_code
 
     def notify_webhook(self, incident, base_text, result, response_code=None):
-        italic_admins_text = ''
+        admins_text = ''
         if result == 'ok':
             base_text += f'{response_code}'
             if response_code >= 400:
                 admins_text = self.get_admins_text()
-                italic_admins_text = self._format_text_italic(admins_text)
         else:
             base_text += f'{result}'
             admins_text = self.get_admins_text()
-            italic_admins_text = self._format_text_italic(admins_text)
         text = TextManager.get_template(
             'notify_webhook_message',
             header=self._format_text_citation(self.header_template.form_message(incident.last_state, incident)),
             notification_text=base_text
         )
 
-        if italic_admins_text:
-            text += TextManager.get_template('admins', admins=italic_admins_text)
+        if admins_text:
+            text += TextManager.get_template('admins', admins=admins_text)
 
         return self._post_thread(incident.channel_id, incident.ts, text)
 
@@ -138,12 +136,11 @@ class Application(ABC):
                 )
                 if incident_status == 'unknown':
                     admins_text = self.get_admins_text()
-                    italic_admins_text = self._format_text_italic(admins_text)
                     body = TextManager.get_template(
                         'unknown_status',
                         header=self._format_text_citation(self.header_template.form_message(incident.last_state)),
                         status=self.format_text_bold(incident_status),
-                        admins=italic_admins_text
+                        admins=admins_text
                     )
                 self._post_thread(incident.channel_id, incident.ts, body)
 
@@ -183,12 +180,11 @@ class Application(ABC):
     def _unit_not_found_text(self, unit_type, identifier):
         logger.error(f'{unit_type.capitalize()} \'{identifier}\' not found in impulse.yml')
         admins_text = self.get_admins_text()
-        italic_admins_text = self._format_text_italic(admins_text)
         return TextManager.get_template(
             'unit_not_defined',
             unit_type=unit_type,
             identifier=self.format_text_bold(identifier),
-            admins=italic_admins_text
+            admins=admins_text
         )
 
     @staticmethod

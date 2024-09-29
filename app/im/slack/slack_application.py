@@ -35,14 +35,33 @@ class SlackApplication(Application):
             sleep(self.post_delay)
             return {c.get('name'): c for c in response.json().get('channels', [])}
         except requests.exceptions.RequestException as e:
-            logger.error(f'Failed to retrieve channel list: {e}')
+            logger.error(f'Failed to retrieve public channels list: {e}')
+            return {}
+
+    def _get_private_channels(self) -> dict:
+        try:
+            response = self.http.get(
+                f'{self.url}/api/conversations.list',
+                params={'types': 'private_channel', 'limit': 1000},
+                headers=self.headers
+            )
+            response.raise_for_status()
+            sleep(self.post_delay)
+            return {c.get('name'): c for c in response.json().get('channels', [])}
+        except requests.exceptions.RequestException as e:
+            logger.error(f'Failed to retrieve private channels list: {e}')
             return {}
 
     def _get_url(self, app_config):
-        return 'https://slack.com'
+        response = self.http.get(
+            f'https://slack.com/api/auth.test',
+            headers=slack_headers
+        )
+        sleep(slack_request_delay)
+        json_ = response.json()
+        return json_.get('url')
 
     def _get_team_name(self, app_config):
-        logger.info(f'Skip getting team name for {self.type.capitalize()}')
         return None
 
     def get_user_details(self, s_users, user_info):

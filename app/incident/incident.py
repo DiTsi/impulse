@@ -20,7 +20,6 @@ class IncidentConfig:
 class Incident:
     last_state: Dict
     status: str
-    ts: str
     channel_id: str
     config: IncidentConfig
     chain: List[Dict] = field(default_factory=list)
@@ -30,7 +29,8 @@ class Incident:
     updated: datetime = datetime.utcnow()
     version: str = INCIDENT_ACTUAL_VERSION
     uuid: str = field(init=False)
-    link: str = field(init=False)
+    ts: str = field(default='')
+    link: str = field(default='')
 
     next_status = {
         'firing': 'unknown',
@@ -40,11 +40,14 @@ class Incident:
 
     def __post_init__(self):
         self.uuid = gen_uuid(self.last_state.get('groupLabels'))
+
+    def set_thread(self, thread_id: str):
+        self.ts = thread_id
         self.link = self.generate_link()
 
     def generate_link(self) -> str:
         if self.config.application_type == 'slack':
-            return f'{self.config.application_url}/archives/{self.channel_id}/p{self.ts.replace(".", "")}'
+            return f'{self.config.application_url}' + f'archives/{self.channel_id}/p{self.ts.replace(".", "")}'
         return f'{self.config.application_url}/{self.config.application_team.lower()}/pl/{self.ts}'
 
     def generate_chain(self, chain=None):
@@ -89,7 +92,6 @@ class Incident:
         incident = cls(
             last_state=content.get('last_state'),
             status=content.get('status'),
-            ts=content.get('ts'),
             channel_id=content.get('channel_id'),
             config=config,
             chain=content.get('chain', []),
@@ -99,6 +101,7 @@ class Incident:
             updated=content.get('updated'),
             version=content.get('version', INCIDENT_ACTUAL_VERSION)
         )
+        incident.set_thread(content.get('ts'))
         return incident
 
     def dump(self):
@@ -123,12 +126,12 @@ class Incident:
             "chain": self.chain,
             "channel_id": self.channel_id,
             "last_state": self.last_state,
-            "link": self.link,
             "status_enabled": self.status_enabled,
             "status_update_datetime": self.status_update_datetime,
             "status": self.status,
-            "ts": self.ts,
             "updated": self.updated,
+            "link": self.link,
+            "ts": self.ts,
         }
 
     def update_status(self, status: str) -> bool:

@@ -95,9 +95,4 @@ class Queue:
             queue.append(uuid_, incident.get_chain())
             queue.put(incident.status_update_datetime, 'update_status', uuid_)
 
-        if queue.items:
-            logger.info('Queue restored with incidents')
-        else:
-            logger.info('Empty Queue created')
-
         return queue

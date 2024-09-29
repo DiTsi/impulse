@@ -34,17 +34,7 @@ class AlertHandler(BaseHandler):
     def _handle_create(self, alert_state):
         channel, chain_name = self.route.get_route(alert_state)
         channel = self.app.channels[channel]
-        body_template = self.app.body_template
-        header_template = self.app.header_template
-        status_icons_template = self.app.status_icons_template
 
-        body = body_template.form_message(alert_state)
-        header = header_template.form_message(alert_state)
-        status_icons = status_icons_template.form_message(alert_state)
-
-        thread_id = self.app.create_thread(
-            channel['id'], body, header, status_icons, status=alert_state['status']
-        )
         status = alert_state['status']
         updated_datetime = datetime.utcnow()
         status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(timeouts.get(status))
@@ -58,7 +48,6 @@ class AlertHandler(BaseHandler):
         incident_ = Incident(
             last_state=alert_state,
             status=status,
-            ts=thread_id,
             channel_id=channel['id'],
             config=config,
             chain=[],
@@ -68,6 +57,7 @@ class AlertHandler(BaseHandler):
             status_update_datetime=status_update_datetime,
             version=INCIDENT_ACTUAL_VERSION
         )
+        self._create_thread(incident_, alert_state)
         self.incidents.add(incident_)
 
         logger.info(f'Incident {incident_.uuid} created. Link: {incident_.link}')
@@ -88,3 +78,13 @@ class AlertHandler(BaseHandler):
                 incident_.chain_enabled, incident_.status_enabled
             )
         self.queue.update(uuid_, incident_.status_update_datetime, incident_.status)
+
+    def _create_thread(self, incident_, alert_state):
+        body = self.app.body_template.form_message(alert_state, incident_)
+        header = self.app.header_template.form_message(alert_state, incident_)
+        status_icons = self.app.status_icons_template.form_message(alert_state, incident_)
+        thread_id = self.app.create_thread(
+            incident_.channel_id, body, header, status_icons, status=alert_state['status']
+        )
+        incident_.set_thread(thread_id)
+        return thread_id

@@ -8,6 +8,7 @@ from flask import request, Flask, redirect, url_for
 from app import buttons_handler
 from app.im.helpers import get_application
 from app.incident.incidents import Incidents
+from app.logging import logger
 from app.queue.manager import QueueManager
 from app.queue.queue import Queue
 from app.route import generate_route
@@ -33,6 +34,7 @@ queue = Queue.recreate_queue(incidents, check_updates)
 queue_manager = QueueManager(queue, application, incidents, webhooks, route)
 
 # run scheduler
+logger.info('Starting scheduler')
 logging.getLogger("apscheduler.scheduler").setLevel(logging.ERROR)
 scheduler = BackgroundScheduler()
 scheduler.add_job(
@@ -41,6 +43,7 @@ scheduler.add_job(
     seconds=0.25
 )
 scheduler.start()
+logger.info('IMPulse running!')
 
 
 def create_app():

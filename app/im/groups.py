@@ -51,5 +51,5 @@ class UserGroup:
             else:
                 admins_text = mattermost_env.from_string(mattermost_admins_template_string).render(users=admins_ids)
             if not_found:
-                text += f'\n➤ admins: _{admins_text}_'
+                text += f'\n➤ admins: {admins_text}'
         return text

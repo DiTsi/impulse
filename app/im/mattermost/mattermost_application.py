@@ -175,3 +175,6 @@ class MattermostApplication(Application):
             data=json.dumps(payload)
         )
         sleep(self.post_delay)
+
+    def _markdown_links_to_native_format(self, text):
+        return text

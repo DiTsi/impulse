@@ -154,9 +154,9 @@ class Application(ABC):
                                         new_version=new_version_text,
                                         changelog_link=changelog_link_text,
                                         release_notes=release_notes)
+        native_formatted_text = self._markdown_links_to_native_format(text)
         admins_text = self.get_admins_text()
-        italic_admins_text = self._format_text_italic(admins_text)
-        self.send_message(channel_id, text, italic_admins_text)
+        self.send_message(channel_id, native_formatted_text, admins_text)
 
     def create_thread(self, channel_id, body, header, status_icons, status):
         payload = self._create_thread_payload(channel_id, body, header, status_icons, status)
@@ -203,6 +203,10 @@ class Application(ABC):
 
     @abstractmethod
     def _initialize_specific_params(self):
+        pass
+
+    @abstractmethod
+    def _markdown_links_to_native_format(self, text):
         pass
 
     @abstractmethod

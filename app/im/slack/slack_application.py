@@ -1,4 +1,5 @@
 import json
+import re
 from time import sleep
 
 import requests
@@ -167,3 +168,13 @@ class SlackApplication(Application):
             headers=slack_headers,
             data=json.dumps(payload)
         )
+
+    def _markdown_links_to_native_format(self, text):
+        def replace_link(match):
+            link_text = match.group(1)
+            url = match.group(2)
+            return f'<{url}|{link_text}>'
+
+        pattern = r'\[([^\]]+)\]\(([^)]+)\)'
+        converted_text = re.sub(pattern, replace_link, text, flags=re.DOTALL)
+        return converted_text

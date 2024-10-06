@@ -1,0 +1,37 @@
+timeouts:
+  firing: 30s
+  unknown: 30s
+  resolved: 30s
+
+route:
+  channel: -1002381826040
+  routes:
+    - matchers:
+        - severity="info"
+      channel: -1002381826040
+      chain: user
+    - matchers:
+        - severity="warning"
+      channel: -1002381826040
+      chain: user
+    - matchers:
+        - severity="critical"
+      channel: -1002381826040
+      chain: user
+
+application:
+  url: https://api.telegram.org/bot
+  type: telegram
+  admin_users:
+    - Vk
+  chains:
+    user:
+      - user: Vk
+  user_groups:
+    default:
+      users:
+        - Vk
+  users:
+    Vk:
+      name: "Valery Khodchenkov"
+      username: "tansdf"

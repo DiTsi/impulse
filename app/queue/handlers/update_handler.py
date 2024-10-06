@@ -22,7 +22,7 @@ class UpdateHandler(BaseHandler):
     def handle(self, identifier):
         current_tag = get_latest_tag()
         if identifier != 'first' and current_tag != self.latest_tag['version']:
-            self.app.new_version_notification(self.queue.app.default_channel_id, current_tag)
+            self.app.new_version_notification(self.app.default_channel_id, current_tag)
             self.latest_tag['version'] = current_tag
         elif identifier == 'first':
             self.latest_tag['version'] = current_tag

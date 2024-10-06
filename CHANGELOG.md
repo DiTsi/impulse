@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.3.1
+Changes:
+- Fix 'update available' notification
+
+## v1.3.0
+Changes:
+- Add private channels support
+- Using `incident.status` in [status_icons](https://github.com/DiTsi/impulse/blob/main/templates/slack_status_icons.j2) instead of `payload.status` 
+- Use specific Slack workspace in incident links
+
 ## v1.2.0
 Changes:
 - Ability to use incident object attributes in [templates](https://docs.impulse.bot/latest/templates/) and [webhooks](https://docs.impulse.bot/latest/webhooks/)

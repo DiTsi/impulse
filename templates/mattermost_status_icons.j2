@@ -1,3 +1,3 @@
-{%- set status = payload.get("status", "Unknown") -%}
-{%- set status_emoji = {"firing": ":fire:", "resolved": ":white_check_mark:"}[status] -%}
+{%- set status = incident.status -%}
+{%- set status_emoji = {"firing": ":fire:", "unknown": ":warning:", "resolved": ":white_check_mark:", "closed": ":heavy_multiplication_x:"}[status] -%}
 {{- status_emoji -}}

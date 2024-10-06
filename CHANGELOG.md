@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.3.1
+Changes:
+- Fix 'update available' notification
+
 ## v1.3.0
 Changes:
 - Add private channels support

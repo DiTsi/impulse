@@ -51,10 +51,11 @@ def mattermost_get_button_update_payload(body, header, status_icons, status, cha
     return payload
 
 
-def mattermost_get_update_payload(channel_id, id, body, header, status_icons, status, chain_enabled, status_enabled):
+def mattermost_get_update_payload(channel_id, thread_id, body, header, status_icons, status, chain_enabled,
+                                  status_enabled):
     payload = {
         'channel_id': channel_id,
-        'id': id,
+        'id': thread_id,
         'message': f'{status_icons} {header}',
         'props': {
             'attachments': [

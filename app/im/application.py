@@ -129,11 +129,8 @@ class Application(ABC):
             logger.info(f'Incident {uuid_} updated with new status \'{incident_status}\'')
             # post to thread
             if status_enabled and incident_status != 'closed':
-                body = TextManager.get_template(
-                    'status_update',
-                    header=self._format_text_citation(self.header_template.form_message(incident.last_state, incident)),
-                    status=self.format_text_bold(incident_status)
-                )
+                body = (f'{self._format_text_citation(self.header_template.form_message(incident.last_state, incident))}'
+                        f'\n➤ status: {self.format_text_bold(incident_status)}')
                 if incident_status == 'unknown':
                     admins_text = self.get_admins_text()
                     body = TextManager.get_template(
@@ -150,10 +147,7 @@ class Application(ABC):
         new_version_text = self.format_text_bold(f'New IMPulse version available: {new_tag}')
         changelog_link_text = self._format_text_link("CHANGELOG.md",
                                                      "https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md")
-        text = TextManager.get_template('new_version',
-                                        new_version=new_version_text,
-                                        changelog_link=changelog_link_text,
-                                        release_notes=release_notes)
+        text = f"{new_version_text} {changelog_link_text}\n\n{release_notes}"
         native_formatted_text = self._markdown_links_to_native_format(text)
         admins_text = self.get_admins_text()
         self.send_message(channel_id, native_formatted_text, admins_text)
@@ -180,12 +174,7 @@ class Application(ABC):
     def _unit_not_found_text(self, unit_type, identifier):
         logger.error(f'{unit_type.capitalize()} \'{identifier}\' not found in impulse.yml')
         admins_text = self.get_admins_text()
-        return TextManager.get_template(
-            'unit_not_defined',
-            unit_type=unit_type,
-            identifier=self.format_text_bold(identifier),
-            admins=admins_text
-        )
+        return f"➤ {unit_type} {self.format_text_bold(identifier)}: not defined in impulse.yml\n➤ admins: {admins_text}"
 
     @staticmethod
     def _setup_http():

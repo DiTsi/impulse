@@ -1,6 +1,5 @@
 from app.logging import logger
 from app.queue.handlers.base_handler import BaseHandler
-from app.text_manager import TextManager
 
 
 class StepHandler(BaseHandler):
@@ -24,10 +23,8 @@ class StepHandler(BaseHandler):
         if step['type'] == 'webhook':
             webhook_name = step['identifier']
             webhook = self.webhooks.get(webhook_name)
-            text = TextManager.get_template(
-                'webhook_name',
-                webhook_name=self.app.format_text_bold(webhook_name)
-            )
+
+            text = f"➤ webhook {self.app.format_text_bold(webhook_name)}:"
             if webhook is not None:
                 result, r_code = webhook.push(incident)
                 self.app.notify_webhook(incident, text, result, response_code=r_code)

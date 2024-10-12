@@ -1,4 +1,5 @@
 import json
+import re
 from time import sleep
 
 import requests
@@ -70,10 +71,10 @@ class SlackApplication(Application):
         if user:
             return {
                 'name': user_info.get('full_name'),
-                'slack_id': user.get('id')
+                'id': user.get('id')
             }
         logger.warning(f"User '{full_name}' not found in Slack")
-        return {'name': user_info.get('name'), 'slack_id': None}
+        return {'name': user_info.get('name')}
 
     def _get_users(self, users):
         full_names = [u['full_name'] for k, u in users.items()]
@@ -108,20 +109,17 @@ class SlackApplication(Application):
         # Create an instance of the Slack User
         return User(
             name=name,
-            slack_id=user_details.get('slack_id')
+            slack_id=user_details.get('id')
         )
 
     def get_notification_destinations(self):
-        return [a.slack_id for a in self.admin_users]
+        return [a.id for a in self.admin_users]
 
     def format_text_bold(self, text):
         return slack_bold_text(text)
 
-    def _format_text_italic(self, text):
+    def format_text_italic(self, text):
         return f'_{text}_'
-
-    def _format_text_citation(self, text):
-        return f'>{text}'
 
     def _format_text_link(self, text, url):
         return f"(<{url}|{text}>)"
@@ -154,7 +152,7 @@ class SlackApplication(Application):
         return slack_get_create_thread_payload(channel_id, body, header, status_icons, status)
 
     def _post_thread_payload(self, channel_id, id_, text):
-        return {'channel': channel_id, 'thread_ts': id_, 'text': text}
+        return {'channel': channel_id, 'thread_ts': id_, 'text': text, 'unfurl_links': False, 'unfurl_media': False}
 
     def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
                                status_enabled):
@@ -167,3 +165,13 @@ class SlackApplication(Application):
             headers=slack_headers,
             data=json.dumps(payload)
         )
+
+    def _markdown_links_to_native_format(self, text):
+        def replace_link(match):
+            link_text = match.group(1)
+            url = match.group(2)
+            return f'<{url}|{link_text}>'
+
+        pattern = r'\[([^\]]+)\]\(([^)]+)\)'
+        converted_text = re.sub(pattern, replace_link, text, flags=re.DOTALL)
+        return converted_text

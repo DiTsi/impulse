@@ -8,9 +8,8 @@ from urllib3 import Retry
 
 from app.im.chain import generate_chains
 from app.im.groups import generate_user_groups
-from app.im.template import JinjaTemplate
+from app.im.template import JinjaTemplate, notification_user, notification_user_group, update_status
 from app.logging import logger
-from app.text_manager import TextManager
 
 
 class Application(ABC):
@@ -84,17 +83,17 @@ class Application(ABC):
         destinations = self.get_notification_destinations()
         if notify_type == 'user':
             unit = self.users.get(identifier)
-            unit_text = unit.mention_text(destinations) if unit else self._unit_not_found_text(notify_type, identifier)
+            text_template = JinjaTemplate(notification_user)
+            fields = {'type': self.type, 'name': identifier, 'unit': unit, 'admins': destinations}
+            unit_text = text_template.form_notification(fields)
         else:
             unit = self.user_groups.get(identifier)
-            unit_text = unit.mention_text(self.type, destinations) if unit else self._unit_not_found_text(notify_type,
-                                                                                                          identifier)
-        text = TextManager.get_template(
-            'notify_message',
-            header=self._format_text_citation(self.header_template.form_message(incident.last_state, incident)),
-            unit_text=unit_text
-        )
-        response_code = self._post_thread(incident.channel_id, incident.ts, text)
+            text_template = JinjaTemplate(notification_user_group)
+            fields = {'type': self.type, 'id': unit.id, 'user_name': unit.name, 'admins': destinations}
+            unit_text = text_template.form_notification(fields)
+        header = self._format_text_italic(self.header_template.form_message(incident.last_state, incident))
+        message = header + '\n' + unit_text
+        response_code = self._post_thread(incident.channel_id, incident.ts, message)
         logger.info(f'Incident {incident.uuid} -> chain step {notify_type} \'{identifier}\'')
         return response_code
 
@@ -107,14 +106,10 @@ class Application(ABC):
         else:
             base_text += f'{result}'
             admins_text = self.get_admins_text()
-        text = TextManager.get_template(
-            'notify_webhook_message',
-            header=self._format_text_citation(self.header_template.form_message(incident.last_state, incident)),
-            notification_text=base_text
-        )
+        text = f"{self._format_text_italic(self.header_template.form_message(incident.last_state, incident))}\n{base_text}"
 
         if admins_text:
-            text += TextManager.get_template('admins', admins=admins_text)
+            text += f"\n➤ admins: {admins_text}"
 
         return self._post_thread(incident.channel_id, incident.ts, text)
 
@@ -129,17 +124,15 @@ class Application(ABC):
             logger.info(f'Incident {uuid_} updated with new status \'{incident_status}\'')
             # post to thread
             if status_enabled and incident_status != 'closed':
-                body = (f'{self._format_text_citation(self.header_template.form_message(incident.last_state, incident))}'
-                        f'\n➤ status: {self.format_text_bold(incident_status)}')
-                if incident_status == 'unknown':
-                    admins_text = self.get_admins_text()
-                    body = TextManager.get_template(
-                        'unknown_status',
-                        header=self._format_text_citation(self.header_template.form_message(incident.last_state)),
-                        status=self.format_text_bold(incident_status),
-                        admins=admins_text
-                    )
-                self._post_thread(incident.channel_id, incident.ts, body)
+                header = self._format_text_italic(self.header_template.form_message(incident.last_state, incident))
+
+                text_template = JinjaTemplate(update_status)
+                admins = self.get_notification_destinations()
+                fields = {'type': self.type, 'status': incident_status, 'admins': admins}
+                text = text_template.form_notification(fields)
+
+                message = header + '\n' + text
+                self._post_thread(incident.channel_id, incident.ts, message)
 
     def new_version_notification(self, channel_id, new_tag):
         r = requests.get(f'https://api.github.com/repos/DiTsi/impulse/releases/tags/{new_tag}')
@@ -228,10 +221,6 @@ class Application(ABC):
 
     @abstractmethod
     def _format_text_italic(self, text):
-        pass
-
-    @abstractmethod
-    def _format_text_citation(self, text):
         pass
 
     @abstractmethod

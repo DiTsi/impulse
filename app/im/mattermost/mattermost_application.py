@@ -87,12 +87,11 @@ class MattermostApplication(Application):
         user = next((u for u in s_users if u.get('username') == username), None)
         if user:
             return {
+                'id': user.get('id'),
                 'username': username,
-                'first_name': user.get('first_name'),
-                'last_name': user.get('last_name')
             }
         logger.warning(f"User '{username}' not found in Mattermost")
-        return {'username': username, 'first_name': None, 'last_name': None}
+        return {'username': username}
 
     def _get_users(self, users):
         usernames = [u['username'] for k, u in users.items()]
@@ -113,9 +112,8 @@ class MattermostApplication(Application):
     def create_user(self, name, user_details):
         return User(
             name=name,
+            user_id=user_details.get('id'),
             username=user_details['username'],
-            first_name=user_details.get('first_name', ''),
-            last_name=user_details.get('last_name', '')
         )
 
     def get_notification_destinations(self):
@@ -125,9 +123,6 @@ class MattermostApplication(Application):
         return mattermost_bold_text(text)
 
     def _format_text_italic(self, text):
-        return f'_{text}_'
-
-    def _format_text_citation(self, text):
         return f'_{text}_'
 
     def _format_text_link(self, text, url):

@@ -32,8 +32,8 @@ class UserGroup:
         for user in self.users:
             if user is not None:
                 if type_ == 'slack':
-                    if user.slack_id is not None:
-                        text += f'{slack_mention_text(user.slack_id)} '
+                    if user.id is not None:
+                        text += f'{slack_mention_text(user.id)} '
                     else:
                         not_found = True
                         text += f'{user.name} (N/A) '

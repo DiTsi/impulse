@@ -37,6 +37,7 @@ class StepHandler(BaseHandler):
                             f'response code {r_code}')
             else:
                 fields = {'type': self.app.type, 'name': webhook_name, 'unit': webhook, 'admins': admins}
+
                 incident.chain_update(identifier, done=True, result=None)
                 logger.warning(
                     f'Incident {incident.uuid} -> chain step webhook \'{webhook_name}\': undefined in impulse.yml'

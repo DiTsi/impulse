@@ -23,6 +23,7 @@ class Application(ABC):
         self.chains = generate_chains(app_config.get('chains', dict()))
         self.templates = app_config.get('template_files', dict())
         self.body_template, self.header_template, self.status_icons_template = self.generate_template()
+        self.new_alerts_notifications = app_config.get('notifications', dict()).get('new_alerts', 'none')
 
         # Application-specific parameters
         self.post_message_url = None
@@ -94,7 +95,7 @@ class Application(ABC):
             header=self._format_text_citation(self.header_template.form_message(incident.last_state, incident)),
             unit_text=unit_text
         )
-        response_code = self._post_thread(incident.channel_id, incident.ts, text)
+        response_code = self.post_thread(incident.channel_id, incident.ts, text)
         logger.info(f'Incident {incident.uuid} -> chain step {notify_type} \'{identifier}\'')
         return response_code
 
@@ -116,7 +117,7 @@ class Application(ABC):
         if admins_text:
             text += TextManager.get_template('admins', admins=admins_text)
 
-        return self._post_thread(incident.channel_id, incident.ts, text)
+        return self.post_thread(incident.channel_id, incident.ts, text)
 
     def update(self, uuid_, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
         body = self.body_template.form_message(alert_state, incident)
@@ -142,7 +143,7 @@ class Application(ABC):
                         status=self.format_text_bold(incident_status),
                         admins=admins_text
                     )
-                self._post_thread(incident.channel_id, incident.ts, body)
+                self.post_thread(incident.channel_id, incident.ts, body)
 
     def new_version_notification(self, channel_id, new_tag):
         r = requests.get(f'https://api.github.com/repos/DiTsi/impulse/releases/tags/{new_tag}')
@@ -171,7 +172,7 @@ class Application(ABC):
                                               status_enabled)
         self._update_thread(id_, payload)
 
-    def _post_thread(self, channel_id, id_, text):
+    def post_thread(self, channel_id, id_, text):
         payload = self._post_thread_payload(channel_id, id_, text)
         response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
         sleep(self.post_delay)

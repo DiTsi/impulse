@@ -84,13 +84,11 @@ class Application(ABC):
         if notify_type == 'user':
             unit = self.users.get(identifier)
             text_template = JinjaTemplate(notification_user)
-            fields = {'type': self.type, 'name': identifier, 'unit': unit, 'admins': destinations}
-            unit_text = text_template.form_notification(fields)
         else:
             unit = self.user_groups.get(identifier)
             text_template = JinjaTemplate(notification_user_group)
-            fields = {'type': self.type, 'id': unit.id, 'user_name': unit.name, 'admins': destinations}
-            unit_text = text_template.form_notification(fields)
+        fields = {'type': self.type, 'name': identifier, 'unit': unit, 'admins': destinations}
+        unit_text = text_template.form_notification(fields)
         header = self._format_text_italic(self.header_template.form_message(incident.last_state, incident))
         message = header + '\n' + unit_text
         response_code = self._post_thread(incident.channel_id, incident.ts, message)

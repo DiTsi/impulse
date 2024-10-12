@@ -63,5 +63,3 @@ def mattermost_generate_users(url, users_dict=None):
     else:
         logger.info(f'No users defined in impulse.yml')
         return users
-
-

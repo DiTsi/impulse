@@ -35,8 +35,8 @@ class Queue:
         self.items = [
             item for item in self.items
             if not (item.incident_uuid == uuid and (
-                    (delete_steps and item.type == 'chain_step') or
-                    (delete_status and item.type == 'update_status')
+                (delete_steps and item.type == 'chain_step') or
+                (delete_status and item.type == 'update_status')
             ))
         ]
 

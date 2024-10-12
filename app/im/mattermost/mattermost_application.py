@@ -122,7 +122,7 @@ class MattermostApplication(Application):
     def format_text_bold(self, text):
         return mattermost_bold_text(text)
 
-    def _format_text_italic(self, text):
+    def format_text_italic(self, text):
         return f'_{text}_'
 
     def _format_text_link(self, text, url):

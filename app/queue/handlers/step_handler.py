@@ -1,3 +1,4 @@
+from app.im.template import JinjaTemplate, notification_webhook
 from app.logging import logger
 from app.queue.handlers.base_handler import BaseHandler
 
@@ -24,16 +25,27 @@ class StepHandler(BaseHandler):
             webhook_name = step['identifier']
             webhook = self.webhooks.get(webhook_name)
 
-            text = f"➤ webhook {self.app.format_text_bold(webhook_name)}:"
+            text_template = JinjaTemplate(notification_webhook)
+            admins = self.app.get_notification_destinations()
+
             if webhook is not None:
                 result, r_code = webhook.push(incident)
-                self.app.notify_webhook(incident, text, result, response_code=r_code)
+                fields = {'type': self.app.type, 'name': webhook_name, 'unit': webhook, 'admins': admins,
+                          'result': result, 'response': r_code}
                 incident.chain_update(identifier, done=True, result=r_code)
-                logger.info(f'Incident {incident.uuid} -> chain step webhook \'{webhook_name}\': {result}, response code {r_code}')
+                logger.info(f'Incident {incident.uuid} -> chain step webhook \'{webhook_name}\': {result}, '
+                            f'response code {r_code}')
             else:
-                self.app.notify_webhook(incident, text, 'not found in impulse.yml')
-                logger.warning(f'Incident {incident.uuid} -> chain step webhook \'{webhook_name}\': undefined in impulse.yml')
+                fields = {'type': self.app.type, 'name': webhook_name, 'unit': webhook, 'admins': admins}
                 incident.chain_update(identifier, done=True, result=None)
+                logger.warning(
+                    f'Incident {incident.uuid} -> chain step webhook \'{webhook_name}\': undefined in impulse.yml'
+                )
+
+            text = text_template.form_notification(fields)
+            header = f"{self.app.format_text_italic(self.app.header_template.form_message(incident.last_state, incident))}"
+            message = f"{header}" + '\n' + f'{text}'
+            self.app.post_thread(incident.channel_id, incident.ts, message)
         else:
             r_code = self.app.notify(incident, step['type'], step['identifier'])
             incident.chain_update(identifier, done=True, result=r_code)

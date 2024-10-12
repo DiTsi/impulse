@@ -89,27 +89,11 @@ class Application(ABC):
             text_template = JinjaTemplate(notification_user_group)
         fields = {'type': self.type, 'name': identifier, 'unit': unit, 'admins': destinations}
         unit_text = text_template.form_notification(fields)
-        header = self._format_text_italic(self.header_template.form_message(incident.last_state, incident))
+        header = self.format_text_italic(self.header_template.form_message(incident.last_state, incident))
         message = header + '\n' + unit_text
-        response_code = self._post_thread(incident.channel_id, incident.ts, message)
+        response_code = self.post_thread(incident.channel_id, incident.ts, message)
         logger.info(f'Incident {incident.uuid} -> chain step {notify_type} \'{identifier}\'')
         return response_code
-
-    def notify_webhook(self, incident, base_text, result, response_code=None):
-        admins_text = ''
-        if result == 'ok':
-            base_text += f'{response_code}'
-            if response_code >= 400:
-                admins_text = self.get_admins_text()
-        else:
-            base_text += f'{result}'
-            admins_text = self.get_admins_text()
-        text = f"{self._format_text_italic(self.header_template.form_message(incident.last_state, incident))}\n{base_text}"
-
-        if admins_text:
-            text += f"\n➤ admins: {admins_text}"
-
-        return self._post_thread(incident.channel_id, incident.ts, text)
 
     def update(self, uuid_, incident, incident_status, alert_state, updated_status, chain_enabled, status_enabled):
         body = self.body_template.form_message(alert_state, incident)
@@ -122,7 +106,7 @@ class Application(ABC):
             logger.info(f'Incident {uuid_} updated with new status \'{incident_status}\'')
             # post to thread
             if status_enabled and incident_status != 'closed':
-                header = self._format_text_italic(self.header_template.form_message(incident.last_state, incident))
+                header = self.format_text_italic(self.header_template.form_message(incident.last_state, incident))
 
                 text_template = JinjaTemplate(update_status)
                 admins = self.get_notification_destinations()
@@ -130,7 +114,7 @@ class Application(ABC):
                 text = text_template.form_notification(fields)
 
                 message = header + '\n' + text
-                self._post_thread(incident.channel_id, incident.ts, message)
+                self.post_thread(incident.channel_id, incident.ts, message)
 
     def new_version_notification(self, channel_id, new_tag):
         r = requests.get(f'https://api.github.com/repos/DiTsi/impulse/releases/tags/{new_tag}')
@@ -156,7 +140,7 @@ class Application(ABC):
                                               status_enabled)
         self._update_thread(id_, payload)
 
-    def _post_thread(self, channel_id, id_, text):
+    def post_thread(self, channel_id, id_, text):
         payload = self._post_thread_payload(channel_id, id_, text)
         response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
         sleep(self.post_delay)
@@ -218,7 +202,7 @@ class Application(ABC):
         pass
 
     @abstractmethod
-    def _format_text_italic(self, text):
+    def format_text_italic(self, text):
         pass
 
     @abstractmethod

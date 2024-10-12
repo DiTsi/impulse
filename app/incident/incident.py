@@ -146,12 +146,27 @@ class Incident:
         self.dump()
         return False
 
-    def update_state(self, alert_state: Dict) -> (bool, bool):
+    def update_state(self, alert_state: Dict) -> (bool, bool, bool):
+        new_firing_instances = False
         update_status = self.update_status(alert_state['status'])
         update_state = self.last_state != alert_state
         if update_state:
+            old_firing_alerts_labels = get_firing_alerts_labels(self.last_state)
+            cur_firing_alerts_labels = get_firing_alerts_labels(alert_state)
+            for ls in cur_firing_alerts_labels:
+                if ls not in old_firing_alerts_labels:
+                    new_firing_instances = True
             self.last_state = alert_state
-        return update_state, update_status
+            print(f'{datetime.utcnow()} {new_firing_instances}')
+        return update_status, update_state, new_firing_instances
 
     def set_status(self, status: str):
         self.status = status
+
+
+def get_firing_alerts_labels(alert_state):
+    alerts = list()
+    for a in alert_state['alerts']:
+        if a['status'] == 'firing':
+            alerts.append(a.get('labels'))
+    return alerts

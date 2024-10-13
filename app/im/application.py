@@ -160,6 +160,10 @@ class Application(ABC):
         return http
 
     @abstractmethod
+    def buttons_handler(self, payload, incidents, queue_):
+        pass
+
+    @abstractmethod
     def _initialize_specific_params(self):
         pass
 

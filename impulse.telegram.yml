@@ -1,22 +1,24 @@
+url: https://0f70-82-215-81-97.ngrok-free.app
+
 timeouts:
   firing: 30s
   unknown: 30s
   resolved: 30s
 
 route:
-  channel: -1002381826040
+  channel: -1002435880649
   routes:
     - matchers:
         - severity="info"
-      channel: -1002381826040
+      channel: -1002435880649
       chain: user
     - matchers:
         - severity="warning"
-      channel: -1002381826040
+      channel: -1002435880649
       chain: user
     - matchers:
         - severity="critical"
-      channel: -1002381826040
+      channel: -1002435880649
       chain: user
 
 application:
@@ -24,14 +26,21 @@ application:
   type: telegram
   admin_users:
     - Vk
+    - DiTsi
   chains:
     user:
       - user: Vk
+      - user: DiTsi
   user_groups:
     default:
       users:
         - Vk
   users:
     Vk:
+      id: 247044204
       name: "Valery Khodchenkov"
       username: "tansdf"
+    DiTsi:
+      id: 169132457
+      name: "Dmitrii Tsybus"
+      username: "DiTsi"

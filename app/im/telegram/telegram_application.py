@@ -4,42 +4,32 @@ from time import sleep
 import requests
 
 from app.im.application import Application
-from app.im.telegram.threads import telegram_get_create_thread_payload
 from app.im.telegram.user import User
 from app.logging import logger
 from config import tg_bot_token, impulse_url
 
-
+# Temporary Firing: 🔥, Unknown: ❓, Resolved: ✅, Closed: 🆒
 class TelegramApplication(Application):
+    icon_map = {
+        '5312241539987020022': '🔥',
+        '5377316857231450742': '❓',
+        '5237699328843200968': '✅',
+        '5420216386448270341': '🆒'
+    }
+
     def __init__(self, app_config, channels, users):
         super().__init__(app_config, channels, users)
 
     def _initialize_specific_params(self):
         self.url += tg_bot_token
         self.post_message_url = self.url + '/sendMessage'
-        self.headers = None
+        self.headers = {'Content-Type': 'application/json'}
         self.post_delay = 0.5
         self.thread_id_key = 'message_id'
         self._setup_webhook()
 
     def get_channels(self, channels_list):
-        channels = {}
-        for channel_id in channels_list:
-            try:
-                response = self.http.get(
-                    f'{self.url}/getChat',
-                    params={'chat_id': channel_id},
-                )
-                response.raise_for_status()
-                sleep(self.post_delay)
-                channel_info = response.json().get('result')
-                channels[channel_info.get('id')] = {
-                    'id': channel_info.get('id'),
-                    'linked_chat_id': channel_info.get('linked_chat_id')
-                }
-            except requests.exceptions.RequestException as e:
-                logger.error(f'Failed to retrieve public channels list: {e}')
-        return channels
+        return {c: {'id': c} for c in channels_list}
 
     def _get_public_channels(self):
         """ Not needed for Telegram """
@@ -70,8 +60,11 @@ class TelegramApplication(Application):
     def _format_text_citation(self, text):
         return f'>{text}'
 
+    def _format_tg_icon(self, icon):
+        return f'![{self.icon_map.get(icon)}](tg://emoji?id={icon})'
+
     def get_admins_text(self):
-        return ', '.join([a.username for a in self.admin_users])
+        return ', '.join([f'@{a.username}' for a in self.admin_users])
 
     def send_message(self, channel_id, text, attachment):
         params = {
@@ -81,26 +74,80 @@ class TelegramApplication(Application):
         }
         response = self.http.post(self.post_message_url, params=params)
         sleep(self.post_delay)
-        return response.json().get('message_id')
+        return response.json().get('result', {}).get('message_id')
+
+    def create_thread(self, channel_id, body, header, status_icons, status):
+        topic_id = self._create_topic(channel_id, header, status_icons)
+        payload = self._create_thread_payload(channel_id, body, header, status_icons, status)
+        payload['message_thread_id'] = topic_id
+        message_id = self._send_create_thread(payload)
+        return f'{topic_id}/{message_id}'
+
+    def _create_topic(self, channel_id, header, status_icons):
+        payload = {
+            'chat_id': channel_id,
+            'name': header,
+            'icon_custom_emoji_id': status_icons
+        }
+        try:
+            response = self.http.post(
+                f'{self.url}/createForumTopic',
+                data=json.dumps(payload),
+                headers=self.headers
+            )
+            return response.json().get('result', {}).get('message_thread_id')
+        except requests.exceptions.RequestException as e:
+            logger.error(f'Failed to create topic: {e}')
+            raise e
+
 
     def _create_thread_payload(self, channel_id, body, header, status_icons, status):
-        return telegram_get_create_thread_payload(channel_id, body, header, status_icons, status)
-
-    def _post_thread_payload(self, channel_id, id_, text):
-        channel = self.channels[channel_id]
         return {
             'chat_id': channel_id,
-            'text': text,
-            'reply_to_message_id': id_,
+            'text': f'{self._format_tg_icon(status_icons)} {status} {header}\n{body}',
             'parse_mode': 'MarkdownV2'
         }
 
-    def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
-                               status_enabled):
+    def _post_thread_payload(self, channel_id, id_, text):
+        topic_id, message_id = id_.split('/')
         return {
             'chat_id': channel_id,
-            'message_id': id_,
-            'text': f'{status_icons} {status} {header}\n{body}',
+            'text': text,
+            'message_thread_id': topic_id,
+            'parse_mode': 'MarkdownV2'
+        }
+
+    def update_thread(self, channel_id, id_, status, body, header, status_icons, chain_enabled=True,
+                      status_enabled=True):
+        self._update_topic(channel_id, id_, header, status_icons)
+        payload = self._update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
+                                              status_enabled)
+        self._update_thread(id_, payload)
+
+    def _update_topic(self, channel_id, id_, header, status_icons):
+        topic_id, message_id = id_.split('/')
+        payload = {
+            'chat_id': channel_id,
+            'name': header,
+            'icon_custom_emoji_id': status_icons,
+            'message_thread_id': topic_id
+        }
+        try:
+            self.http.post(
+                f'{self.url}/editForumTopic',
+                data=json.dumps(payload),
+                headers=self.headers
+            )
+        except requests.exceptions.RequestException as e:
+            logger.error(f'Failed to update topic: {e}')
+
+    def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
+                               status_enabled):
+        topic_id, message_id = id_.split('/')
+        return {
+            'chat_id': channel_id,
+            'message_id': message_id,
+            'text': f'{self._format_tg_icon(status_icons)} {status} {header}\n{body}',
             'parse_mode': 'MarkdownV2'
         }
 
@@ -108,7 +155,8 @@ class TelegramApplication(Application):
         try:
             self.http.post(
                 f'{self.url}/editMessageText',
-                data=json.dumps(payload)
+                data=json.dumps(payload),
+                headers=self.headers
             )
             sleep(self.post_delay)
         except requests.exceptions.RequestException as e:
@@ -119,12 +167,14 @@ class TelegramApplication(Application):
 
     def get_user_details(self, s_users, user_info):
         return {
+            'id': user_info['id'],
             'username': user_info['username'],
             'name': user_info.get('name')
         }
 
     def create_user(self, name, user_details):
         return User(
+            id_=user_details['id'],
             name=name,
             username=user_details['username']
         )
@@ -133,7 +183,8 @@ class TelegramApplication(Application):
         try:
             self.http.post(
                 f'{self.url}/setWebhook',
-                params={'url': f'{impulse_url}/app'}
+                params={'url': f'{impulse_url}/app'},
+                headers=self.headers
             )
             sleep(self.post_delay)
         except requests.exceptions.RequestException as e:

@@ -18,6 +18,11 @@ class Queue:
             check_update_datetime = datetime.utcnow()
             self.put(check_update_datetime, 'check_update', None, 'first')
 
+    def put_first(self, datetime_, type_, incident_uuid=None, identifier=None, data=None):
+        new_item = QueueItem(datetime_, type_, incident_uuid, identifier, data)
+        with self.lock:
+            self._insert_item_first(new_item)
+
     def put(self, datetime_, type_, incident_uuid=None, identifier=None, data=None):
         new_item = QueueItem(datetime_, type_, incident_uuid, identifier, data)
         with self.lock:
@@ -57,16 +62,15 @@ class Queue:
                 return
         self.items.append(new_item)
 
+    def _insert_item_first(self, new_item):
+        self.items.insert(0, new_item)
+
     def update(self, uuid_, incident_status_change, status):
         with self.lock:
-            if uuid_ not in [item.incident_uuid for item in self.items]:
-                self._insert_item_sorted(QueueItem(incident_status_change, 'update_status', uuid_, None, None))
-            else:
-                self._perform_delete(uuid_, delete_steps=False, delete_status=True)
-                self._insert_item_sorted(QueueItem(incident_status_change, 'update_status', uuid_, None, None))
-
             if status == 'resolved':
                 self._perform_delete(uuid_, delete_steps=True, delete_status=False)
+            self._perform_delete(uuid_, delete_steps=False, delete_status=True)
+            self._insert_item_sorted(QueueItem(incident_status_change, 'update_status', uuid_, None, None)) #!
 
     def handle(self):
         with self.lock:

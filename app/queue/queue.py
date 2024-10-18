@@ -28,10 +28,6 @@ class Queue:
         with self.lock:
             self._insert_item_sorted(new_item)
 
-    def delete(self, index):
-        with self.lock:
-            del self.items[index]
-
     def delete_by_id(self, uuid, delete_steps=True, delete_status=True):
         with self.lock:
             self._perform_delete(uuid, delete_steps, delete_status)
@@ -45,7 +41,7 @@ class Queue:
             ))
         ]
 
-    def append(self, uuid, incident_chain):
+    def recreate(self, uuid, incident_chain):
         new_items = []
         for i, s in enumerate(incident_chain):
             if not s['done']:
@@ -96,7 +92,7 @@ class Queue:
         queue = cls(check_update)
 
         for uuid_, incident in incidents.by_uuid.items():
-            queue.append(uuid_, incident.get_chain())
+            queue.recreate(uuid_, incident.get_chain())
             queue.put(incident.status_update_datetime, 'update_status', uuid_)
 
         return queue

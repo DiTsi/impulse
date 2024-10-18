@@ -3,7 +3,6 @@ from datetime import datetime
 from app.incident.incident import IncidentConfig, Incident
 from app.logging import logger
 from app.queue.handlers.base_handler import BaseHandler
-from app.text_manager import TextManager
 from app.time import unix_sleep_to_timedelta
 from config import timeouts, INCIDENT_ACTUAL_VERSION
 
@@ -68,37 +67,22 @@ class AlertHandler(BaseHandler):
         self.queue.put(status_update_datetime, 'update_status', incident_.uuid)
 
         incident_.generate_chain(chain)
-        self.queue.append(incident_.uuid, incident_.chain)
+        self.queue.recreate(incident_.uuid, incident_.chain)
         incident_.dump()
 
+    def _recreate_chain_in_queue(self, uuid_, incident_):
+        chain = incident_.get_chain()
+        self.queue.recreate(uuid_, chain)
+
     def _handle_update(self, uuid_, incident_, alert_state):
-        prev_status = incident_.status
-        is_status_updated, is_state_updated, added_new_firing = incident_.update_state(alert_state)
+        if alert_state.get('status') == 'firing':
+            self._recreate_chain_in_queue(uuid_, incident_)
+        is_state_updated, is_status_updated = incident_.update_state(alert_state)
         if is_state_updated or is_status_updated:
             self.app.update(
                 uuid_, incident_, alert_state['status'], alert_state, is_status_updated,
                 incident_.chain_enabled, incident_.status_enabled
             )
-        if prev_status == 'firing' and added_new_firing:
-            logger.info(f"Incident {uuid_} updated with new firing alerts")
-            if self.app.new_alerts_notifications == 'release':
-                self.queue.delete_by_id(incident_.uuid, delete_steps=True, delete_status=False)
-                incident_.chain_enabled = True
-                channel, chain_name = self.route.get_route(alert_state)
-                chain = self.app.chains.get(chain_name)
-                incident_.generate_chain(chain)
-                self.queue.append(incident_.uuid, incident_.chain)
-
-                logger.info(f"Incident {uuid_} chain recreated")
-            elif self.app.new_alerts_notifications == 'message':
-                text = TextManager.get_template(
-                    'status_update',
-                    header=self.app._format_text_citation(
-                        self.app.header_template.form_message(incident_.last_state, incident_)
-                    ),
-                    status=(self.app.format_text_bold('firing') + ' (new firing alerts)')
-                )
-                self.app.post_thread(incident_.channel_id, incident_.ts, text)
         self.queue.update(uuid_, incident_.status_update_datetime, incident_.status)
 
     def _create_thread(self, incident_, alert_state):

@@ -18,14 +18,15 @@ class Queue:
             check_update_datetime = datetime.utcnow()
             self.put(check_update_datetime, 'check_update', None, 'first')
 
+    def put_first(self, datetime_, type_, incident_uuid=None, identifier=None, data=None):
+        new_item = QueueItem(datetime_, type_, incident_uuid, identifier, data)
+        with self.lock:
+            self._insert_item_first(new_item)
+
     def put(self, datetime_, type_, incident_uuid=None, identifier=None, data=None):
         new_item = QueueItem(datetime_, type_, incident_uuid, identifier, data)
         with self.lock:
             self._insert_item_sorted(new_item)
-
-    def delete(self, index):
-        with self.lock:
-            del self.items[index]
 
     def delete_by_id(self, uuid, delete_steps=True, delete_status=True):
         with self.lock:
@@ -40,7 +41,7 @@ class Queue:
             ))
         ]
 
-    def append(self, uuid, incident_chain):
+    def recreate(self, uuid, incident_chain):
         new_items = []
         for i, s in enumerate(incident_chain):
             if not s['done']:
@@ -57,16 +58,15 @@ class Queue:
                 return
         self.items.append(new_item)
 
+    def _insert_item_first(self, new_item):
+        self.items.insert(0, new_item)
+
     def update(self, uuid_, incident_status_change, status):
         with self.lock:
-            if uuid_ not in [item.incident_uuid for item in self.items]:
-                self._insert_item_sorted(QueueItem(incident_status_change, 'update_status', uuid_, None, None))
-            else:
-                self._perform_delete(uuid_, delete_steps=False, delete_status=True)
-                self._insert_item_sorted(QueueItem(incident_status_change, 'update_status', uuid_, None, None))
-
             if status == 'resolved':
                 self._perform_delete(uuid_, delete_steps=True, delete_status=False)
+            self._perform_delete(uuid_, delete_steps=False, delete_status=True)
+            self._insert_item_sorted(QueueItem(incident_status_change, 'update_status', uuid_, None, None)) #!
 
     def handle(self):
         with self.lock:
@@ -92,7 +92,7 @@ class Queue:
         queue = cls(check_update)
 
         for uuid_, incident in incidents.by_uuid.items():
-            queue.append(uuid_, incident.get_chain())
+            queue.recreate(uuid_, incident.get_chain())
             queue.put(incident.status_update_datetime, 'update_status', uuid_)
 
         return queue

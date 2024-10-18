@@ -64,8 +64,8 @@ class Incident:
 
     def get_chain(self) -> List[Dict]:
         if not self.chain_enabled:
-            return []
-        return [c for c in self.chain if not c['done']]
+            return list()
+        return self.chain
 
     def chain_put(self, index: int, datetime_: datetime, type_: str, identifier: str):
         self.chain.insert(index, {

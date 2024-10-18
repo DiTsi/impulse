@@ -20,7 +20,7 @@ class SlackApplication(Application):
         super().__init__(app_config, channels_list, default_channel)
 
     def _initialize_specific_params(self):
-        self.post_message_url = f'{self.url}/api/chat.postMessage'
+        self.post_message_url = f'{self.url}/chat.postMessage'
         self.headers = slack_headers
         self.post_delay = slack_request_delay
         self.thread_id_key = 'ts'
@@ -28,7 +28,7 @@ class SlackApplication(Application):
     def _get_public_channels(self) -> dict:
         try:
             response = self.http.get(
-                f'{self.url}/api/conversations.list',
+                f'{self.url}/conversations.list',
                 params={'limit': 1000},
                 headers=self.headers
             )
@@ -42,7 +42,7 @@ class SlackApplication(Application):
     def _get_private_channels(self) -> dict:
         try:
             response = self.http.get(
-                f'{self.url}/api/conversations.list',
+                f'{self.url}/conversations.list',
                 params={'types': 'private_channel', 'limit': 1000},
                 headers=self.headers
             )
@@ -54,13 +54,7 @@ class SlackApplication(Application):
             return {}
 
     def _get_url(self, app_config):
-        response = self.http.get(
-            f'https://slack.com/api/auth.test',
-            headers=slack_headers
-        )
-        sleep(slack_request_delay)
-        json_ = response.json()
-        return json_.get('url')
+        return 'https://slack.com/api'
 
     def _get_team_name(self, app_config):
         return None
@@ -86,7 +80,7 @@ class SlackApplication(Application):
         try:
             while len(filtered_users) < len(full_names):
                 response = self.http.get(
-                    f'{self.url}/api/users.list',
+                    f'{self.url}/users.list',
                     params=request_data,
                     headers=self.headers
                 )
@@ -144,7 +138,7 @@ class SlackApplication(Application):
                 }
             ]
         }
-        response = self.http.post(f'{self.url}/api/chat.postMessage', headers=self.headers, data=json.dumps(payload))
+        response = self.http.post(f'{self.url}/chat.postMessage', headers=self.headers, data=json.dumps(payload))
         sleep(self.post_delay)
         return response.json().get('ts')
 
@@ -161,7 +155,7 @@ class SlackApplication(Application):
 
     def _update_thread(self, id_, payload):
         requests.post(
-            f'{self.url}/api/chat.update',
+            f'{self.url}/chat.update',
             headers=slack_headers,
             data=json.dumps(payload)
         )

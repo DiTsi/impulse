@@ -67,7 +67,8 @@ class AlertHandler(BaseHandler):
         self.queue.put(status_update_datetime, 'update_status', incident_.uuid)
 
         incident_.generate_chain(chain)
-        self.queue.recreate(incident_.uuid, incident_.chain)
+        if status == 'firing':
+            self.queue.recreate(incident_.uuid, incident_.chain)
         incident_.dump()
 
     def _recreate_chain_in_queue(self, uuid_, incident_):

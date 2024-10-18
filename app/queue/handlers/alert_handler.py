@@ -70,7 +70,13 @@ class AlertHandler(BaseHandler):
         self.queue.recreate(incident_.uuid, incident_.chain)
         incident_.dump()
 
+    def _recreate_chain_in_queue(self, uuid_, incident_):
+        chain = incident_.get_chain()
+        self.queue.recreate(uuid_, chain)
+
     def _handle_update(self, uuid_, incident_, alert_state):
+        if alert_state.get('status') == 'firing':
+            self._recreate_chain_in_queue(uuid_, incident_)
         is_state_updated, is_status_updated = incident_.update_state(alert_state)
         if is_state_updated or is_status_updated:
             self.app.update(

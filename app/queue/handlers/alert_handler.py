@@ -1,10 +1,11 @@
 from datetime import datetime
 
+from app.im.template import JinjaTemplate, update_alerts
 from app.incident.incident import IncidentConfig, Incident
 from app.logging import logger
 from app.queue.handlers.base_handler import BaseHandler
 from app.time import unix_sleep_to_timedelta
-from config import timeouts, INCIDENT_ACTUAL_VERSION
+from config import timeouts, INCIDENT_ACTUAL_VERSION, incident, experimental
 
 
 class AlertHandler(BaseHandler):
@@ -32,8 +33,8 @@ class AlertHandler(BaseHandler):
             self._handle_update(incident_.uuid, incident_, alert_state)
 
     def _handle_create(self, alert_state):
-        channel, chain_name = self.route.get_route(alert_state)
-        channel = self.app.channels[channel]
+        channel_name, chain_name = self.route.get_route(alert_state)
+        channel = self.app.channels[channel_name]
 
         status = alert_state['status']
         updated_datetime = datetime.utcnow()
@@ -75,15 +76,50 @@ class AlertHandler(BaseHandler):
         self.queue.recreate(uuid_, chain)
 
     def _handle_update(self, uuid_, incident_, alert_state):
+        prev_status = incident_.status
         if alert_state.get('status') == 'firing':
             self._recreate_chain_in_queue(uuid_, incident_)
-        is_state_updated, is_status_updated = incident_.update_state(alert_state)
+        is_status_updated, is_state_updated, new_alerts_fir, old_alerts_res = incident_.update_state(alert_state)
         if is_state_updated or is_status_updated:
+            if experimental.get('release_incident_and_recreate_chain_by_new_firing_alerts') and new_alerts_fir:
+                incident_.chain_enabled = True
             self.app.update(
                 uuid_, incident_, alert_state['status'], alert_state, is_status_updated,
                 incident_.chain_enabled, incident_.status_enabled
             )
+        if prev_status == 'firing':
+            self._handle_new_alerts(uuid_, alert_state, incident_, new_alerts_fir, old_alerts_res)
         self.queue.update(uuid_, incident_.status_update_datetime, incident_.status)
+
+    def _handle_new_alerts(self, uuid_, alert_state, incident_, new_alerts_fir, old_alerts_res):
+        if not new_alerts_fir and not old_alerts_res:
+            return
+
+        recreate_chain = experimental.get('release_incident_and_recreate_chain_by_new_firing_alerts')
+        if recreate_chain and new_alerts_fir:
+            self.queue.delete_by_id(incident_.uuid, delete_steps=True, delete_status=False)
+
+            _, chain_name = self.route.get_route(alert_state)
+            chain = self.app.chains.get(chain_name)
+            incident_.generate_chain(chain)
+            self.queue.recreate(incident_.uuid, incident_.chain)
+            incident_.dump()
+
+            logger.info(f"Incident {uuid_} chain recreated")
+        if recreate_chain or incident.get('new_firing_alerts_notifications'):
+            header = self.app.format_text_italic(
+                self.app.header_template.form_message(incident_.last_state, incident_)
+            )
+            fields = {'type': self.app.type, 'firing': new_alerts_fir, 'recreate': recreate_chain}
+            text_template = JinjaTemplate(update_alerts)
+            text = text_template.form_notification(fields)
+
+            message = header + '\n' + text
+            self.app.post_thread(incident_.channel_id, incident_.ts, message)
+            if new_alerts_fir:
+                logger.info(f"Incident {uuid_} updated with new alerts firing")
+            else:
+                logger.info(f"Incident {uuid_} updated with some alerts resolved")
 
     def _create_thread(self, incident_, alert_state):
         body = self.app.body_template.form_message(alert_state, incident_)

@@ -1,5 +1,5 @@
 import os
-from typing import Dict
+from typing import Dict, Union
 
 from app.incident.helpers import gen_uuid
 from app.incident.incident import Incident, IncidentConfig
@@ -11,11 +11,11 @@ class Incidents:
     def __init__(self, incidents_list):
         self.by_uuid: Dict[str, Incident] = {i.uuid: i for i in incidents_list}
 
-    def get(self, alert: Dict) -> Incident | None:
+    def get(self, alert: Dict) -> Union[Incident, None]:
         uuid_ = gen_uuid(alert.get('groupLabels'))
         return self.by_uuid.get(uuid_)
 
-    def get_by_ts(self, ts: str) -> Incident | None:
+    def get_by_ts(self, ts: str) -> Union[Incident, None]:
         return next((incident for incident in self.by_uuid.values() if incident.ts == ts), None)
 
     def add(self, incident: Incident):

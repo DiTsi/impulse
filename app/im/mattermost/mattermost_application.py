@@ -78,6 +78,9 @@ class MattermostApplication(Application):
     def _get_url(self, app_config):
         return app_config['url']
 
+    def _get_public_url(self, app_config):
+        return app_config['url']
+
     def _get_team_name(self, app_config):
         logger.info(f'Get {self.type.capitalize()} team name')
         return app_config['team']

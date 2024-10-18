@@ -28,7 +28,7 @@ application = get_application(
     route.channel
 )
 webhooks = generate_webhooks(webhooks_dict)
-incidents = Incidents.create_or_load(application.type, application.url, application.team)
+incidents = Incidents.create_or_load(application.type, application.public_url, application.team)
 queue = Queue.recreate_queue(incidents, check_updates)
 
 queue_manager = QueueManager(queue, application, incidents, webhooks, route)

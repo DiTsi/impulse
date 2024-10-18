@@ -59,7 +59,7 @@ def route_queue_get():
 def route_alert_post():
     if request.method == 'POST':
         alert_state = request.json
-        queue.put(datetime.utcnow(), 'alert', None, None, alert_state)
+        queue.put_first(datetime.utcnow(), 'alert', None, None, alert_state)
         return alert_state, 200
     else:
         return redirect(url_for('route_incidents_get'))

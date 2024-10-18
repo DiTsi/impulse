@@ -6,6 +6,7 @@ import yaml
 
 from app.incident.helpers import gen_uuid
 from app.time import unix_sleep_to_timedelta
+from app.tools import NoAliasDumper
 from config import incidents_path, timeouts, INCIDENT_ACTUAL_VERSION
 
 
@@ -118,7 +119,7 @@ class Incident:
             "version": self.version
         }
         with open(f'{incidents_path}/{self.uuid}.yml', 'w') as f:
-            yaml.dump(data, f, default_flow_style=False)
+            yaml.dump(data, f, NoAliasDumper, default_flow_style=False)
 
     def serialize(self) -> Dict:
         return {

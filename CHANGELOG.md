@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.4.0
+Changes:
+- Huge notifications format update
+- New 'firing' (and old 'resolved') alerts notifications
+- Added documentation links in notification messages
+- Python 3.9 support
+- Some bugfixes
+
 ## v1.3.1
 Changes:
 - Fix 'update available' notification

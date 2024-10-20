@@ -76,60 +76,66 @@ class AlertHandler(BaseHandler):
         self.queue.recreate(uuid_, chain)
 
     def _handle_update(self, uuid_, incident_, alert_state):
+        is_new_firing_alerts_added = False
+        is_some_firing_alerts_removed = False
+
         prev_status = incident_.status
         if alert_state.get('status') == 'firing':
             self._recreate_chain_in_queue(uuid_, incident_)
 
-        is_experimental_chain_recreate_enabled = experimental.get(
-            'release_incident_and_recreate_chain_by_new_firing_alerts', False)
-        is_new_firing_alerts_added = incident_.is_new_firing_alerts_added(alert_state)
-        is_some_firing_alerts_removed = incident_.is_some_firing_alerts_removed(alert_state)
+        chain_recreate = experimental.get('recreate_chain', False)
+        if incident.get('alerts_firing_notifications') or chain_recreate:
+            is_new_firing_alerts_added = incident_.is_new_firing_alerts_added(alert_state)
+        if incident.get('alerts_resolved_notifications'):
+            is_some_firing_alerts_removed = incident_.is_some_firing_alerts_removed(alert_state)
+
         is_status_updated, is_state_updated = incident_.update_state(alert_state)
 
+        if prev_status == 'firing' and chain_recreate and is_new_firing_alerts_added:
+            incident_.chain_enabled = True
+
         if is_state_updated or is_status_updated:
-            if is_experimental_chain_recreate_enabled and is_new_firing_alerts_added:
-                incident_.chain_enabled = True
-            self.app.update(uuid_, incident_, alert_state['status'], alert_state, is_status_updated,
-                            incident_.chain_enabled, incident_.status_enabled)
+            self.app.update(
+                uuid_, incident_, alert_state['status'], alert_state, is_status_updated,
+                incident_.chain_enabled, incident_.status_enabled
+            )
 
-        if prev_status == 'firing' and (is_new_firing_alerts_added or is_some_firing_alerts_removed):
+        if prev_status == 'firing':
             if is_new_firing_alerts_added:
-                self._recreate_chain_for_fire(alert_state, incident_, uuid_)
-            if is_experimental_chain_recreate_enabled or incident.get('new_firing_alerts_notifications', False):
-                self._notify_new_fire_alert(incident_, is_new_firing_alerts_added, uuid_)
-
+                if chain_recreate:
+                    self._new_alerts_recreate_chain(alert_state, incident_, uuid_)
+            if is_new_firing_alerts_added or is_some_firing_alerts_removed:
+                self._notify_new_fire_alert(
+                    incident_, is_new_firing_alerts_added, is_some_firing_alerts_removed,
+                    uuid_, chain_recreate
+                )
         self.queue.update(uuid_, incident_.status_update_datetime, incident_.status)
 
-    def _notify_new_fire_alert(self, incident_, is_new_firing_alerts_added, uuid_):
+    def _notify_new_fire_alert(self, incident_, new_alerts_f, new_alerts_r, uuid_, experimental_recreate):
         """
         Notify about new firing alerts added to the incident
         """
-        is_experimental_chain_recreate_enabled = experimental.get(
-            'release_incident_and_recreate_chain_by_new_firing_alerts', False)
         header = self.app.format_text_italic(
             self.app.header_template.form_message(incident_.last_state, incident_)
         )
         fields = {
             'type': self.app.type,
-            'firing': is_new_firing_alerts_added,
-            'recreate': is_experimental_chain_recreate_enabled
+            'firing': new_alerts_f,
+            'resolved': new_alerts_r,
+            'recreate': experimental_recreate
         }
         text = JinjaTemplate(update_alerts).form_notification(fields)
         message = header + '\n' + text
         self.app.post_thread(incident_.channel_id, incident_.ts, message)
-        if is_new_firing_alerts_added:
+        if new_alerts_f:
             logger.info(f"Incident {uuid_} updated with new alerts firing")
-        else:
+        elif new_alerts_r:
             logger.info(f"Incident {uuid_} updated with some alerts resolved")
 
-    def _recreate_chain_for_fire(self, alert_state, incident_, uuid_):
+    def _new_alerts_recreate_chain(self, alert_state, incident_, uuid_):
         """
         EXPERIMENTAL: release incident and recreate chain by new firing alerts
         """
-        is_experimental_chain_recreate_enabled = experimental.get(
-            'release_incident_and_recreate_chain_by_new_firing_alerts', False)
-        if not is_experimental_chain_recreate_enabled:
-            return
         self.queue.delete_by_id(incident_.uuid, delete_steps=True, delete_status=False)
         _, chain_name = self.route.get_route(alert_state)
         chain = self.app.chains.get(chain_name)

@@ -61,6 +61,21 @@ class Incident:
                 dt += unix_sleep_to_timedelta(value)
             else:
                 self.chain_put(index=index, datetime_=dt, type_=type_, identifier=value)
+        self.dump()
+
+    def recreate_chain(self, chain=None):
+        self.chain = []
+        if not chain or not chain.steps:
+            return
+
+        dt = datetime.utcnow()
+        for index, step in enumerate(chain.steps):
+            type_, value = next(iter(step.items()))
+            if type_ == 'wait':
+                dt += unix_sleep_to_timedelta(value)
+            else:
+                self.chain_put(index=index, datetime_=dt, type_=type_, identifier=value)
+        self.dump()
 
     def get_chain(self) -> List[Dict]:
         if not self.chain_enabled:

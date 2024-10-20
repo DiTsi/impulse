@@ -69,7 +69,6 @@ class AlertHandler(BaseHandler):
 
         incident_.generate_chain(chain)
         self.queue.recreate(incident_.uuid, incident_.chain)
-        incident_.dump()
 
     def _recreate_chain_in_queue(self, uuid_, incident_):
         chain = incident_.get_chain()
@@ -80,7 +79,7 @@ class AlertHandler(BaseHandler):
         is_some_firing_alerts_removed = False
 
         prev_status = incident_.status
-        if alert_state.get('status') == 'firing':
+        if alert_state.get('status') == 'firing' and prev_status == 'resolved':
             self._recreate_chain_in_queue(uuid_, incident_)
 
         chain_recreate = experimental.get('recreate_chain', False)
@@ -139,7 +138,7 @@ class AlertHandler(BaseHandler):
         self.queue.delete_by_id(incident_.uuid, delete_steps=True, delete_status=False)
         _, chain_name = self.route.get_route(alert_state)
         chain = self.app.chains.get(chain_name)
-        incident_.generate_chain(chain)
+        incident_.recreate_chain(chain)
         self.queue.recreate(incident_.uuid, incident_.chain)
         incident_.dump()
         logger.info(f"Incident {uuid_} chain recreated")

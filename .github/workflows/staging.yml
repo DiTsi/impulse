@@ -4,9 +4,6 @@ concurrency:
   group: ${{ github.ref }}
 
 on:
-  push:
-    branches:
-    - 'release/*'
   workflow_dispatch:
 
 env:
@@ -16,7 +13,6 @@ env:
 jobs:
   build-and-push-image:
     runs-on: ubuntu-20.04
-    if: github.event_name != 'workflow_dispatch'
     permissions:
       contents: read
       packages: write
@@ -42,7 +38,6 @@ jobs:
   deploy-to-staging:
     needs: build-and-push-image
     runs-on: ubuntu-20.04
-    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Recreate IMPulse
         uses: appleboy/ssh-action@v1.0.3

@@ -1,4 +1,4 @@
-name: to_test
+name: test
 
 concurrency:
   group: ${{ github.ref }}

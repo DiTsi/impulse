@@ -1,4 +1,4 @@
-name: release
+name: staging
 
 concurrency:
   group: ${{ github.ref }}

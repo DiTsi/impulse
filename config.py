@@ -23,6 +23,13 @@ with open(f'{config_path}/impulse.yml', 'r') as file:
             'unknown': settings.get('timeouts', {}).get('unknown', '6h'),
             'resolved': settings.get('timeouts', {}).get('resolved', '12h'),
         }
+        incident = {
+            'alerts_firing_notifications':
+                settings.get('incident', {}).get('alerts_firing_notifications', False),
+            'alerts_resolved_notifications':
+                settings.get('incident', {}).get('alerts_resolved_notifications', False),
+        }
+        experimental = settings.get('experimental', {})
         check_updates = True
         impulse_url = settings.get('url', None)
     except yaml.YAMLError as e:

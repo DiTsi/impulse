@@ -1,4 +1,4 @@
-name: ci/cd
+name: release
 
 concurrency:
   group: ${{ github.ref }}
@@ -16,6 +16,7 @@ env:
 jobs:
   build-and-push-image:
     runs-on: ubuntu-20.04
+    if: github.event_name != 'workflow_dispatch'
     permissions:
       contents: read
       packages: write

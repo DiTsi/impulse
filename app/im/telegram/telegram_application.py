@@ -8,12 +8,12 @@ from app.im.application import Application
 from app.im.telegram.config import buttons
 from app.im.telegram.user import User
 from app.logging import logger
-from config import tg_bot_token, impulse_url
+from config import telegram_bot_token, impulse_url
 
 
 # Temporary Firing: 🔥, Unknown: ❓, Resolved: ✅, Closed: 🆒
 class TelegramApplication(Application):
-    icon_map = {
+    icon_map = { #!!
         '5312241539987020022': '🔥',
         '5377316857231450742': '❓',
         '5237699328843200968': '✅',
@@ -24,7 +24,7 @@ class TelegramApplication(Application):
         super().__init__(app_config, channels, users)
 
     def _initialize_specific_params(self):
-        self.url += tg_bot_token
+        self.url += telegram_bot_token
         self.post_message_url = self.url + '/sendMessage'
         self.headers = {'Content-Type': 'application/json'}
         self.post_delay = 0.5
@@ -43,7 +43,7 @@ class TelegramApplication(Application):
         pass
 
     def _get_url(self, app_config):
-        return app_config['url']
+        return 'https://api.telegram.org/bot'
 
     def _get_team_name(self, app_config):
         return None

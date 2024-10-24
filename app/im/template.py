@@ -89,6 +89,14 @@ update: status **{% if fields.status == 'unknown' %}[unknown](https://docs.impul
 {%- endif -%}
 """
 
+update_alerts = """
+{%- if fields.type == 'slack' -%}
+update: {% if fields.firing %}new alerts *firing*{% if fields.recreate %}  |  restart chain{% endif %}{% else %}some alerts *resolved*{% endif %}
+{%- elif fields.type == 'mattermost' -%}
+update: {% if fields.firing %}new alerts **firing**{% if fields.recreate %}  |  restart chain{% endif %}{% else %}some alerts **resolved**{% endif %}
+{%- endif -%}
+"""
+
 notification_webhook = """
 {%- if fields.type == 'slack' -%}
 :loudspeaker: webhook *{{ fields.name -}}*

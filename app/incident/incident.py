@@ -61,6 +61,21 @@ class Incident:
                 dt += unix_sleep_to_timedelta(value)
             else:
                 self.chain_put(index=index, datetime_=dt, type_=type_, identifier=value)
+        self.dump()
+
+    def recreate_chain(self, chain=None):
+        self.chain = []
+        if not chain or not chain.steps:
+            return
+
+        dt = datetime.utcnow()
+        for index, step in enumerate(chain.steps):
+            type_, value = next(iter(step.items()))
+            if type_ == 'wait':
+                dt += unix_sleep_to_timedelta(value)
+            else:
+                self.chain_put(index=index, datetime_=dt, type_=type_, identifier=value)
+        self.dump()
 
     def get_chain(self) -> List[Dict]:
         if not self.chain_enabled:
@@ -151,7 +166,21 @@ class Incident:
         update_state = self.last_state != alert_state
         if update_state:
             self.last_state = alert_state
-        return update_state, update_status
+        return update_status, update_state
 
     def set_status(self, status: str):
         self.status = status
+
+    def is_new_firing_alerts_added(self, alert_state: Dict) -> bool:
+        old_alerts_labels = self._get_firing_alerts_labels(self.last_state)
+        new_alerts_labels = self._get_firing_alerts_labels(alert_state)
+        return any(label not in old_alerts_labels for label in new_alerts_labels)
+
+    def is_some_firing_alerts_removed(self, alert_state: Dict) -> bool:
+        old_alerts_labels = self._get_firing_alerts_labels(self.last_state)
+        new_alerts_labels = self._get_firing_alerts_labels(alert_state)
+        return any(label not in new_alerts_labels for label in old_alerts_labels)
+
+    @staticmethod
+    def _get_firing_alerts_labels(alert_state):
+        return [a.get('labels') for a in alert_state['alerts'] if a['status'] == 'firing']

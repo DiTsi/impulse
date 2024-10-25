@@ -166,7 +166,7 @@ class MattermostApplication(Application):
                 queue_.delete_by_id(incident_.uuid, delete_steps=True, delete_status=False)
             else:
                 incident_.chain_enabled = True
-                queue_.append(incident_.uuid, incident_.chain)
+                queue_.recreate(incident_.uuid, incident_.chain)
         elif action == 'status':
             if incident_.status_enabled:
                 incident_.status_enabled = False

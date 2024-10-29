@@ -143,8 +143,8 @@ class Incident:
     def update_status(self, status: str) -> bool:
         now = datetime.utcnow()
         self.updated = now
-        self.status_update_datetime = (
-                now + unix_sleep_to_timedelta(timeouts.get(status)))
+        if status != 'closed':
+            self.status_update_datetime = now + unix_sleep_to_timedelta(timeouts.get(status))
         if self.status != status:
             self.set_status(status)
             self.dump()

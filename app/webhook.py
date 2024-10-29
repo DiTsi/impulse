@@ -20,11 +20,9 @@ class Webhook:
 
         try:
             response = requests.post(url=self._url, data=rendered_data, auth=auth, timeout=5.0)
-        except requests.exceptions.Timeout as e:
-            logger.error(f'Webhook push timeout: {e}')
+        except requests.exceptions.Timeout:
             return 'Timeout', None
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f'Webhook push connection error: {e}')
+        except requests.exceptions.ConnectionError:
             return 'ConnectionError', None
 
         return 'ok', response.status_code

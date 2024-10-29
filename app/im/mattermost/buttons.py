@@ -4,6 +4,8 @@ from app.im.mattermost.threads import mattermost_get_button_update_payload
 def mattermost_buttons_handler(app, payload, incidents, queue_):
     post_id = payload['post_id']
     incident_ = incidents.get_by_ts(ts=post_id)
+    if incident_ is None:
+        return payload, 200
     action = payload['context']['action']
     if action == 'chain':
         if incident_.chain_enabled:

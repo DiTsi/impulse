@@ -100,7 +100,7 @@ class AlertHandler(BaseHandler):
                 incident_.chain_enabled, incident_.status_enabled
             )
 
-        if prev_status == 'firing':
+        if prev_status == 'firing' and incident_.status == 'firing':
             if is_new_firing_alerts_added:
                 if chain_recreate:
                     self._new_alerts_recreate_chain(alert_state, incident_, uuid_)

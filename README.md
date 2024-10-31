@@ -18,7 +18,7 @@ See [https://docs.impulse.bot](https://docs.impulse.bot)
 
 ### Run
 
-1. Use [instructions](https://docs.impulse.bot/latest/slack) to create bot
+1. Use [instructions](https://docs.impulse.bot/latest/slack) to create and configure bot
 2. Create directories
     ```bash
     mkdir impulse impulse/config impulse/data
@@ -26,8 +26,8 @@ See [https://docs.impulse.bot](https://docs.impulse.bot)
     ```
 3. Get docker-compose.yml and config
     ```bash
-    wget -O docker-compose.yml https://raw.githubusercontent.com/DiTsi/impulse/master/docker-compose.yml
-    wget -O config/impulse.yml https://raw.githubusercontent.com/DiTsi/impulse/master/impulse.slack.yml
+    wget -O docker-compose.yml https://raw.githubusercontent.com/DiTsi/impulse/main/examples/docker-compose.yml
+    wget -O config/impulse.yml https://raw.githubusercontent.com/DiTsi/impulse/main/examples/impulse.slack.yml
     ```
 4. Modify `config/impulse.yml` with actual data
 

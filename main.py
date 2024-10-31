@@ -6,6 +6,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, Flask, redirect, url_for
 
 from app import buttons_handler
+from app.im.channels import check_channels
 from app.im.helpers import get_application
 from app.incident.incidents import Incidents
 from app.logging import logger
@@ -22,9 +23,10 @@ app_dict = settings.get('application')
 webhooks_dict = settings.get('webhooks')
 
 route = generate_route(route_dict)
+channels = check_channels(route.get_uniq_channels(), app_dict['channels'], route.channel)
 application = get_application(
     app_dict,
-    route.get_uniq_channels(),
+    channels,
     route.channel
 )
 webhooks = generate_webhooks(webhooks_dict)

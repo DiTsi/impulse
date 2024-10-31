@@ -8,7 +8,6 @@ from app.im.colors import status_colors
 from app.im.exceptions import UserGenerationError
 from app.im.mattermost.config import (mattermost_headers, mattermost_request_delay, mattermost_bold_text,
                                       mattermost_env, mattermost_admins_template_string)
-from app.im.mattermost.teams import get_team
 from app.im.mattermost.threads import mattermost_get_create_thread_payload, mattermost_get_update_payload
 from app.im.mattermost.user import User
 from app.logging import logger
@@ -16,35 +15,14 @@ from app.logging import logger
 
 class MattermostApplication(Application):
 
-    def __init__(self, app_config, channels_list, default_channel):
-        super().__init__(app_config, channels_list, default_channel)
+    def __init__(self, app_config, channels, default_channel):
+        super().__init__(app_config, channels, default_channel)
 
     def _initialize_specific_params(self):
         self.post_message_url = f'{self.url}/api/v4/posts'
         self.headers = mattermost_headers
         self.post_delay = mattermost_request_delay
         self.thread_id_key = 'id'
-
-    def _get_public_channels(self) -> dict:
-        team = get_team(self.url, self.team)
-        if not team:
-            return {}
-        return self._get_channels(team)
-
-    def _get_private_channels(self) -> dict:
-        try:
-            response = self.http.get(
-                f"{self.url}/api/v4/channels",
-                params={'per_page': 1000},
-                headers=self.headers
-            )
-            response.raise_for_status()
-            sleep(self.post_delay)
-            data = response.json()
-            return {c.get('name'): c for c in data}
-        except requests.exceptions.RequestException as e:
-            logger.error(f'Failed to retrieve channel list: {e}')
-            return {}
 
     def _get_channels(self, team):
         try:

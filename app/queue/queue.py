@@ -92,7 +92,8 @@ class Queue:
         queue = cls(check_update)
 
         for uuid_, incident in incidents.by_uuid.items():
-            queue.recreate(uuid_, incident.get_chain())
+            if incident.status != 'resolved':
+                queue.recreate(uuid_, incident.get_chain())
             queue.put(incident.status_update_datetime, 'update_status', uuid_)
 
         return queue

@@ -16,42 +16,14 @@ from app.logging import logger
 
 class SlackApplication(Application):
 
-    def __init__(self, app_config, channels_list, default_channel):
-        super().__init__(app_config, channels_list, default_channel)
+    def __init__(self, app_config, channels, default_channel):
+        super().__init__(app_config, channels, default_channel)
 
     def _initialize_specific_params(self):
         self.post_message_url = f'{self.url}/api/chat.postMessage'
         self.headers = slack_headers
         self.post_delay = slack_request_delay
         self.thread_id_key = 'ts'
-
-    def _get_public_channels(self) -> dict:
-        try:
-            response = self.http.get(
-                f'{self.url}/api/conversations.list',
-                params={'limit': 1000},
-                headers=self.headers
-            )
-            response.raise_for_status()
-            sleep(self.post_delay)
-            return {c.get('name'): c for c in response.json().get('channels', [])}
-        except requests.exceptions.RequestException as e:
-            logger.error(f'Failed to retrieve public channels list: {e}')
-            return {}
-
-    def _get_private_channels(self) -> dict:
-        try:
-            response = self.http.get(
-                f'{self.url}/api/conversations.list',
-                params={'types': 'private_channel', 'limit': 1000},
-                headers=self.headers
-            )
-            response.raise_for_status()
-            sleep(self.post_delay)
-            return {c.get('name'): c for c in response.json().get('channels', [])}
-        except requests.exceptions.RequestException as e:
-            logger.error(f'Failed to retrieve private channels list: {e}')
-            return {}
 
     def _get_url(self, app_config):
         return 'https://slack.com'

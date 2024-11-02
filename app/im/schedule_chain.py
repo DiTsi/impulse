@@ -3,11 +3,12 @@ from datetime import datetime
 from typing import List, Dict
 from zoneinfo import ZoneInfo
 
+from app.logging import logger
 from app.time import unix_sleep_to_timedelta
 
 
 class ScheduleChain:
-    DAY_MAP = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
+    DAY_MAP = {0: "Sun", 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat", 7: "Sun"}
     DEFAULT_TIMEZONE = "UTC"
 
     def __init__(self, name, timezone: str = DEFAULT_TIMEZONE, schedule: List[Dict] = None):
@@ -38,7 +39,6 @@ class ScheduleChain:
                 return entry['steps']
             elif 'steps' in entry:
                 return entry['steps']
-
         return []
 
     def _match_conditions(self, conditions: List[Dict], current_time: datetime) -> bool:
@@ -47,7 +47,7 @@ class ScheduleChain:
         """
         dow = current_time.weekday()
         dow_str = self.DAY_MAP[dow]
-        doe = (current_time - datetime(1970, 1, 1, tzinfo=ZoneInfo("UTC"))).days
+        doe = int(datetime.now().timestamp() // (24 * 60 * 60))
         date_str = current_time.strftime("%Y-%m-%d")
 
         for condition in conditions:
@@ -73,7 +73,6 @@ class ScheduleChain:
             else:
                 if self._evaluate_custom_expression(expr):
                     return True
-
         return False
 
     @staticmethod
@@ -83,7 +82,6 @@ class ScheduleChain:
         """
         start_hour, start_minute = map(int, start_time.split(":"))
         shift_start = current_time.replace(hour=start_hour, minute=start_minute, second=0, microsecond=0)
-
         shift_end = shift_start + unix_sleep_to_timedelta(duration)
 
         return shift_start <= current_time < shift_end
@@ -107,13 +105,13 @@ class ScheduleChain:
             try:
                 target = str(eval(left, {"__builtins__": {}}, {}))
             except Exception as e:
-                print(f"Failed to evaluate left side of regex condition {expr}: {e}")
+                logger.error(f"Failed to evaluate left side of regex condition {expr}: {e}")
                 return False
 
         try:
             return bool(re.search(pattern, target))
         except re.error as e:
-            print(f"Regex error in pattern {pattern}: {e}")
+            logger.error(f"Regex error in pattern {pattern}: {e}")
             return False
 
     @staticmethod
@@ -125,7 +123,7 @@ class ScheduleChain:
             condition = expr.replace("dow", str(dow))
             return eval(condition, {"__builtins__": {}}, {})
         except Exception as e:
-            print(f"Failed to evaluate DOW condition {expr}: {e}")
+            logger.error(f"Failed to evaluate DOW condition {expr}: {e}")
             return False
 
     @staticmethod
@@ -137,7 +135,7 @@ class ScheduleChain:
             condition = expr.replace("doe", str(doe))
             return eval(condition, {"__builtins__": {}}, {})
         except Exception as e:
-            print(f"Failed to evaluate DOE condition {expr}: {e}")
+            logger.error(f"Failed to evaluate DOE condition {expr}: {e}")
             return False
 
     @staticmethod
@@ -149,7 +147,7 @@ class ScheduleChain:
             condition = expr.replace("date", f'"{date_str}"')
             return eval(condition, {"__builtins__": {}}, {})
         except Exception as e:
-            print(f"Failed to evaluate date condition {expr}: {e}")
+            logger.error(f"Failed to evaluate date condition {expr}: {e}")
             return False
 
     @staticmethod
@@ -160,5 +158,5 @@ class ScheduleChain:
         try:
             return eval(expr, {"__builtins__": {}}, {})
         except Exception as e:
-            print(f"Failed to evaluate custom expression {expr}: {e}")
+            logger.error(f"Failed to evaluate custom expression {expr}: {e}")
             return False

@@ -13,7 +13,7 @@ class ChainFactory:
         """
         Create and return a Chain or ScheduleChain instance based on the configuration.
         """
-        if 'schedule' in config or 'timezone' in config:
+        if 'type' in config and config.get('type') == 'schedule':
             return ScheduleChain(
                 name=name,
                 timezone=config.get('timezone', ScheduleChain.DEFAULT_TIMEZONE),

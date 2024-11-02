@@ -7,7 +7,7 @@ import yaml
 from app.incident.helpers import gen_uuid
 from app.time import unix_sleep_to_timedelta
 from app.tools import NoAliasDumper
-from config import incidents_path, timeouts, INCIDENT_ACTUAL_VERSION
+from config import incidents_path, incident, INCIDENT_ACTUAL_VERSION
 
 
 @dataclass
@@ -145,7 +145,7 @@ class Incident:
         now = datetime.utcnow()
         self.updated = now
         if status != 'closed':
-            self.status_update_datetime = now + unix_sleep_to_timedelta(timeouts.get(status))
+            self.status_update_datetime = now + unix_sleep_to_timedelta(incident['timeouts'].get(status))
         if self.status != status:
             self.set_status(status)
             self.dump()

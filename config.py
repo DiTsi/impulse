@@ -18,17 +18,15 @@ INCIDENT_ACTUAL_VERSION = 'v0.4'
 with open(f'{config_path}/impulse.yml', 'r') as file:
     try:
         settings = yaml.safe_load(file)
-        timeouts = {
-            'firing': settings.get('timeouts', {}).get('firing', '6h'),
-            'unknown': settings.get('timeouts', {}).get('unknown', '6h'),
-            'resolved': settings.get('timeouts', {}).get('resolved', '12h'),
-        }
-        incident = {
-            'alerts_firing_notifications':
-                settings.get('incident', {}).get('alerts_firing_notifications', False),
-            'alerts_resolved_notifications':
-                settings.get('incident', {}).get('alerts_resolved_notifications', False),
-        }
+
+        incident = dict()
+        incident['alerts_firing_notifications'] = settings.get('incident', {}).get('alerts_firing_notifications', False)
+        incident['alerts_resolved_notifications'] = settings.get('incident', {}).get('alerts_resolved_notifications', False)
+        incident['timeouts'] = dict()
+        incident['timeouts']['firing'] = settings.get('incident', {}).get('timeouts', {}).get('firing', '6h')
+        incident['timeouts']['unknown'] = settings.get('incident', {}).get('timeouts', {}).get('unknown', '6h')
+        incident['timeouts']['resolved'] = settings.get('incident', {}).get('timeouts', {}).get('resolved', '12h')
+
         experimental = settings.get('experimental', {})
         check_updates = True
         impulse_url = settings.get('url', None)

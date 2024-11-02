@@ -5,7 +5,7 @@ from app.incident.incident import IncidentConfig, Incident
 from app.logging import logger
 from app.queue.handlers.base_handler import BaseHandler
 from app.time import unix_sleep_to_timedelta
-from config import timeouts, INCIDENT_ACTUAL_VERSION, incident, experimental
+from config import INCIDENT_ACTUAL_VERSION, incident, experimental
 
 
 class AlertHandler(BaseHandler):
@@ -38,7 +38,7 @@ class AlertHandler(BaseHandler):
 
         status = alert_state['status']
         updated_datetime = datetime.utcnow()
-        status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(timeouts.get(status))
+        status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(incident['timeouts'].get(status))
 
         chain = self.app.chains.get(chain_name)
         config = IncidentConfig(

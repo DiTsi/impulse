@@ -1,8 +1,8 @@
 class User:
-    def __init__(self, name, slack_id=None):
+    def __init__(self, name, id_=None, exists=False):
         self.name = name
-        self.id = slack_id
-        self.exists = True if slack_id is not None else False
+        self.id = id_
+        self.exists = exists
         self.defined = True
 
     def __repr__(self):

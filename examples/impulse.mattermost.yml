@@ -13,4 +13,4 @@ application:
   admin_users:
   - Dmitry
   users:
-    Dmitry: {username: "ditsi"}
+    Dmitry: {id: ic8pft3ac7rjrd9eopxp4kc7qy}

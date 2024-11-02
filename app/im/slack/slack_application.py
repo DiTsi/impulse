@@ -6,12 +6,10 @@ import requests
 
 from app.im.application import Application
 from app.im.colors import status_colors
-from app.im.exceptions import UserGenerationError
 from app.im.slack.config import slack_headers, slack_request_delay, slack_bold_text, slack_env, \
     slack_admins_template_string
 from app.im.slack.threads import slack_get_create_thread_payload, slack_get_update_payload
 from app.im.slack.user import User
-from app.logging import logger
 
 
 class SlackApplication(Application):
@@ -40,51 +38,23 @@ class SlackApplication(Application):
     def _get_team_name(self, app_config):
         return None
 
-    def get_user_details(self, s_users, user_info):
-        full_name = user_info['full_name']
-        user = next((u for u in s_users if u.get('real_name') == full_name), None)
-        if user:
-            return {
-                'name': user_info.get('full_name'),
-                'id': user.get('id')
-            }
-        logger.warning(f"User '{full_name}' not found in Slack")
-        return {'name': user_info.get('name')}
-
-    def _get_users(self, users):
-        full_names = [u['full_name'] for k, u in users.items()]
-        filtered_users = []
-        request_data = {
-            'limit': 50,
-        }
-        logger.info(f'Get users from Slack')
-        try:
-            while len(filtered_users) < len(full_names):
-                response = self.http.get(
-                    f'{self.url}/api/users.list',
-                    params=request_data,
-                    headers=self.headers
-                )
-                response.raise_for_status()
-                sleep(slack_request_delay)
-                json_data = response.json()
-                for user in json_data.get('members', []):
-                    if user.get('real_name') in full_names:
-                        filtered_users.append(user)
-                cursor = json_data.get('response_metadata', {}).get('next_cursor')
-                request_data.update({'cursor': cursor})
-                if not cursor:
-                    break
-            return filtered_users
-        except requests.exceptions.RequestException as e:
-            logger.error(f'Incorrect Slack response. Reason: {e}')
-            raise UserGenerationError(f'Failed to retrieve users: {e}')
+    def get_user_details(self, id_):
+        if id_ is not None:
+            response = self.http.get(f'{self.url}/api/users.info?user={id_}', headers=self.headers)
+            data = response.json()
+            if not data.get('ok') and data.get('error') == 'user_not_found':
+                exists = False
+            else:
+                exists = True
+            return {'id': id_, 'exists': exists}
+        else:
+            return {'id': None, 'exists': False}
 
     def create_user(self, name, user_details):
-        # Create an instance of the Slack User
         return User(
             name=name,
-            slack_id=user_details.get('id')
+            id_=user_details.get('id'),
+            exists=user_details.get('exists')
         )
 
     def get_notification_destinations(self):

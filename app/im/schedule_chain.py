@@ -35,9 +35,10 @@ class ScheduleChain:
         current_time = current_time.astimezone(self.tz)
 
         for entry in self.schedule:
-            if 'matchers' in entry and self._match_conditions(entry['matchers'], current_time):
-                return entry['steps']
-            elif 'steps' in entry:
+            if 'matchers' in entry:
+                if self._match_conditions(entry['matchers'], current_time):
+                    return entry['steps']
+            else:
                 return entry['steps']
         return []
 
@@ -45,7 +46,7 @@ class ScheduleChain:
         """
         Check each condition in the list against the current date and time.
         """
-        dow = current_time.weekday()
+        dow = (current_time.weekday() + 1) % 7
         dow_str = self.DAY_MAP[dow]
         doe = int(datetime.now().timestamp() // (24 * 60 * 60))
         date_str = current_time.strftime("%Y-%m-%d")

@@ -58,21 +58,21 @@ class ScheduleChain:
                 if not self._within_shift_time(start_time, duration, current_time):
                     continue
 
-            expr = condition['expr']
-            if "=~" in expr:
-                if self._match_regex_condition(expr, dow_str, doe, date_str):
+            start_day = condition['start_day']
+            if "=~" in start_day:
+                if self._match_regex_condition(start_day, dow_str, doe, date_str):
                     return True
-            elif "dow" in expr:
-                if self._match_dow_condition(expr, dow):
+            elif "dow" in start_day:
+                if self._match_dow_condition(start_day, dow):
                     return True
-            elif "doe" in expr:
-                if self._match_doe_condition(expr, doe):
+            elif "doe" in start_day:
+                if self._match_doe_condition(start_day, doe):
                     return True
-            elif "date" in expr:
-                if self._match_date_condition(expr, date_str):
+            elif "date" in start_day:
+                if self._match_date_condition(start_day, date_str):
                     return True
             else:
-                if self._evaluate_custom_expression(expr):
+                if self._evaluate_custom_expression(start_day):
                     return True
         return False
 
@@ -88,11 +88,11 @@ class ScheduleChain:
         return shift_start <= current_time < shift_end
 
     @staticmethod
-    def _match_regex_condition(expr: str, dow_str: str, doe: int, date_str: str) -> bool:
+    def _match_regex_condition(start_day: str, dow_str: str, doe: int, date_str: str) -> bool:
         """
         Evaluate regex-based conditions with "=~" operator.
         """
-        left, pattern = expr.split("=~")
+        left, pattern = start_day.split("=~")
         left = left.strip()
         pattern = pattern.strip().strip('"')
 
@@ -106,7 +106,7 @@ class ScheduleChain:
             try:
                 target = str(eval(left, {"__builtins__": {}}, {}))
             except Exception as e:
-                logger.error(f"Failed to evaluate left side of regex condition {expr}: {e}")
+                logger.error(f"Failed to evaluate left side of regex condition {start_day}: {e}")
                 return False
 
         try:
@@ -116,48 +116,48 @@ class ScheduleChain:
             return False
 
     @staticmethod
-    def _match_dow_condition(expr: str, dow: int) -> bool:
+    def _match_dow_condition(start_day: str, dow: int) -> bool:
         """
         Evaluate day of the week conditions.
         """
         try:
-            condition = expr.replace("dow", str(dow))
+            condition = start_day.replace("dow", str(dow))
             return eval(condition, {"__builtins__": {}}, {})
         except Exception as e:
-            logger.error(f"Failed to evaluate DOW condition {expr}: {e}")
+            logger.error(f"Failed to evaluate DOW condition {start_day}: {e}")
             return False
 
     @staticmethod
-    def _match_doe_condition(expr: str, doe: int) -> bool:
+    def _match_doe_condition(start_day: str, doe: int) -> bool:
         """
         Evaluate day of epoch conditions.
         """
         try:
-            condition = expr.replace("doe", str(doe))
+            condition = start_day.replace("doe", str(doe))
             return eval(condition, {"__builtins__": {}}, {})
         except Exception as e:
-            logger.error(f"Failed to evaluate DOE condition {expr}: {e}")
+            logger.error(f"Failed to evaluate DOE condition {start_day}: {e}")
             return False
 
     @staticmethod
-    def _match_date_condition(expr: str, date_str: str) -> bool:
+    def _match_date_condition(start_day: str, date_str: str) -> bool:
         """
         Evaluate specific date conditions.
         """
         try:
-            condition = expr.replace("date", f'"{date_str}"')
+            condition = start_day.replace("date", f'"{date_str}"')
             return eval(condition, {"__builtins__": {}}, {})
         except Exception as e:
-            logger.error(f"Failed to evaluate date condition {expr}: {e}")
+            logger.error(f"Failed to evaluate date condition {start_day}: {e}")
             return False
 
     @staticmethod
-    def _evaluate_custom_expression(expr: str) -> bool:
+    def _evaluate_custom_expression(start_day: str) -> bool:
         """
         Evaluate any custom expression not directly tied to dow, doe, or date.
         """
         try:
-            return eval(expr, {"__builtins__": {}}, {})
+            return eval(start_day, {"__builtins__": {}}, {})
         except Exception as e:
-            logger.error(f"Failed to evaluate custom expression {expr}: {e}")
+            logger.error(f"Failed to evaluate custom expression {start_day}: {e}")
             return False

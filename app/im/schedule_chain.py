@@ -1,6 +1,6 @@
 import re
-from datetime import datetime
-from typing import List, Dict
+from datetime import datetime, timedelta
+from typing import List, Dict, Tuple
 from zoneinfo import ZoneInfo
 
 from app.logging import logger
@@ -46,46 +46,72 @@ class ScheduleChain:
         """
         Check each condition in the list against the current date and time.
         """
+        for condition in conditions:
+            start_day = condition['start_day']
+            start_time = condition.get('start_time')
+            duration = condition.get('duration')
+
+            day_condition = self._check_day_condition(start_day, current_time)
+
+            if start_time and duration:
+                if day_condition:
+                    if self._within_shift_time(start_time, duration, current_time):
+                        return True
+                    else:
+                        continue
+                else:
+                    shift_start, shift_end = self._get_shift_time(start_time, duration, current_time)
+                    days_difference = self.calculate_days_difference(shift_start, current_time)
+                    if days_difference < 1:
+                        continue
+                    else:
+                        for i in range(days_difference):
+                            if self._check_day_condition(start_day, current_time + timedelta(days=i)):
+                                return True
+
+            if day_condition:
+                return True
+
+        return False
+
+    def _check_day_condition(self, start_day: str, current_time: datetime) -> bool:
+        """
+        Check if the day condition is met.
+        """
         dow = (current_time.weekday() + 1) % 7
         dow_str = self.DAY_MAP[dow]
         doe = int(datetime.now().timestamp() // (24 * 60 * 60))
         date_str = current_time.strftime("%Y-%m-%d")
 
-        for condition in conditions:
-            start_time = condition.get('start_time')
-            duration = condition.get('duration')
-            if start_time and duration:
-                if not self._within_shift_time(start_time, duration, current_time):
-                    continue
+        if "dow" in start_day:
+            return self._match_dow_condition(start_day, dow)
+        elif "doe" in start_day:
+            return self._match_doe_condition(start_day, doe)
+        elif "date" in start_day:
+            return self._match_date_condition(start_day, date_str)
+        elif "=~" in start_day:
+            return self._match_regex_condition(start_day, dow_str, doe, date_str)
+        else:
+            return self._evaluate_custom_expression(start_day)
 
-            start_day = condition['start_day']
-            if "=~" in start_day:
-                if self._match_regex_condition(start_day, dow_str, doe, date_str):
-                    return True
-            elif "dow" in start_day:
-                if self._match_dow_condition(start_day, dow):
-                    return True
-            elif "doe" in start_day:
-                if self._match_doe_condition(start_day, doe):
-                    return True
-            elif "date" in start_day:
-                if self._match_date_condition(start_day, date_str):
-                    return True
-            else:
-                if self._evaluate_custom_expression(start_day):
-                    return True
-        return False
-
-    @staticmethod
-    def _within_shift_time(start_time: str, duration: str, current_time: datetime) -> bool:
+    def _within_shift_time(self, start_time: str, duration: str, current_time: datetime) -> bool:
         """
         Check if the current time falls within the specified shift window.
+        """
+        shift_start, shift_end = self._get_shift_time(start_time, duration, current_time)
+
+        return shift_start <= current_time < shift_end
+
+    @staticmethod
+    def _get_shift_time(start_time: str, duration: str, current_time: datetime) -> Tuple[datetime, datetime]:
+        """
+        Get the start and end time of the shift.
         """
         start_hour, start_minute = map(int, start_time.split(":"))
         shift_start = current_time.replace(hour=start_hour, minute=start_minute, second=0, microsecond=0)
         shift_end = shift_start + unix_sleep_to_timedelta(duration)
 
-        return shift_start <= current_time < shift_end
+        return shift_start, shift_end
 
     @staticmethod
     def _match_regex_condition(start_day: str, dow_str: str, doe: int, date_str: str) -> bool:
@@ -161,3 +187,12 @@ class ScheduleChain:
         except Exception as e:
             logger.error(f"Failed to evaluate custom expression {start_day}: {e}")
             return False
+
+    @staticmethod
+    def calculate_days_difference(start_datetime: datetime, end_datetime: datetime) -> int:
+        if start_datetime > end_datetime:
+            start_datetime, end_datetime = end_datetime, start_datetime
+
+        days_difference = (end_datetime.date() - start_datetime.date()).days
+
+        return days_difference

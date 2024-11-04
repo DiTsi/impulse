@@ -39,10 +39,10 @@ class MattermostApplication(Application):
             return {}
 
     def _get_url(self, app_config):
-        return app_config['url']
+        return app_config['address']
 
     def _get_public_url(self, app_config):
-        return app_config['url']
+        return app_config['address']
 
     def _get_team_name(self, app_config):
         logger.info(f'Get {self.type.capitalize()} team name')

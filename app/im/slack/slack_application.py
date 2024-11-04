@@ -54,6 +54,9 @@ class SlackApplication(Application):
             return {}
 
     def _get_url(self, app_config):
+        return 'https://slack.com'
+
+    def _get_public_url(self, app_config):
         response = self.http.get(
             f'https://slack.com/api/auth.test',
             headers=slack_headers

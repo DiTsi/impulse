@@ -68,7 +68,8 @@ class AlertHandler(BaseHandler):
         self.queue.put(status_update_datetime, 'update_status', incident_.uuid)
 
         incident_.generate_chain(chain)
-        self.queue.recreate(incident_.uuid, incident_.chain)
+        if status == 'firing':
+            self.queue.recreate(incident_.uuid, incident_.chain)
 
     def _recreate_chain_in_queue(self, uuid_, incident_):
         chain = incident_.get_chain()
@@ -99,11 +100,11 @@ class AlertHandler(BaseHandler):
                 incident_.chain_enabled, incident_.status_enabled
             )
 
-        if prev_status == 'firing':
+        if prev_status == 'firing' and incident_.status == 'firing':
             if is_new_firing_alerts_added:
                 if chain_recreate:
                     self._new_alerts_recreate_chain(alert_state, incident_, uuid_)
-            if is_new_firing_alerts_added or is_some_firing_alerts_removed:
+            if (is_new_firing_alerts_added or is_some_firing_alerts_removed) and incident_.status_enabled:
                 self._notify_new_fire_alert(
                     incident_, is_new_firing_alerts_added, is_some_firing_alerts_removed,
                     uuid_, chain_recreate
@@ -150,5 +151,5 @@ class AlertHandler(BaseHandler):
         thread_id = self.app.create_thread(
             incident_.channel_id, body, header, status_icons, status=alert_state['status']
         )
-        incident_.set_thread(thread_id)
+        incident_.set_thread(thread_id, self.app.public_url)
         return thread_id

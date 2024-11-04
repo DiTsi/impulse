@@ -6,6 +6,7 @@ import yaml
 
 from app.incident.helpers import gen_uuid
 from app.time import unix_sleep_to_timedelta
+from app.tools import NoAliasDumper
 from config import incidents_path, timeouts, INCIDENT_ACTUAL_VERSION
 
 
@@ -22,10 +23,10 @@ class Incident:
     status: str
     channel_id: str
     config: IncidentConfig
+    status_update_datetime: datetime
     chain: List[Dict] = field(default_factory=list)
     chain_enabled: bool = False
     status_enabled: bool = False
-    status_update_datetime: Optional[datetime] = None
     updated: datetime = datetime.utcnow()
     version: str = INCIDENT_ACTUAL_VERSION
     uuid: str = field(init=False)
@@ -41,13 +42,13 @@ class Incident:
     def __post_init__(self):
         self.uuid = gen_uuid(self.last_state.get('groupLabels'))
 
-    def set_thread(self, thread_id: str):
+    def set_thread(self, thread_id: str, public_url: str):
         self.ts = thread_id
-        self.link = self.generate_link()
+        self.link = self.generate_link(public_url)
 
-    def generate_link(self) -> str:
+    def generate_link(self, public_url) -> str:
         if self.config.application_type == 'slack':
-            return f'{self.config.application_url}' + f'archives/{self.channel_id}/p{self.ts.replace(".", "")}'
+            return f'{public_url}' + f'archives/{self.channel_id}/p{self.ts.replace(".", "")}'
         return f'{self.config.application_url}/{self.config.application_team.lower()}/pl/{self.ts}'
 
     def generate_chain(self, chain=None):
@@ -65,17 +66,7 @@ class Incident:
 
     def recreate_chain(self, chain=None):
         self.chain = []
-        if not chain or not chain.steps:
-            return
-
-        dt = datetime.utcnow()
-        for index, step in enumerate(chain.steps):
-            type_, value = next(iter(step.items()))
-            if type_ == 'wait':
-                dt += unix_sleep_to_timedelta(value)
-            else:
-                self.chain_put(index=index, datetime_=dt, type_=type_, identifier=value)
-        self.dump()
+        self.generate_chain(chain)
 
     def get_chain(self) -> List[Dict]:
         if not self.chain_enabled:
@@ -116,7 +107,7 @@ class Incident:
             updated=content.get('updated'),
             version=content.get('version', INCIDENT_ACTUAL_VERSION)
         )
-        incident.set_thread(content.get('ts'))
+        incident.set_thread(content.get('ts'), config.application_url)
         return incident
 
     def dump(self):
@@ -133,7 +124,7 @@ class Incident:
             "version": self.version
         }
         with open(f'{incidents_path}/{self.uuid}.yml', 'w') as f:
-            yaml.dump(data, f, default_flow_style=False)
+            yaml.dump(data, f, NoAliasDumper, default_flow_style=False)
 
     def serialize(self) -> Dict:
         return {
@@ -152,8 +143,8 @@ class Incident:
     def update_status(self, status: str) -> bool:
         now = datetime.utcnow()
         self.updated = now
-        self.status_update_datetime = (
-                now + unix_sleep_to_timedelta(timeouts.get(status))) if status != 'closed' else None
+        if status != 'closed':
+            self.status_update_datetime = now + unix_sleep_to_timedelta(timeouts.get(status))
         if self.status != status:
             self.set_status(status)
             self.dump()

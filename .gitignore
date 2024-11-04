@@ -1,11 +1,12 @@
-.vscode
-.idea
-.env
-
 __pycache__
 
-venv
-env
+.idea
+.vscode
 
-impulse.yml
+env
+venv
+
+.env
+impulse*.yml
 data
+docker-compose.yml

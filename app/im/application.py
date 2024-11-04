@@ -18,6 +18,7 @@ class Application(ABC):
         self.http = self._setup_http()
         self.type = app_config['type']
         self.url = self.get_url(app_config)
+        self.public_url = self._get_public_url(app_config)
         self.team = self.get_team_name(app_config)
         self.chains = generate_chains(app_config.get('chains', dict()))
         self.templates = app_config.get('template_files', dict())
@@ -183,6 +184,11 @@ class Application(ABC):
 
     @abstractmethod
     def _get_url(self, app_config):
+        pass
+
+    @abstractmethod
+    def _get_public_url(self, app_config):
+        """Get the public URL of the application to share with users."""
         pass
 
     @abstractmethod

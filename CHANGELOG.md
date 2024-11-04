@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.5.0
+Changes:
+- Webhook timeout handling
+- Fixes for all known bugs
+
 ## v1.4.0
 Changes:
 - Huge notifications format update

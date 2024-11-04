@@ -151,5 +151,5 @@ class AlertHandler(BaseHandler):
         thread_id = self.app.create_thread(
             incident_.channel_id, body, header, status_icons, status=alert_state['status']
         )
-        incident_.set_thread(thread_id)
+        incident_.set_thread(thread_id, self.app.public_url)
         return thread_id

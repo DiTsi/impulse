@@ -105,7 +105,7 @@ class ScheduleChain:
         """
         shift_start, shift_end = self._get_shift_time(start_time, duration, current_time)
 
-        return shift_start <= current_time < shift_end
+        return shift_start <= datetime.now().astimezone(self.tz) < shift_end
 
     @staticmethod
     def _get_duration(condition: dict) -> Optional[str]:

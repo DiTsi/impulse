@@ -29,6 +29,6 @@ with open(f'{config_path}/impulse.yml', 'r') as file:
 
         experimental = settings.get('experimental', {})
         check_updates = True
-        impulse_url = settings.get('url', None)
+        application = settings.get('application')
     except yaml.YAMLError as e:
         print(f"Error reading YAML file: {e}")

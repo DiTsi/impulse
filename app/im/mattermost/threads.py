@@ -1,6 +1,6 @@
 from app.im.colors import status_colors
 from app.im.mattermost.config import buttons
-from config import impulse_url
+from config import application
 
 
 def mattermost_get_button_update_payload(body, header, status_icons, status, chain_enabled, status_enabled):
@@ -22,7 +22,7 @@ def mattermost_get_button_update_payload(body, header, status_icons, status, cha
                                 "style": buttons['chain']['enabled']['style'] if chain_enabled else
                                 buttons['chain']['disabled']['style'],
                                 "integration": {
-                                    "url": f"{impulse_url}/app",
+                                    "url": f"{application.get('impulse_address')}/app",
                                     "context": {
                                         "action": "chain"
                                     }
@@ -36,7 +36,7 @@ def mattermost_get_button_update_payload(body, header, status_icons, status, cha
                                 "style": buttons['status']['enabled']['style'] if status_enabled else
                                 buttons['status']['disabled']['style'],
                                 "integration": {
-                                    "url": f"{impulse_url}/app",
+                                    "url": f"{application.get('impulse_address')}/app",
                                     "context": {
                                         "action": "status"
                                     }
@@ -72,7 +72,7 @@ def mattermost_get_update_payload(channel_id, thread_id, body, header, status_ic
                             "style": buttons['chain']['enabled']['style'] if chain_enabled else
                             buttons['chain']['disabled']['style'],
                             "integration": {
-                                "url": f"{impulse_url}/app",
+                                "url": f"{application.get('impulse_address')}/app",
                                 "context": {
                                     "action": "chain"
                                 }
@@ -86,7 +86,7 @@ def mattermost_get_update_payload(channel_id, thread_id, body, header, status_ic
                             "style": buttons['status']['enabled']['style'] if status_enabled else
                             buttons['status']['disabled']['style'],
                             "integration": {
-                                "url": f"{impulse_url}/app",
+                                "url": f"{application.get('impulse_address')}/app",
                                 "context": {
                                     "action": "status"
                                 }
@@ -117,7 +117,7 @@ def mattermost_get_create_thread_payload(channel_id, body, header, status_icons,
                             "name": buttons['chain']['enabled']['text'],
                             "style": "good",  # good, warning, danger, default, primary, and success
                             "integration": {
-                                "url": f"{impulse_url}/app",
+                                "url": f"{application.get('impulse_address')}/app",
                                 "context": {
                                     "action": "chain"
                                 }
@@ -129,7 +129,7 @@ def mattermost_get_create_thread_payload(channel_id, body, header, status_icons,
                             "name": buttons['status']['enabled']['text'],
                             "style": "good",  # good, warning, danger, default, primary, and success
                             "integration": {
-                                "url": f"{impulse_url}/app",
+                                "url": f"{application.get('impulse_address')}/app",
                                 "context": {
                                     "action": "status"
                                 }

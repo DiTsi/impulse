@@ -1,6 +1,6 @@
 import re
 from datetime import datetime, timedelta
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from zoneinfo import ZoneInfo
 
 from app.logging import logger
@@ -47,30 +47,35 @@ class ScheduleChain:
         Check each condition in the list against the current date and time.
         """
         for condition in conditions:
-            start_day = condition['start_day']
-            start_time = condition.get('start_time')
-            duration = condition.get('duration')
+            try:
+                start_day = condition['start_day']
+                start_time = condition.get('start_time')
+                duration = self._get_duration(condition)
 
-            day_condition = self._check_day_condition(start_day, current_time)
+                day_condition = self._check_day_condition(start_day, current_time)
 
-            if start_time and duration:
+                if start_time and duration:
+                    if day_condition:
+                        if self._within_shift_time(start_time, duration, current_time):
+                            return True
+                        else:
+                            continue
+                    else:
+                        shift_start, shift_end = self._get_shift_time(start_time, duration, current_time)
+                        days_difference = self.calculate_days_difference(shift_start, shift_end)
+                        if days_difference < 1:
+                            continue
+                        else:
+                            for i in range(days_difference+1):
+                                check_time = current_time - timedelta(days=i)
+                                if self._check_day_condition(start_day, check_time):
+                                    return self._within_shift_time(start_time, duration, check_time)
+
                 if day_condition:
-                    if self._within_shift_time(start_time, duration, current_time):
-                        return True
-                    else:
-                        continue
-                else:
-                    shift_start, shift_end = self._get_shift_time(start_time, duration, current_time)
-                    days_difference = self.calculate_days_difference(shift_start, current_time)
-                    if days_difference < 1:
-                        continue
-                    else:
-                        for i in range(days_difference):
-                            if self._check_day_condition(start_day, current_time + timedelta(days=i)):
-                                return True
-
-            if day_condition:
-                return True
+                    return True
+            except Exception as e:
+                logger.error(f"Failed to evaluate condition {condition}: {e}")
+                return False
 
         return False
 
@@ -80,7 +85,7 @@ class ScheduleChain:
         """
         dow = (current_time.weekday() + 1) % 7
         dow_str = self.DAY_MAP[dow]
-        doe = int(datetime.now().timestamp() // (24 * 60 * 60))
+        doe = int(current_time.timestamp() // (24 * 60 * 60))
         date_str = current_time.strftime("%Y-%m-%d")
 
         if "dow" in start_day:
@@ -101,6 +106,19 @@ class ScheduleChain:
         shift_start, shift_end = self._get_shift_time(start_time, duration, current_time)
 
         return shift_start <= current_time < shift_end
+
+    @staticmethod
+    def _get_duration(condition: dict) -> Optional[str]:
+        """
+        Get the duration from the condition.
+        """
+        duration = condition.get('duration')
+        if duration:
+            delta = unix_sleep_to_timedelta(duration)
+            if delta > timedelta(days=1):
+                logger.warning(f'Duration is greater than 1 day: {duration} for condition {condition}. Resetting to 24 hours.')
+                return '24h'
+            return duration
 
     @staticmethod
     def _get_shift_time(start_time: str, duration: str, current_time: datetime) -> Tuple[datetime, datetime]:

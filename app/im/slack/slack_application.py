@@ -99,8 +99,8 @@ class SlackApplication(Application):
     def _post_thread_payload(self, channel_id, id_, text):
         return {'channel': channel_id, 'thread_ts': id_, 'text': text, 'unfurl_links': False, 'unfurl_media': False}
 
-    def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
-                               status_enabled):
+    def update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
+                              status_enabled):
         return slack_get_update_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
                                         status_enabled)
 

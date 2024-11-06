@@ -110,8 +110,8 @@ class MattermostApplication(Application):
     def _post_thread_payload(self, channel_id, id_, text):
         return {'channel_id': channel_id, 'root_id': id_, 'message': text}
 
-    def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
-                               status_enabled):
+    def update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
+                              status_enabled):
         return mattermost_get_update_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
                                              status_enabled)
 

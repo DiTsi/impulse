@@ -3,7 +3,10 @@ from app.logging import logger
 from config import slack_verification_token
 
 
-def reformat_message(original_message, chain_enabled, status_enabled):
+def reformat_message(original_message, text, attachments, chain_enabled, status_enabled):
+    original_message['text'] = text
+    original_message['attachments'] = attachments
+
     if chain_enabled:
         original_message['attachments'][1]['actions'][0]['text'] = buttons['chain']['enabled']['text']
         original_message['attachments'][1]['actions'][0]['style'] = buttons['chain']['enabled']['style']
@@ -20,7 +23,7 @@ def reformat_message(original_message, chain_enabled, status_enabled):
     return original_message
 
 
-def slack_buttons_handler(payload, incidents, queue_):
+def slack_buttons_handler(app, payload, incidents, queue_):
     if payload.get('token') != slack_verification_token:
         logger.error(f'Unauthorized request to \'/slack\'')
         return {}, 401
@@ -31,12 +34,16 @@ def slack_buttons_handler(payload, incidents, queue_):
         return original_message, 200
     actions = payload.get('actions')
 
+    user_id = payload.get('user')['id']
+
     for action in actions:
         if action['name'] == 'chain':
             if incident_.chain_enabled:
+                incident_.assign_user_id(user_id)
                 incident_.chain_enabled = False
                 queue_.delete_by_id(incident_.uuid, delete_steps=True, delete_status=False)
             else:
+                incident_.assign_user_id("")
                 incident_.chain_enabled = True
                 queue_.recreate(incident_.uuid, incident_.chain)
         elif action['name'] == 'status':
@@ -44,6 +51,13 @@ def slack_buttons_handler(payload, incidents, queue_):
                 incident_.status_enabled = False
             else:
                 incident_.status_enabled = True
+
+    body = app.body_template.form_message(incident_.last_state, incident_)
+    header = app.header_template.form_message(incident_.last_state, incident_)
+    status_icons = app.status_icons_template.form_message(incident_.last_state, incident_)
+    payload = app.update_thread_payload(incident_.channel_id, incident_.ts, body, header, status_icons,
+                                        incident_.status, incident_.chain_enabled, incident_.status_enabled)
     incident_.dump()
-    modified_message = reformat_message(original_message, incident_.chain_enabled, incident_.status_enabled)
+    modified_message = reformat_message(original_message, payload['text'], payload['attachments'],
+                                        incident_.chain_enabled, incident_.status_enabled)
     return modified_message, 200

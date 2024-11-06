@@ -56,9 +56,13 @@ class AlertHandler(BaseHandler):
             status_enabled=True,
             updated=updated_datetime,
             status_update_datetime=status_update_datetime,
+            assigned_user_id="",
+            assigned_user="",
             version=INCIDENT_ACTUAL_VERSION
         )
         self._create_thread(incident_, alert_state)
+        incident_.dump()
+
         self.incidents.add(incident_)
 
         logger.info(f'Incident {incident_.uuid} created. Link: {incident_.link}')

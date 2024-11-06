@@ -24,6 +24,8 @@ class Incident:
     channel_id: str
     config: IncidentConfig
     status_update_datetime: datetime
+    assigned_user_id: str
+    assigned_user: str
     chain: List[Dict] = field(default_factory=list)
     chain_enabled: bool = False
     status_enabled: bool = False
@@ -96,7 +98,7 @@ class Incident:
     def load(cls, dump_file: str, config: IncidentConfig):
         with open(dump_file, 'r') as f:
             content = yaml.load(f, Loader=yaml.CLoader)
-        incident = cls(
+        incident_ = cls(
             last_state=content.get('last_state'),
             status=content.get('status'),
             channel_id=content.get('channel_id'),
@@ -106,10 +108,12 @@ class Incident:
             status_enabled=content.get('status_enabled', False),
             status_update_datetime=content.get('status_update_datetime'),
             updated=content.get('updated'),
+            assigned_user_id=content.get('assigned_user_id'),
+            assigned_user=content.get('assigned_user'),
             version=content.get('version', INCIDENT_ACTUAL_VERSION)
         )
-        incident.set_thread(content.get('ts'))
-        return incident
+        incident_.set_thread(content.get('ts'))
+        return incident_
 
     def dump(self):
         data = {
@@ -122,6 +126,8 @@ class Incident:
             "status": self.status,
             "ts": self.ts,
             "updated": self.updated,
+            "assigned_user_id": self.assigned_user_id,
+            "assigned_user": self.assigned_user,
             "version": self.version
         }
         with open(f'{incidents_path}/{self.uuid}.yml', 'w') as f:
@@ -137,6 +143,8 @@ class Incident:
             "status_update_datetime": self.status_update_datetime,
             "status": self.status,
             "updated": self.updated,
+            "assigned_user_id": self.assigned_user_id,
+            "assigned_user": self.assigned_user,
             "link": self.link,
             "ts": self.ts,
         }
@@ -162,6 +170,12 @@ class Incident:
 
     def set_status(self, status: str):
         self.status = status
+
+    def assign_user_id(self, user_id: str):
+        self.assigned_user_id = user_id
+
+    def assign_user(self, user: str):
+        self.assigned_user = user
 
     def is_new_firing_alerts_added(self, alert_state: Dict) -> bool:
         old_alerts_labels = self._get_firing_alerts_labels(self.last_state)

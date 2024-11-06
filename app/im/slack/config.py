@@ -7,24 +7,24 @@ slack_headers = {
     'Authorization': f'Bearer {slack_bot_user_oauth_token}',
 }
 buttons = {
-    # styles: normal, danger
+    # styles: normal, danger, primary
     'chain': {
         'enabled': {
-            'text': '◼ Chain',
+            'text': 'Take It',
             'style': 'primary'
         },
         'disabled': {
-            'text': '▶ Chain',
-            'style': 'normal'
+            'text': 'Release',
+            'style': 'primary'
         }
     },
     'status': {
         'enabled': {
-            'text': '◼ Status',
-            'style': 'primary'
+            'text': ':large_green_circle: Status',
+            'style': 'normal'
         },
         'disabled': {
-            'text': '▶ Status',
+            'text': ':red_circle: Status',
             'style': 'normal'
         }
     }

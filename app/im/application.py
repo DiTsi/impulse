@@ -127,8 +127,8 @@ class Application(ABC):
 
     def update_thread(self, channel_id, id_, status, body, header, status_icons, chain_enabled=True,
                       status_enabled=True):
-        payload = self._update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
-                                              status_enabled)
+        payload = self.update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
+                                             status_enabled)
         self._update_thread(id_, payload)
 
     def post_thread(self, channel_id, id_, text):
@@ -210,8 +210,7 @@ class Application(ABC):
         pass
 
     @abstractmethod
-    def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
-                               status_enabled):
+    def update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled, status_enabled):
         pass
 
     @abstractmethod

@@ -49,7 +49,8 @@ class MattermostApplication(Application):
         logger.info(f'Get {self.type.capitalize()} team name')
         return app_config['team']
 
-    def get_user_details(self, id_):
+    def get_user_details(self, user_details):
+        id_ = user_details.get('id') if user_details is not None else None
         if id_ is not None:
             response = self.http.get(f'{self.url}/api/v4/users/{id_}?user_id={id_}', headers=self.headers)
             data = response.json()

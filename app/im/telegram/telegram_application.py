@@ -8,7 +8,7 @@ from app.im.application import Application
 from app.im.telegram.config import buttons
 from app.im.telegram.user import User
 from app.logging import logger
-from config import telegram_bot_token, impulse_url
+from config import telegram_bot_token, application
 
 
 # Temporary Firing: 🔥, Unknown: ❗️, Resolved: ✅, Closed: 🏁
@@ -30,17 +30,6 @@ class TelegramApplication(Application):
         self.post_delay = 0.5
         self.thread_id_key = 'message_id'
         self._setup_webhook()
-
-    def get_channels(self, channels_list):
-        return {c: {'id': c} for c in channels_list}
-
-    def _get_public_channels(self):
-        """ Not needed for Telegram """
-        pass
-
-    def _get_private_channels(self):
-        """ Not needed for Telegram """
-        pass
 
     def _get_url(self, app_config):
         return 'https://api.telegram.org/bot'
@@ -241,28 +230,27 @@ class TelegramApplication(Application):
     def _markdown_links_to_native_format(self, text):
         return text
 
-    def _get_users(self, users):
-        return users
-
-    def get_user_details(self, s_users, user_info):
+    def get_user_details(self, user_details):
         return {
-            'id': user_info['id'],
-            'username': user_info['username'],
-            'name': user_info.get('name')
+            'id': user_details.get('id'),
+            'username': user_details.get('username'),
+            'name': user_details.get('name'),
+            'exists': user_details.get('exists', False)
         }
 
     def create_user(self, name, user_details):
         return User(
-            id_=user_details['id'],
             name=name,
-            username=user_details['username']
+            id_=user_details.get('id'),
+            username=user_details.get('username'),
+            exists=user_details.get('exists', False)
         )
 
     def _setup_webhook(self):
         try:
             self.http.post(
                 f'{self.url}/setWebhook',
-                params={'url': f'{impulse_url}/app'},
+                params={'url': f'{application.get('impulse_address')}/app'},
                 headers=self.headers
             )
             sleep(self.post_delay)

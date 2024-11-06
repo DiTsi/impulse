@@ -6,7 +6,6 @@ import requests
 
 from app.im.application import Application
 from app.im.colors import status_colors
-from app.im.exceptions import UserGenerationError
 from app.im.slack import reformat_message
 from app.im.slack.config import slack_headers, slack_request_delay, slack_bold_text, slack_env, \
     slack_admins_template_string
@@ -42,7 +41,8 @@ class SlackApplication(Application):
     def _get_team_name(self, app_config):
         return None
 
-    def get_user_details(self, id_):
+    def get_user_details(self, user_details):
+        id_ = user_details.get('id') if user_details is not None else None
         if id_ is not None:
             response = self.http.get(f'{self.url}/api/users.info?user={id_}', headers=self.headers)
             data = response.json()

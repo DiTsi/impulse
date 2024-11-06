@@ -49,11 +49,12 @@ class Application(ABC):
         users = dict()
         for name, user_info in users_dict.items():
             if user_info.get('id') is not None:
-                user_details = self.get_user_details(user_info.get('id'))
+                user_details = self.get_user_details(user_info)
                 if not user_details['exists']:
                     logger.warning(f'.. user {name} not found in {self.type.capitalize()} and will not be notified')
             else:
                 logger.warning(f'.. user {name} has no \'id\' and will not be notified')
+                user_details = {}
             users[name] = self.create_user(name, user_details)
         logger.info(f'.. done')
 
@@ -226,7 +227,7 @@ class Application(ABC):
         pass
 
     @abstractmethod
-    def get_user_details(self, id_):
+    def get_user_details(self, user_details):
         """Fetch user-specific details (ID, name, etc.) from the system. Must be implemented by subclasses."""
         pass
 

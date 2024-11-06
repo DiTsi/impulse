@@ -66,7 +66,7 @@ class ScheduleChain:
                         if days_difference < 1:
                             continue
                         else:
-                            for i in range(days_difference+1):
+                            for i in range(days_difference + 1):
                                 check_time = current_time - timedelta(days=i)
                                 if self._check_day_condition(start_day, check_time):
                                     return self._within_shift_time(start_time, duration, check_time)
@@ -84,6 +84,7 @@ class ScheduleChain:
         Check if the day condition is met.
         """
         dow = (current_time.weekday() + 1) % 7
+        dom = current_time.day
         dow_str = self.DAY_MAP[dow]
         doe = int(current_time.timestamp() // (24 * 60 * 60))
         date_str = current_time.strftime("%Y-%m-%d")
@@ -92,6 +93,8 @@ class ScheduleChain:
             return self._match_dow_condition(start_day, dow)
         elif "doe" in start_day:
             return self._match_doe_condition(start_day, doe)
+        elif "dom" in start_day:
+            return self._match_dom_condition(start_day, dom)
         elif "date" in start_day:
             return self._match_date_condition(start_day, date_str)
         elif "=~" in start_day:
@@ -157,6 +160,18 @@ class ScheduleChain:
             return bool(re.search(pattern, target))
         except re.error as e:
             logger.error(f"Regex error in pattern {pattern}: {e}")
+            return False
+
+    @staticmethod
+    def _match_dom_condition(start_day: str, dom: int) -> bool:
+        """
+        Evaluate day of the month conditions.
+        """
+        try:
+            condition = start_day.replace("dom", str(dom))
+            return eval(condition, {"__builtins__": {}}, {})
+        except Exception as e:
+            logger.error(f"Failed to evaluate DOM condition {start_day}: {e}")
             return False
 
     @staticmethod

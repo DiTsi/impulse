@@ -108,8 +108,8 @@ class Incident:
             status_enabled=content.get('status_enabled', False),
             status_update_datetime=content.get('status_update_datetime'),
             updated=content.get('updated'),
-            assigned_user_id=content.get('assigned_user_id'),
-            assigned_user=content.get('assigned_user'),
+            assigned_user_id=content.get('assigned_user_id', ''),
+            assigned_user=content.get('assigned_user', ''),
             version=content.get('version', INCIDENT_ACTUAL_VERSION)
         )
         incident_.set_thread(content.get('ts'))

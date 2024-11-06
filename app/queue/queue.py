@@ -41,15 +41,16 @@ class Queue:
             ))
         ]
 
-    def recreate(self, uuid, incident_chain):
-        new_items = []
-        for i, s in enumerate(incident_chain):
-            if not s['done']:
-                new_items.append(QueueItem(s['datetime'], 'chain_step', uuid, i, None))
+    def recreate(self, status, uuid, incident_chain):
+        if status != 'resolved':
+            new_items = []
+            for i, s in enumerate(incident_chain):
+                if not s['done']:
+                    new_items.append(QueueItem(s['datetime'], 'chain_step', uuid, i, None))
 
-        with self.lock:
-            for new_item in new_items:
-                self._insert_item_sorted(new_item)
+            with self.lock:
+                for new_item in new_items:
+                    self._insert_item_sorted(new_item)
 
     def _insert_item_sorted(self, new_item):
         for i, item in enumerate(self.items):
@@ -92,8 +93,7 @@ class Queue:
         queue = cls(check_update)
 
         for uuid_, incident in incidents.by_uuid.items():
-            if incident.status != 'resolved':
-                queue.recreate(uuid_, incident.get_chain())
+            queue.recreate(incident.status, uuid_, incident.get_chain())
             queue.put(incident.status_update_datetime, 'update_status', uuid_)
 
         return queue

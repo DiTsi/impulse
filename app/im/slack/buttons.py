@@ -23,7 +23,7 @@ def reformat_message(original_message, text, attachments, chain_enabled, status_
     return original_message
 
 
-def slack_buttons_handler(app, payload, incidents, queue_):
+def slack_buttons_handler(app, payload, incidents, queue_, route):
     if payload.get('token') != slack_verification_token:
         logger.error(f'Unauthorized request to \'/slack\'')
         return {}, 401
@@ -43,9 +43,14 @@ def slack_buttons_handler(app, payload, incidents, queue_):
                 incident_.chain_enabled = False
                 queue_.delete_by_id(incident_.uuid, delete_steps=True, delete_status=False)
             else:
+                queue_.delete_by_id(incident_.uuid, delete_steps=True, delete_status=False)
+                _, chain_name = route.get_route(incident_.last_state)
+                chain = app.chains.get(chain_name)
+                incident_.recreate_chain(chain)
+
                 incident_.assign_user_id("")
                 incident_.chain_enabled = True
-                queue_.recreate(incident_.uuid, incident_.chain)
+                queue_.recreate(incident_.status, incident_.uuid, incident_.chain)
         elif action['name'] == 'status':
             if incident_.status_enabled:
                 incident_.status_enabled = False

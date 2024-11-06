@@ -235,7 +235,7 @@ class TelegramApplication(Application):
             'id': user_details.get('id'),
             'username': user_details.get('username'),
             'name': user_details.get('name'),
-            'exists': user_details.get('exists', False)
+            'exists': True
         }
 
     def create_user(self, name, user_details):

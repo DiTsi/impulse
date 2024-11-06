@@ -40,6 +40,17 @@ notification_user = """
 {#      #} ([NotFound](https://docs.impulse.bot/latest/warnings/NotFound/))  |  :bell: admins ({%- for a in fields.admins %}@{{ a }}{% if not loop.last %},{% endif %}{% endfor -%})
 {#-  -#}{%- endif -%}
 {#--#}{%- endif -%}
+{%- elif fields.type == 'telegram' -%}
+📢 user *{{ fields.name | replace("_", "\\_") }}*
+{#--#}{%- if not fields.unit -%}
+{#-   #} ([NotDefined](https://docs.impulse.bot/latest/warnings/NotDefined/))  |  📢 admins ({%- for a in fields.admins %}@{{ a | replace("_", "\\_") }}{% if not loop.last %},{% endif %}{% endfor -%})
+{#--#}{%- else -%}
+{#-  -#}{%- if fields.unit.exists -%}
+{#-     #} (@{{ fields.unit.id | replace("_", "\\_") }})
+{#-  -#}{%- else -%}
+{#      #} ([NotFound](https://docs.impulse.bot/latest/warnings/NotFound/))  |  📢 admins ({%- for a in fields.admins %}@{{ a | replace("_", "\\_") }}{% if not loop.last %},{% endif %}{% endfor -%})
+{#-  -#}{%- endif -%}
+{#--#}{%- endif -%}
 {%- endif -%}
 """
 
@@ -58,7 +69,7 @@ notification_user_group = """
 {#-   #} ({%- for u in existing_users %}<@{{ u }}>{% if not loop.last %}, {% endif %}{% endfor -%})
 {#-  -#}{% if absent_users | length > 0 %}  |  {% for u in absent_users %}*{{ u }}* (<https://docs.impulse.bot/latest/warnings/NotFound/|NotFound>){% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
 {#-  -#}{% if undefined_users | length > 0 %}  |  {% for u in undefined_users %}*{{ u }}* (<https://docs.impulse.bot/latest/warnings/NotDefined/|NotDefined>){% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
-{#-  -#}{% if absent_users | length > 0 or undefined_users | length > 0 %}  |  :loudspeaker: admins ({% for a in fields.admins %}<@{{ a }}>{% if not loop.last %},{% endif %}{% endfor %}){% endif -%}
+{#-  -#}{% if absent_users | length > 0 or undefined_users | length > 0 %}  |  :loudspeaker: admins ({% for a in fields.admins %}<@{{ a }}>{% if not loop.last %},{% endif %}{% endfor -%}){% endif -%}
 {#--#}{%- endif -%}
 {%- elif fields.type == 'mattermost' -%}
 {%- set existing_users = [] -%}
@@ -70,7 +81,17 @@ notification_user_group = """
 {#-   #} ({%- for u in existing_users %}@{{ u }}{% if not loop.last %}, {% endif %}{% endfor -%})
 {#-  -#}{% if absent_users | length > 0 %}  |  {% for u in absent_users %}**{{ u }}** ([NotFound](https://docs.impulse.bot/latest/warnings/NotFound/)){% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
 {#-  -#}{% if undefined_users | length > 0 %}  |  {% for u in undefined_users %}**{{ u }}** ([NotDefined](https://docs.impulse.bot/latest/warnings/NotDefined/)){% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
-{#-  -#}{% if absent_users | length > 0 or undefined_users | length > 0 %}  |  :bell: admins ({% for a in fields.admins %}@{{ a }}{% if not loop.last %},{% endif %}{% endfor %}){% endif -%}
+{#-  -#}{% if absent_users | length > 0 or undefined_users | length > 0 %}  |  :bell: admins ({% for a in fields.admins %}@{{ a }}{% if not loop.last %},{% endif %}{% endfor -%}){% endif -%}
+{#--#}{%- endif -%}
+{%- elif fields.type == 'telegram' -%}
+📢 user_group *{{ fields.name | replace("_", "\\_") }}*
+{#--#}{%- if not fields.unit -%}
+{#-   #} ([NotDefined](https://docs.impulse.bot/latest/warnings/NotDefined/))  |  📢 admins ({%- for a in fields.admins %}@{{ a | replace("_", "\\_") }}{% if not loop.last %},{% endif %}{% endfor -%})
+{#--#}{%- else -%}
+{#-   #} ({%- for u in existing_users %}@{{ u | replace("_", "\\_") }}{% if not loop.last %}, {% endif %}{% endfor -%})
+{#-  -#}{% if absent_users | length > 0 %}  |  {% for u in absent_users %}*{{ u | replace("_", "\\_") }}* ([NotFound](https://docs.impulse.bot/latest/warnings/NotFound/)){% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+{#-  -#}{% if undefined_users | length > 0 %}  |  {% for u in undefined_users %}*{{ u | replace("_", "\\_") }}* ([NotDefined](https://docs.impulse.bot/latest/warnings/NotDefined/)){% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+{#-  -#}{% if absent_users | length > 0 or undefined_users | length > 0 %}  |  📢 admins ({% for a in fields.admins %}@{{ a | replace("_", "\\_") }}{% if not loop.last %},{% endif %}{% endfor -%}){% endif -%}
 {#--#}{%- endif -%}
 {%- endif -%}
 """
@@ -86,6 +107,11 @@ update: status **{% if fields.status == 'unknown' %}[unknown](https://docs.impul
 {#--#}{%- if fields.status == 'unknown' -%}
 {#-   #}  |  :bell: admins ({%- for a in fields.admins %}@{{ a }}{% if not loop.last %},{% endif %}{% endfor -%})
 {#--#}{%- endif -%}
+{%- elif fields.type == 'telegram' -%}
+update: status *{% if fields.status == 'unknown' %}[unknown](https://docs.impulse.bot/latest/warnings/StatusUnknown/){% else %}{{ fields.status | replace("_", "\\_") }}{% endif %}*
+{#--#}{%- if fields.status == 'unknown' -%}
+{#-   #}  |  📢 admins ({%- for a in fields.admins %}@{{ a | replace("_", "\\_") }}{% if not loop.last %},{% endif %}{% endfor -%})
+{#--#}{%- endif -%}
 {%- endif -%}
 """
 
@@ -94,6 +120,8 @@ update_alerts = """
 update: {% if fields.firing %}new alerts *firing*{% if fields.recreate %}  |  restart chain{% endif %}{% else %}some alerts *resolved*{% endif %}
 {%- elif fields.type == 'mattermost' -%}
 update: {% if fields.firing %}new alerts **firing**{% if fields.recreate %}  |  restart chain{% endif %}{% else %}some alerts **resolved**{% endif %}
+{%- elif fields.type == 'telegram' -%}
+update: {% if fields.firing %}new alerts *firing*{% if fields.recreate %}  |  restart chain{% endif %}{% else %}some alerts *resolved*{% endif %}
 {%- endif -%}
 """
 
@@ -122,6 +150,19 @@ notification_webhook = """
 {#      #} ([TimeoutError](https://docs.impulse.bot/latest/warnings/TimeoutError/))  |  :bell: admins ({%- for a in fields.admins %}@{{ a }}{% if not loop.last %},{% endif %}{% endfor -%})
 {#-  -#}{%- else -%}
 {#      #} ([ConnectionError](https://docs.impulse.bot/latest/warnings/ConnectionError/))  |  :bell: admins ({%- for a in fields.admins %}@{{ a }}{% if not loop.last %},{% endif %}{% endfor -%})
+{#-  -#}{%- endif -%}
+{#--#}{%- endif -%}
+{%- elif fields.type == 'telegram' -%}
+📢 webhook *{{ fields.name | replace("_", "\\_") }}*
+{#--#}{%- if fields.unit is none -%}
+{#-   #} ([NotDefined](https://docs.impulse.bot/latest/warnings/NotDefined/))  |  📢 admins ({%- for a in fields.admins %}@{{ a | replace("_", "\\_") }}{% if not loop.last %},{% endif %}{% endfor -%})
+{#--#}{%- else -%}
+{#-  -#}{%- if fields.result == 'ok' -%}
+{#-     #} ({% if fields.response < 400 %}{{ fields.response }}{% else %}[{{ fields.response }}](https://docs.impulse.bot/latest/warnings/ResponseCode/){% endif %})
+{#-  -#}{%- elif fields.result == 'Timeout' -%}
+{#      #} ([TimeoutError](https://docs.impulse.bot/latest/warnings/TimeoutError/))  |  📢 admins ({%- for a in fields.admins %}@{{ a | replace("_", "\\_") }}{% if not loop.last %},{% endif %}{% endfor -%})
+{#-  -#}{%- else -%}
+{#      #} ([ConnectionError](https://docs.impulse.bot/latest/warnings/ConnectionError/))  |  📢 admins ({%- for a in fields.admins %}@{{ a | replace("_", "\\_") }}{% if not loop.last %},{% endif %}{% endfor -%})
 {#-  -#}{%- endif -%}
 {#--#}{%- endif -%}
 {%- endif -%}

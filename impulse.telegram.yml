@@ -1,4 +1,6 @@
-url: https://0f70-82-215-81-97.ngrok-free.app
+incident:
+  alerts_firing_notifications: true
+  alerts_resolved_notifications: true
 
 timeouts:
   firing: 30s
@@ -22,11 +24,19 @@ route:
       chain: user
 
 application:
-  url: https://api.telegram.org/bot
+  impulse_address: https://0f70-82-215-81-97.ngrok-free.app
+  address: https://api.telegram.org/bot
   type: telegram
   admin_users:
     - Vk
     - DiTsi
+  users:
+    - id: 247044204
+      name: "Valery Khodchenkov"
+      username: "tansdf"
+    - id: 169132457
+      name: "Dmitrii Tsybus"
+      username: "DiTsi"
   chains:
     user:
       - user: Vk
@@ -35,12 +45,4 @@ application:
     default:
       users:
         - Vk
-  users:
-    Vk:
-      id: 247044204
-      name: "Valery Khodchenkov"
-      username: "tansdf"
-    DiTsi:
-      id: 169132457
-      name: "Dmitrii Tsybus"
-      username: "DiTsi"
+        - DiTsi

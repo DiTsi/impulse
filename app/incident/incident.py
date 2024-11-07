@@ -44,13 +44,13 @@ class Incident:
     def __post_init__(self):
         self.uuid = gen_uuid(self.last_state.get('groupLabels'))
 
-    def set_thread(self, thread_id: str):
+    def set_thread(self, thread_id: str, public_url: str):
         self.ts = thread_id
-        self.link = self.generate_link()
+        self.link = self.generate_link(public_url)
 
-    def generate_link(self) -> str:
+    def generate_link(self, public_url) -> str:
         if self.config.application_type == 'slack':
-            return f'{self.config.application_url}' + f'archives/{self.channel_id}/p{self.ts.replace(".", "")}'
+            return f'{public_url}' + f'archives/{self.channel_id}/p{self.ts.replace(".", "")}'
         elif self.config.application_type == 'mattermost':
             return f'{self.config.application_url}/{self.config.application_team.lower()}/pl/{self.ts}'
 
@@ -112,7 +112,7 @@ class Incident:
             assigned_user=content.get('assigned_user', ''),
             version=content.get('version', INCIDENT_ACTUAL_VERSION)
         )
-        incident_.set_thread(content.get('ts'))
+        incident_.set_thread(content.get('ts'), config.application_url)
         return incident_
 
     def dump(self):

@@ -2,7 +2,18 @@
 
 ## v2.0.0
 Upgrade instructions:
-- Move `timeouts` option under `incident` ([docs](https://docs.impulse.bot/latest/config_file/))
+- Modify `application.users`. Define them by IDs instead of their names ([docs](https://docs.impulse.bot/latest/config_file/#users))
+- Add `application.channels` and define them ([docs](https://docs.impulse.bot/latest/config_file/#channels))
+- Replace docker image `ghcr.io/ditsi/impulse` with `ghcr.io/eslupmi/impulse`
+- Move `timeouts` option under `incident` ([docs](https://docs.impulse.bot/latest/config_file/#all-options))
+
+Changes:
+- Replace `Chain` button with `Take It` / `Release`
+- New behavior. `Release` button restarts chain from scratch
+- Added `assigned to` to templates with user who works on incident
+- Define users and channels using IDs only
+- New `Channel` button state indicator
+- Configuration file upgrade
 
 ## v1.5.0
 Changes:

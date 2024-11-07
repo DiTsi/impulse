@@ -6,6 +6,8 @@ Upgrade instructions:
 - Add `application.channels` and define them ([docs](https://docs.impulse.bot/latest/config_file/#channels))
 - Replace docker image `ghcr.io/ditsi/impulse` with `ghcr.io/eslupmi/impulse`
 - Move `timeouts` option under `incident` ([docs](https://docs.impulse.bot/latest/config_file/#all-options))
+- Move `url` under `application` and rename to `impulse_address` (Mattermost only) 
+- Rename `application.url` to `application.address`  (Mattermost only)
 
 Changes:
 - Replace `Chain` button with `Take It` / `Release`

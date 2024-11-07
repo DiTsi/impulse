@@ -1,7 +1,7 @@
 version: "3.3"
 services:
   app:
-    image: ghcr.io/ditsi/impulse:<release_tag>
+    image: ghcr.io/eslupmi/impulse:<release_tag>
     environment:
       SLACK_BOT_USER_OAUTH_TOKEN: <slack_bot_user_oauth_token>
       SLACK_VERIFICATION_TOKEN: <slack_verification_token>

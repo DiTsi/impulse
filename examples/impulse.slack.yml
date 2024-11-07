@@ -9,4 +9,4 @@ application:
   admin_users:
   - Dmitry
   users:
-    Dmitry: {full_name: "Dmitry Tsybus"}
+    Dmitry: {id: U73MD1YLR4M}

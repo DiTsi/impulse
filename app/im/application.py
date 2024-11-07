@@ -14,7 +14,7 @@ from app.logging import logger
 
 class Application(ABC):
 
-    def __init__(self, app_config, channels_list, default_channel):
+    def __init__(self, app_config, channels, default_channel):
         self.http = self._setup_http()
         self.type = app_config['type']
         self.url = self.get_url(app_config)
@@ -31,22 +31,11 @@ class Application(ABC):
         self.thread_id_key = None
         self._initialize_specific_params()
 
-        self.channels = self.get_channels(channels_list)
+        self.channels = channels
         self.default_channel_id = self.channels[default_channel]['id']
-        self.users = self._generate_users(app_config.get('users'))
+        self.users = self._generate_users(app_config['users'])
         self.user_groups = generate_user_groups(app_config.get('user_groups'), self.users)
         self.admin_users = [self.users[admin] for admin in app_config['admin_users']]
-
-    def get_channels(self, channels_list):
-        logger.info(f'Get {self.type.capitalize()} channels using API')
-        public_channels = self._get_public_channels()
-        private_channels = self._get_private_channels()
-        all_channels = public_channels | private_channels
-        channels = {ch: all_channels[ch] for ch in channels_list if ch in all_channels}
-        missing_channels = set(channels_list) - set(channels.keys())
-        for ch in missing_channels:
-            logger.warning(f'No public channel \'{ch}\' in {self.type.capitalize()}')
-        return channels
 
     def get_url(self, app_config):
         return self._get_url(app_config)
@@ -55,17 +44,18 @@ class Application(ABC):
         return self._get_team_name(app_config)
 
     def _generate_users(self, users_dict):
-        if not users_dict:
-            logger.info('No users defined in impulse.yml')
-            return {}
-
         logger.info(f'Creating users')
-        users_list = self._get_users(users_dict)
 
-        users = {}
+        users = dict()
         for name, user_info in users_dict.items():
-            user_details = self.get_user_details(users_list, user_info)
+            if user_info.get('id') is not None:
+                user_details = self.get_user_details(user_info.get('id'))
+                if not user_details['exists']:
+                    logger.warning(f'.. user {name} not found in {self.type.capitalize()} and will not be notified')
+            else:
+                logger.warning(f'.. user {name} has no \'id\' and will not be notified')
             users[name] = self.create_user(name, user_details)
+        logger.info(f'.. done')
 
         return users
 
@@ -137,8 +127,8 @@ class Application(ABC):
 
     def update_thread(self, channel_id, id_, status, body, header, status_icons, chain_enabled=True,
                       status_enabled=True):
-        payload = self._update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
-                                              status_enabled)
+        payload = self.update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
+                                             status_enabled)
         self._update_thread(id_, payload)
 
     def post_thread(self, channel_id, id_, text):
@@ -172,14 +162,6 @@ class Application(ABC):
 
     @abstractmethod
     def _markdown_links_to_native_format(self, text):
-        pass
-
-    @abstractmethod
-    def _get_public_channels(self):
-        pass
-
-    @abstractmethod
-    def _get_private_channels(self):
         pass
 
     @abstractmethod
@@ -228,8 +210,7 @@ class Application(ABC):
         pass
 
     @abstractmethod
-    def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
-                               status_enabled):
+    def update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled, status_enabled):
         pass
 
     @abstractmethod
@@ -237,12 +218,7 @@ class Application(ABC):
         pass
 
     @abstractmethod
-    def _get_users(self, users):
-        """Fetch users from the external system. Must be implemented by subclasses."""
-        pass
-
-    @abstractmethod
-    def get_user_details(self, s_users, user_info):
+    def get_user_details(self, id_):
         """Fetch user-specific details (ID, name, etc.) from the system. Must be implemented by subclasses."""
         pass
 

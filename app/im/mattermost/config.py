@@ -10,22 +10,22 @@ buttons = {
     # styles: good, warning, danger, default, primary, and success
     'chain': {
         'enabled': {
-            'text': '◼ Chain',
-            'style': 'good'
+            'text': 'Take It',
+            'style': 'primary'
         },
         'disabled': {
-            'text': '▶ Chain',
-            'style': 'danger'
+            'text': 'Release',
+            'style': 'primary'
         }
     },
     'status': {
         'enabled': {
-            'text': '◼ Status',
-            'style': 'good'
+            'text': ':large_green_circle: Status',
+            'style': 'default'
         },
         'disabled': {
-            'text': '▶ Status',
-            'style': 'danger'
+            'text': ':red_circle: Status',
+            'style': 'default'
         }
     }
 }

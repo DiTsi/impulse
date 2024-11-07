@@ -5,7 +5,7 @@ from app.incident.incident import IncidentConfig, Incident
 from app.logging import logger
 from app.queue.handlers.base_handler import BaseHandler
 from app.time import unix_sleep_to_timedelta
-from config import timeouts, INCIDENT_ACTUAL_VERSION, incident, experimental
+from config import INCIDENT_ACTUAL_VERSION, incident, experimental
 
 
 class AlertHandler(BaseHandler):
@@ -38,7 +38,7 @@ class AlertHandler(BaseHandler):
 
         status = alert_state['status']
         updated_datetime = datetime.utcnow()
-        status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(timeouts.get(status))
+        status_update_datetime = datetime.utcnow() + unix_sleep_to_timedelta(incident['timeouts'].get(status))
 
         chain = self.app.chains.get(chain_name)
         config = IncidentConfig(
@@ -56,9 +56,13 @@ class AlertHandler(BaseHandler):
             status_enabled=True,
             updated=updated_datetime,
             status_update_datetime=status_update_datetime,
+            assigned_user_id="",
+            assigned_user="",
             version=INCIDENT_ACTUAL_VERSION
         )
         self._create_thread(incident_, alert_state)
+        incident_.dump()
+
         self.incidents.add(incident_)
 
         logger.info(f'Incident {incident_.uuid} created. Link: {incident_.link}')
@@ -68,20 +72,16 @@ class AlertHandler(BaseHandler):
         self.queue.put(status_update_datetime, 'update_status', incident_.uuid)
 
         incident_.generate_chain(chain)
-        if status == 'firing':
-            self.queue.recreate(incident_.uuid, incident_.chain)
-
-    def _recreate_chain_in_queue(self, uuid_, incident_):
-        chain = incident_.get_chain()
-        self.queue.recreate(uuid_, chain)
+        self.queue.recreate(status, incident_.uuid, incident_.chain)
 
     def _handle_update(self, uuid_, incident_, alert_state):
         is_new_firing_alerts_added = False
         is_some_firing_alerts_removed = False
 
         prev_status = incident_.status
-        if alert_state.get('status') == 'firing' and prev_status == 'resolved':
-            self._recreate_chain_in_queue(uuid_, incident_)
+        if prev_status == 'resolved':
+            chain = incident_.get_chain()
+            self.queue.recreate(alert_state.get('status'), uuid_, chain)
 
         chain_recreate = experimental.get('recreate_chain', False)
         if incident.get('alerts_firing_notifications') or chain_recreate:
@@ -140,7 +140,7 @@ class AlertHandler(BaseHandler):
         _, chain_name = self.route.get_route(alert_state)
         chain = self.app.chains.get(chain_name)
         incident_.recreate_chain(chain)
-        self.queue.recreate(incident_.uuid, incident_.chain)
+        self.queue.recreate(incident_.status, incident_.uuid, incident_.chain)
         incident_.dump()
         logger.info(f"Incident {uuid_} chain recreated")
 

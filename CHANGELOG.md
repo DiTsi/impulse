@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.0
+Upgrade instructions:
+- Move `timeouts` option under `incident` ([docs](https://docs.impulse.bot/latest/config_file/))
+
 ## v1.5.0
 Changes:
 - Webhook timeout handling

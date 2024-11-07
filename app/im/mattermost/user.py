@@ -1,10 +1,10 @@
 class User:
-    def __init__(self, name, user_id, username):
+    def __init__(self, name, id_, username=None, exists=False):
         self.name = name
-        self.id = user_id
-        self.exists = True if user_id is not None else False
+        self.id = id_
+        self.exists = exists
         self.username = username
         self.defined = True
 
     def __repr__(self):
-        return self.username
+        return self.name

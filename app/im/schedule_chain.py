@@ -35,91 +35,92 @@ class ScheduleChain:
         current_time = current_time.astimezone(self.tz)
 
         for entry in self.schedule:
-            if 'matchers' in entry:
-                if self._match_conditions(entry['matchers'], current_time):
+            if 'matcher' in entry:
+                if self._match_conditions(entry['matcher'], current_time):
                     return entry['steps']
             else:
                 return entry['steps']
         return []
 
-    def _match_conditions(self, conditions: List[Dict], current_time: datetime) -> bool:
+    def _match_conditions(self, matcher, current_time: datetime) -> bool:
         """
         Check each condition in the list against the current date and time.
         """
-        for condition in conditions:
-            try:
-                start_day = condition['start_day']
-                start_time = condition.get('start_time')
-                duration = self._get_duration(condition)
+        start_day_expr = matcher.get('start_day_expr')
+        start_day_values = matcher.get('start_day_values')
+        start_time = matcher.get('start_time')
+        duration = matcher.get('duration')
 
-                day_condition = self._check_day_condition(start_day, current_time)
+        duration_ = self._get_duration(duration)
+        day_condition = self._check_day_condition(start_day_expr, start_day_values, current_time)
 
-                if start_time and duration:
-                    if day_condition:
-                        if self._within_shift_time(start_time, duration, current_time):
-                            return True
-                        else:
-                            continue
-                    else:
-                        shift_start, shift_end = self._get_shift_time(start_time, duration, current_time)
-                        days_difference = self.calculate_days_difference(shift_start, shift_end)
-                        if days_difference < 1:
-                            continue
-                        else:
-                            for i in range(days_difference + 1):
-                                check_time = current_time - timedelta(days=i)
-                                if self._check_day_condition(start_day, check_time):
-                                    return self._within_shift_time(start_time, duration, check_time)
-
-                if day_condition:
+        if start_time and duration_:
+            if day_condition:
+                if self._within_shift_time(start_time, duration_, current_time):
                     return True
-            except Exception as e:
-                logger.error(f"Failed to evaluate condition {condition}: {e}")
-                return False
+                else:
+                    return False
+            else:
+                shift_start, shift_end = self._get_shift_time(start_time, duration_, current_time)
+                days_difference = self.calculate_days_difference(shift_start, shift_end)
+                if days_difference < 1:
+                    return False
+                else:
+                    for i in range(days_difference + 1):
+                        check_time = current_time - timedelta(days=i)
+                        if self._check_day_condition(start_day_expr, start_day_values, check_time):
+                            return self._within_shift_time(start_time, duration_, check_time)
+
+        if day_condition:
+            return True
 
         return False
 
-    def _check_day_condition(self, start_day: str, current_time: datetime) -> bool:
+    def _check_day_condition(self, start_day_expr: str, start_day_values: List, current_time: datetime) -> bool:
         """
         Check if the day condition is met.
         """
-        dow = (current_time.weekday() + 1) % 7
-        dom = current_time.day
-        dow_str = self.DAY_MAP[dow]
-        doe = int(current_time.timestamp() // (24 * 60 * 60))
-        date_str = current_time.strftime("%Y-%m-%d")
+        now = {
+            'dow': (current_time.weekday() + 1) % 7,
+            'dom': current_time.day,
+            'date': current_time.strftime("%Y-%m-%d"),
+        }
 
-        if "dow" in start_day:
-            return self._match_dow_condition(start_day, dow)
-        elif "doe" in start_day:
-            return self._match_doe_condition(start_day, doe)
-        elif "dom" in start_day:
-            return self._match_dom_condition(start_day, dom)
-        elif "date" in start_day:
-            return self._match_date_condition(start_day, date_str)
-        elif "=~" in start_day:
-            return self._match_regex_condition(start_day, dow_str, doe, date_str)
-        else:
-            return self._evaluate_custom_expression(start_day)
+        expr = re.compile(r'(?P<selector>dow|dom|date)(\s?%\s?(?P<divider>\d))?')
+        match = expr.match(start_day_expr)
+        if not match:
+            logger.error(f'Incorrect start_day_expr \'{start_day_expr}\'')
+
+        selector = match.group('selector')
+        divider = match.group('divider')
+
+        value = now[selector]
+        if divider is not None:
+            value = value % divider
+
+        if selector == 'dow':
+            return self._match_dow_condition(value, start_day_values)
+        elif selector == "dom":
+            return self._match_dom_condition(value, start_day_values)
+        elif selector == "date":
+            return self._match_date_condition(value, start_day_values)
 
     def _within_shift_time(self, start_time: str, duration: str, current_time: datetime) -> bool:
         """
         Check if the current time falls within the specified shift window.
         """
         shift_start, shift_end = self._get_shift_time(start_time, duration, current_time)
-
         return shift_start <= datetime.now().astimezone(self.tz) < shift_end
 
     @staticmethod
-    def _get_duration(condition: dict) -> Optional[str]:
+    def _get_duration(duration: str) -> Optional[str]:
         """
         Get the duration from the condition.
         """
-        duration = condition.get('duration')
         if duration:
             delta = unix_sleep_to_timedelta(duration)
             if delta > timedelta(days=1):
-                logger.warning(f'Duration is greater than 1 day: {duration} for condition {condition}. Resetting to 24 hours.')
+                logger.warning(f'Schedule chain matcher duration \'{duration}\' greater than 24h. Resetting to 24 hours.')
                 return '24h'
             return duration
 
@@ -135,97 +136,36 @@ class ScheduleChain:
         return shift_start, shift_end
 
     @staticmethod
-    def _match_regex_condition(start_day: str, dow_str: str, doe: int, date_str: str) -> bool:
-        """
-        Evaluate regex-based conditions with "=~" operator.
-        """
-        left, pattern = start_day.split("=~")
-        left = left.strip()
-        pattern = pattern.strip().strip('"')
-
-        if left == "dow":
-            target = dow_str
-        elif left == "doe":
-            target = str(doe)
-        elif left == "date":
-            target = date_str
-        else:
-            try:
-                target = str(eval(left, {"__builtins__": {}}, {}))
-            except Exception as e:
-                logger.error(f"Failed to evaluate left side of regex condition {start_day}: {e}")
-                return False
-
-        try:
-            return bool(re.search(pattern, target))
-        except re.error as e:
-            logger.error(f"Regex error in pattern {pattern}: {e}")
-            return False
-
-    @staticmethod
-    def _match_dom_condition(start_day: str, dom: int) -> bool:
-        """
-        Evaluate day of the month conditions.
-        """
-        try:
-            condition = start_day.replace("dom", str(dom))
-            return eval(condition, {"__builtins__": {}}, {})
-        except Exception as e:
-            logger.error(f"Failed to evaluate DOM condition {start_day}: {e}")
-            return False
-
-    @staticmethod
-    def _match_dow_condition(start_day: str, dow: int) -> bool:
+    def _match_dow_condition(value: int, start_day_values: List) -> bool:
         """
         Evaluate day of the week conditions.
         """
-        try:
-            condition = start_day.replace("dow", str(dow))
-            return eval(condition, {"__builtins__": {}}, {})
-        except Exception as e:
-            logger.error(f"Failed to evaluate DOW condition {start_day}: {e}")
-            return False
+        for i in start_day_values:
+            if value == i or ScheduleChain.DAY_MAP[value] == i:
+                return True
+        return False
 
     @staticmethod
-    def _match_doe_condition(start_day: str, doe: int) -> bool:
+    def _match_dom_condition(value: int, start_day_values: List) -> bool:
         """
-        Evaluate day of epoch conditions.
+        Evaluate day of the month conditions.
         """
-        try:
-            condition = start_day.replace("doe", str(doe))
-            return eval(condition, {"__builtins__": {}}, {})
-        except Exception as e:
-            logger.error(f"Failed to evaluate DOE condition {start_day}: {e}")
-            return False
+        if value in start_day_values:
+            return True
+        return False
 
     @staticmethod
-    def _match_date_condition(start_day: str, date_str: str) -> bool:
+    def _match_date_condition(value: str, start_day_values: List) -> bool:
         """
         Evaluate specific date conditions.
         """
-        try:
-            condition = start_day.replace("date", f'"{date_str}"')
-            return eval(condition, {"__builtins__": {}}, {})
-        except Exception as e:
-            logger.error(f"Failed to evaluate date condition {start_day}: {e}")
-            return False
-
-    @staticmethod
-    def _evaluate_custom_expression(start_day: str) -> bool:
-        """
-        Evaluate any custom expression not directly tied to dow, doe, or date.
-        """
-        try:
-            return eval(start_day, {"__builtins__": {}}, {})
-        except Exception as e:
-            logger.error(f"Failed to evaluate custom expression {start_day}: {e}")
-            return False
+        if value in start_day_values:
+            return True
+        return False
 
     @staticmethod
     def calculate_days_difference(start_datetime: datetime, end_datetime: datetime) -> int:
         if start_datetime > end_datetime:
             start_datetime, end_datetime = end_datetime, start_datetime
-
         days_difference = (end_datetime.date() - start_datetime.date()).days
-
         return days_difference

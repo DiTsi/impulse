@@ -32,7 +32,7 @@ class UpdateHandler(BaseHandler):
 
 
 def get_latest_tag():
-    url = f"https://api.github.com/repos/DiTsi/impulse/tags"
+    url = f"https://api.github.com/repos/eslupmi/impulse/tags"
     response = requests.get(url)
 
     if response.status_code == 200:

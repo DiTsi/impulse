@@ -108,11 +108,11 @@ class Application(ABC):
                 self.post_thread(incident.channel_id, incident.ts, message)
 
     def new_version_notification(self, channel_id, new_tag):
-        r = requests.get(f'https://api.github.com/repos/DiTsi/impulse/releases/tags/{new_tag}')
+        r = requests.get(f'https://api.github.com/repos/eslupmi/impulse/releases/tags/{new_tag}')
         release_notes = r.json().get('body')
         new_version_text = self.format_text_bold(f'New IMPulse version available: {new_tag}')
         changelog_link_text = self._format_text_link("CHANGELOG.md",
-                                                     "https://github.com/DiTsi/impulse/blob/main/CHANGELOG.md")
+                                                     "https://github.com/eslupmi/impulse/blob/main/CHANGELOG.md")
         text = f"{new_version_text} {changelog_link_text}\n\n{release_notes}"
         native_formatted_text = self._markdown_links_to_native_format(text)
         admins_text = self.get_admins_text()

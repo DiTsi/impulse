@@ -33,7 +33,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: 'ghcr.io/ditsi/impulse:release'
+        tags: 'ghcr.io/eslupmi/impulse:release'
 
   deploy-to-staging:
     needs: build-and-push-image

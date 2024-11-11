@@ -1,4 +1,4 @@
-name: to_test
+name: test
 
 concurrency:
   group: ${{ github.ref }}
@@ -33,7 +33,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: 'ghcr.io/ditsi/impulse:test'
+        tags: 'ghcr.io/eslupmi/impulse:test'
 
   deploy:
     needs: build-and-push

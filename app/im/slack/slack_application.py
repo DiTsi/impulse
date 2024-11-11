@@ -97,7 +97,7 @@ class SlackApplication(Application):
         sleep(self.post_delay)
         return response.json().get('ts')
 
-    def buttons_handler(self, payload, incidents, queue_):
+    def buttons_handler(self, payload, incidents, queue_, route):
         if payload.get('token') != slack_verification_token:
             logger.error(f'Unauthorized request to \'/slack\'')
             return {}, 401
@@ -108,21 +108,37 @@ class SlackApplication(Application):
             return original_message, 200
         actions = payload.get('actions')
 
+        user_id = payload.get('user')['id']
+
         for action in actions:
             if action['name'] == 'chain':
                 if incident_.chain_enabled:
+                    incident_.assign_user_id(user_id)
                     incident_.chain_enabled = False
                     queue_.delete_by_id(incident_.uuid, delete_steps=True, delete_status=False)
                 else:
+                    queue_.delete_by_id(incident_.uuid, delete_steps=True, delete_status=False)
+                    _, chain_name = route.get_route(incident_.last_state)
+                    chain = self.chains.get(chain_name)
+                    incident_.recreate_chain(chain)
+    
+                    incident_.assign_user_id("")
                     incident_.chain_enabled = True
-                    queue_.recreate(incident_.uuid, incident_.chain)
+                    queue_.recreate(incident_.status, incident_.uuid, incident_.chain)
             elif action['name'] == 'status':
                 if incident_.status_enabled:
                     incident_.status_enabled = False
                 else:
                     incident_.status_enabled = True
+
+        body = self.body_template.form_message(incident_.last_state, incident_)
+        header = self.header_template.form_message(incident_.last_state, incident_)
+        status_icons = self.status_icons_template.form_message(incident_.last_state, incident_)
+        payload = self.update_thread_payload(incident_.channel_id, incident_.ts, body, header, status_icons,
+                                             incident_.status, incident_.chain_enabled, incident_.status_enabled)
         incident_.dump()
-        modified_message = reformat_message(original_message, incident_.chain_enabled, incident_.status_enabled)
+        modified_message = reformat_message(original_message, payload['text'], payload['attachments'],
+                                            incident_.chain_enabled, incident_.status_enabled)
         return modified_message, 200
 
     def _create_thread_payload(self, channel_id, body, header, status_icons, status):
@@ -131,8 +147,8 @@ class SlackApplication(Application):
     def _post_thread_payload(self, channel_id, id_, text):
         return {'channel': channel_id, 'thread_ts': id_, 'text': text, 'unfurl_links': False, 'unfurl_media': False}
 
-    def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
-                               status_enabled):
+    def update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
+                              status_enabled):
         return slack_get_update_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
                                         status_enabled)
 

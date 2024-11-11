@@ -115,7 +115,7 @@ def mattermost_get_create_thread_payload(channel_id, body, header, status_icons,
                             "id": "chain",
                             "type": "button",
                             "name": buttons['chain']['enabled']['text'],
-                            "style": "good",  # good, warning, danger, default, primary, and success
+                            "style": buttons['chain']['enabled']['style'],
                             "integration": {
                                 "url": f"{application.get('impulse_address')}/app",
                                 "context": {
@@ -127,7 +127,7 @@ def mattermost_get_create_thread_payload(channel_id, body, header, status_icons,
                             "id": "status",
                             "type": "button",
                             "name": buttons['status']['enabled']['text'],
-                            "style": "good",  # good, warning, danger, default, primary, and success
+                            "style": buttons['status']['enabled']['style'],
                             "integration": {
                                 "url": f"{application.get('impulse_address')}/app",
                                 "context": {

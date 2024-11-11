@@ -1,7 +1,10 @@
 from app.im.slack.config import buttons
 
 
-def reformat_message(original_message, chain_enabled, status_enabled):
+def reformat_message(original_message, text, attachments, chain_enabled, status_enabled):
+    original_message['text'] = text
+    original_message['attachments'] = attachments
+
     if chain_enabled:
         original_message['attachments'][1]['actions'][0]['text'] = buttons['chain']['enabled']['text']
         original_message['attachments'][1]['actions'][0]['style'] = buttons['chain']['enabled']['style']

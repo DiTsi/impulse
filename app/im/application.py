@@ -161,7 +161,7 @@ class Application(ABC):
         return http
 
     @abstractmethod
-    def buttons_handler(self, payload, incidents, queue_):
+    def buttons_handler(self, payload, incidents, queue_, route):
         pass
 
     @abstractmethod

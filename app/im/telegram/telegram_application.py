@@ -81,7 +81,7 @@ class TelegramApplication(Application):
         response_json = response.json()
         return response_json.get('result', {}).get(self.thread_id_key)
 
-    def buttons_handler(self, payload, incidents, queue_):
+    def buttons_handler(self, payload, incidents, queue_, route):
         if 'callback_query' not in payload:
             return jsonify({}), 200
         callback = payload['callback_query']
@@ -177,8 +177,8 @@ class TelegramApplication(Application):
     def update_thread(self, channel_id, id_, status, body, header, status_icons, chain_enabled=True,
                       status_enabled=True):
         self._update_topic(channel_id, id_, header, status_icons)
-        payload = self._update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
-                                              status_enabled)
+        payload = self.update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
+                                             status_enabled)
         self._update_thread(id_, payload)
 
     def _update_topic(self, channel_id, id_, header, status_icons):
@@ -198,8 +198,8 @@ class TelegramApplication(Application):
         except requests.exceptions.RequestException as e:
             logger.error(f'Failed to update topic: {e}')
 
-    def _update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
-                               status_enabled):
+    def update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
+                              status_enabled):
         topic_id, message_id = id_.split('/')
         return {
             'chat_id': channel_id,
@@ -250,7 +250,7 @@ class TelegramApplication(Application):
         try:
             self.http.post(
                 f'{self.url}/setWebhook',
-                params={'url': f'{application.get('impulse_address')}/app'},
+                params={'url': f"{application.get('impulse_address')}/app"},
                 headers=self.headers
             )
             sleep(self.post_delay)

@@ -70,7 +70,7 @@ def route_app_buttons():
         payload = json.loads(request.form['payload'])
     else:
         payload = request.json
-    return messenger.buttons_handler(messenger, payload, incidents, queue, route)
+    return messenger.buttons_handler(payload, incidents, queue, route)
 
 
 @app.route('/incidents', methods=['GET'])

@@ -5,21 +5,21 @@ buttons = {
     # styles: normal, danger
     'chain': {
         'enabled': {
-            'text': '⏹️ Chain',
+            'text': 'Take It',
             'callback_data': 'stop_chain'
         },
         'disabled': {
-            'text': '▶️ Chain',
+            'text': 'Release',
             'callback_data': 'start_chain'
         }
     },
     'status': {
         'enabled': {
-            'text': '⏹️ Status',
+            'text': '🟢 Status',
             'callback_data': 'stop_status'
         },
         'disabled': {
-            'text': '▶️ Status',
+            'text': '🔴 Status',
             'callback_data': 'start_status'
         }
     }

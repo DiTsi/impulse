@@ -138,8 +138,8 @@ class Incident:
             "assigned_user": self.assigned_user,
             "version": self.version
         }
-        with open(f'{incidents_path}/{self.uuid}.yml', 'w') as f:
-            yaml.dump(data, f, NoAliasDumper, default_flow_style=False)
+        # with open(f'{incidents_path}/{self.uuid}.yml', 'w') as f:
+        #     yaml.dump(data, f, NoAliasDumper, default_flow_style=False)
 
     def serialize(self) -> Dict:
         return {

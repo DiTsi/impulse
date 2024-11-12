@@ -141,11 +141,6 @@ class Application(ABC):
         sleep(self.post_delay)
         return response.status_code
 
-    def _unit_not_found_text(self, unit_type, identifier):
-        logger.error(f'{unit_type.capitalize()} \'{identifier}\' not found in impulse.yml')
-        admins_text = self.get_admins_text()
-        return f"➤ {unit_type} {self.format_text_bold(identifier)}: not defined in impulse.yml\n➤ admins: {admins_text}"
-
     @staticmethod
     def _setup_http():
         retry_strategy = Retry(

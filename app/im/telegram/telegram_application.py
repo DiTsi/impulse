@@ -41,28 +41,28 @@ class TelegramApplication(Application):
         return None
 
     def get_notification_destinations(self):
-        return [a.username for a in self.admin_users]
+        return self.admin_users
 
     def format_text_bold(self, text):
-        return f'*{text}*'
+        return f'<b>{text}</b>'
 
     def _format_text_link(self, text, url):
-        return f'[{text}]({url})'
+        return f'<a href={url}>{text}</a>'
 
     def format_text_italic(self, text):
-        return f'_{text}_'
+        return f'<i>{text}</i>'
 
     def _format_tg_icon(self, icon):
-        return f'![{self.icon_map.get(icon)}](tg://emoji?id={icon})'
+        return f'{self.icon_map.get(icon)}'
 
-    def get_admins_text(self):
+    def get_admins_text(self): #!
         return ', '.join([f'@{a.username}' for a in self.admin_users])
 
     def send_message(self, channel_id, text, attachment):
         params = {
             'chat_id': channel_id,
             'text': text,
-            'parse_mode': 'MarkdownV2'
+            'parse_mode': 'HTML'
         }
         response = self.http.post(self.post_message_url, params=params)
         sleep(self.post_delay)
@@ -153,8 +153,8 @@ class TelegramApplication(Application):
     def _create_thread_payload(self, channel_id, body, header, status_icons, status):
         return {
             'chat_id': channel_id,
-            'text': f'{self._format_tg_icon(status_icons)} {status} {header}\n{body}',
-            'parse_mode': 'MarkdownV2',
+            'text': f'{self._format_tg_icon(status_icons)} {header}\n{body}',
+            'parse_mode': 'HTML',
             'reply_markup': {
                 'inline_keyboard': [
                     [
@@ -171,7 +171,7 @@ class TelegramApplication(Application):
             'chat_id': channel_id,
             'text': text,
             'message_thread_id': topic_id,
-            'parse_mode': 'MarkdownV2'
+            'parse_mode': 'HTML'
         }
 
     def update_thread(self, channel_id, id_, status, body, header, status_icons, chain_enabled=True,
@@ -204,8 +204,8 @@ class TelegramApplication(Application):
         return {
             'chat_id': channel_id,
             'message_id': message_id,
-            'text': f'{self._format_tg_icon(status_icons)} {status} {header}\n{body}',
-            'parse_mode': 'MarkdownV2',
+            'text': f'{self._format_tg_icon(status_icons)} {header}\n{body}',
+            'parse_mode': 'HTML',
             'reply_markup': {
                 'inline_keyboard': [
                     [

@@ -42,13 +42,13 @@ notification_user = """
 {#--#}{%- endif -%}
 {%- elif fields.type == 'telegram' -%}
 🔔 user
-{#--#}{%- if not fields.unit -%}
-{#-   #} <b>{{ fields.name }}</b> [NotDefined](https://docs.impulse.bot/latest/warnings/NotDefined/)  |  🔔 admins {%- for a in fields.admins %}@{{ a }}{% if not loop.last %},{% endif %}{% endfor -%}
+{#--#}{%- if not fields.unit or fields.unit is none -%}
+{#-   #} <b>{{ fields.name }}</b> (<a href="https://docs.impulse.bot/latest/warnings/NotDefined/">NotDefined</a>)  |  🔔 admins ({%- for a in fields.admins %}<a href="tg://user?id={{ a.id }}">{{ a.name }}</a>{% if not loop.last %},{% endif %}{% endfor -%})
 {#--#}{%- else -%}
-{#-  -#}{%- if fields.unit.exists -%}
+{#-  -#}{%- if fields.unit -%}
 {#-     #} <b><a href="tg://user?id={{ fields.unit.id }}">{{ fields.name }}</a></b>
 {#-  -#}{%- else -%}
-{#      #} <b>{{ fields.name }}</b> [NotFound](https://docs.impulse.bot/latest/warnings/NotFound/)  |  🔔 admins {%- for a in fields.admins %}@{{ a }}{% if not loop.last %},{% endif %}{% endfor -%}
+{#      #} <b>{{ fields.name }}</b> (<a href="https://docs.impulse.bot/latest/warnings/NotFound/">NotFound</a>)  |  🔔 admins ({%- for a in fields.admins %}<a href="tg://user?id={{ a.id }}">{{ a.name }}</a>{% if not loop.last %},{% endif %}{% endfor -%})
 {#-  -#}{%- endif -%}
 {#--#}{%- endif -%}
 {%- endif -%}
@@ -121,7 +121,7 @@ update: {% if fields.firing %}new alerts *firing*{% if fields.recreate %}  |  re
 {%- elif fields.type == 'mattermost' -%}
 update: {% if fields.firing %}new alerts **firing**{% if fields.recreate %}  |  restart chain{% endif %}{% else %}some alerts **resolved**{% endif %}
 {%- elif fields.type == 'telegram' -%}
-update: {% if fields.firing %}new alerts *firing*{% if fields.recreate %}  |  restart chain{% endif %}{% else %}some alerts *resolved*{% endif %}
+update: {% if fields.firing %}new alerts <b>firing</b>{% if fields.recreate %}  |  restart chain{% endif %}{% else %}some alerts <b>resolved</b>{% endif %}
 {%- endif -%}
 """
 

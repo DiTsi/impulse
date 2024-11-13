@@ -80,9 +80,12 @@ class Application(ABC):
             unit = self.user_groups.get(identifier)
             text_template = JinjaTemplate(notification_user_group)
         fields = {'type': self.type, 'name': identifier, 'unit': unit, 'admins': destinations}
-        unit_text = text_template.form_notification(fields)
+        text = text_template.form_notification(fields)
         header = self.format_text_italic(self.header_template.form_message(incident.last_state, incident))
-        message = header + '\n' + unit_text
+        if self.type == 'telegram':
+            message = text
+        else:
+            message = header + '\n' + text
         response_code = self.post_thread(incident.channel_id, incident.ts, message)
         logger.info(f'Incident {incident.uuid} -> chain step {notify_type} \'{identifier}\'')
         return response_code
@@ -97,7 +100,10 @@ class Application(ABC):
         if updated_status:
             logger.info(f'Incident {uuid_} updated with new status \'{incident_status}\'')
             # post to thread
-            if status_enabled and incident_status != 'closed':
+            if status_enabled and (
+                (incident_status != 'closed' and self.type != 'telegram') or
+                (incident_status == 'unknown' and self.type == 'telegram')
+            ):
                 header = self.format_text_italic(self.header_template.form_message(incident.last_state, incident))
 
                 text_template = JinjaTemplate(update_status)
@@ -105,7 +111,10 @@ class Application(ABC):
                 fields = {'type': self.type, 'status': incident_status, 'admins': admins}
                 text = text_template.form_notification(fields)
 
-                message = header + '\n' + text
+                if self.type == 'telegram':
+                    message = text
+                else:
+                    message = header + '\n' + text
                 self.post_thread(incident.channel_id, incident.ts, message)
 
     def new_version_notification(self, channel_id, new_tag):

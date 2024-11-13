@@ -13,7 +13,7 @@ from config import telegram_bot_token, application
 
 # Temporary Firing: 🔥, Unknown: ❗️, Resolved: ✅, Closed: 🏁
 class TelegramApplication(Application):
-    icon_map = { #!!
+    icon_map = { #!
         '5312241539987020022': '🔥',
         '5379748062124056162': '❗️',
         '5237699328843200968': '✅',

@@ -42,10 +42,10 @@ notification_user = """
 {#--#}{%- endif -%}
 {%- elif fields.type == 'telegram' -%}
 🔔 user
-{#--#}{%- if not fields.unit or fields.unit is none -%}
+{#--#}{%- if not fields.unit -%}
 {#-   #} <b>{{ fields.name }}</b> (<a href="https://docs.impulse.bot/latest/warnings/NotDefined/">NotDefined</a>)  |  🔔 admins ({%- for a in fields.admins %}<a href="tg://user?id={{ a.id }}">{{ a.name }}</a>{% if not loop.last %},{% endif %}{% endfor -%})
 {#--#}{%- else -%}
-{#-  -#}{%- if fields.unit -%}
+{#-  -#}{%- if fields.unit.exists -%}
 {#-     #} <b><a href="tg://user?id={{ fields.unit.id }}">{{ fields.name }}</a></b>
 {#-  -#}{%- else -%}
 {#      #} <b>{{ fields.name }}</b> (<a href="https://docs.impulse.bot/latest/warnings/NotFound/">NotFound</a>)  |  🔔 admins ({%- for a in fields.admins %}<a href="tg://user?id={{ a.id }}">{{ a.name }}</a>{% if not loop.last %},{% endif %}{% endfor -%})

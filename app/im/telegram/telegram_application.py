@@ -231,18 +231,19 @@ class TelegramApplication(Application):
         return text
 
     def get_user_details(self, user_details):
-        return {
-            'id': user_details.get('id'),
-            'username': user_details.get('username'),
-            'name': user_details.get('name'),
-            'exists': True
-        }
+        id_ = user_details.get('id') if user_details is not None else None
+        exists = False
+        if id_ is not None:
+            response = self.http.get(f'{self.url}/getChat?chat_id={id_}', headers=self.headers)
+            data = response.json()
+            if response.status_code == 200 and data.get('ok'):
+                exists = True
+        return {'id': id_, 'exists': exists}
 
     def create_user(self, name, user_details):
         return User(
             name=name,
             id_=user_details.get('id'),
-            username=user_details.get('username'),
             exists=user_details.get('exists', False)
         )
 

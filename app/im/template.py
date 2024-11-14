@@ -157,14 +157,14 @@ notification_webhook = """
 {%- elif fields.type == 'telegram' -%}
 🔔 webhook <b>{{ fields.name }}</b>
 {#--#}{%- if fields.unit is none -%}
-{#-   #} [NotDefined](https://docs.impulse.bot/latest/warnings/NotDefined/)  |  🔔 admins ({%- for a in fields.admins %}<a href="tg://user?id={{ a.id }}">{{ a.name }}</a>{% if not loop.last %},{% endif %}{% endfor -%})
+{#-   #} (<a href="https://docs.impulse.bot/latest/warnings/NotDefined/">NotDefined</a>)  |  🔔 admins ({%- for a in fields.admins %}<a href="tg://user?id={{ a.id }}">{{ a.name }}</a>{% if not loop.last %},{% endif %}{% endfor -%})
 {#--#}{%- else -%}
 {#-  -#}{%- if fields.result == 'ok' -%}
-{#-     #} ({% if fields.response < 400 %}{{ fields.response }}{% else %}[{{ fields.response }}](https://docs.impulse.bot/latest/warnings/ResponseCode/){% endif %})
+{#-     #} ({% if fields.response < 400 %}{{ fields.response }}{% else %}<a href="https://docs.impulse.bot/latest/warnings/ResponseCode/">{{ fields.response }}</a>{% endif %})
 {#-  -#}{%- elif fields.result == 'Timeout' -%}
-{#      #} [TimeoutError](https://docs.impulse.bot/latest/warnings/TimeoutError/)  |  🔔 admins ({%- for a in fields.admins %}<a href="tg://user?id={{ a.id }}">{{ a.name }}</a>{% if not loop.last %},{% endif %}{% endfor -%})
+{#      #} (<a href="https://docs.impulse.bot/latest/warnings/TimeoutError/">TimeoutError</a>)  |  🔔 admins ({%- for a in fields.admins %}<a href="tg://user?id={{ a.id }}">{{ a.name }}</a>{% if not loop.last %},{% endif %}{% endfor -%})
 {#-  -#}{%- else -%}
-{#      #} [ConnectionError](https://docs.impulse.bot/latest/warnings/ConnectionError/)  |  🔔 admins ({%- for a in fields.admins %}<a href="tg://user?id={{ a.id }}">{{ a.name }}</a>{% if not loop.last %},{% endif %}{% endfor -%})
+{#      #} (<a href="https://docs.impulse.bot/latest/warnings/ConnectionError/">ConnectionError</a>)  |  🔔 admins ({%- for a in fields.admins %}<a href="tg://user?id={{ a.id }}">{{ a.name }}</a>{% if not loop.last %},{% endif %}{% endfor -%})
 {#-  -#}{%- endif -%}
 {#--#}{%- endif -%}
 {%- endif -%}

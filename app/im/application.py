@@ -86,7 +86,7 @@ class Application(ABC):
             message = text
         else:
             message = header + '\n' + text
-        response_code = self.post_thread(incident.channel_id, incident.ts, message)
+        response_code = self.post_thread(incident.channel_id, incident, message)
         logger.info(f'Incident {incident.uuid} -> chain step {notify_type} \'{identifier}\'')
         return response_code
 
@@ -115,7 +115,7 @@ class Application(ABC):
                     message = text
                 else:
                     message = header + '\n' + text
-                self.post_thread(incident.channel_id, incident.ts, message)
+                self.post_thread(incident.channel_id, incident, message)
 
     def new_version_notification(self, channel_id, new_tag):
         r = requests.get(f'https://api.github.com/repos/eslupmi/impulse/releases/tags/{new_tag}')
@@ -144,8 +144,8 @@ class Application(ABC):
                                              status_enabled)
         self._update_thread(id_, payload)
 
-    def post_thread(self, channel_id, id_, text):
-        payload = self._post_thread_payload(channel_id, id_, text)
+    def post_thread(self, channel_id, incident_, text):
+        payload = self._post_thread_payload(channel_id, incident_.ts, text)
         response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
         sleep(self.post_delay)
         return response.status_code

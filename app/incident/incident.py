@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
+from threading import Lock
 from typing import List, Dict, Optional
 
 import yaml
@@ -33,7 +34,10 @@ class Incident:
     version: str = INCIDENT_ACTUAL_VERSION
     uuid: str = field(init=False)
     ts: str = field(default='')
+    thread_id: str = field(default='')
     link: str = field(default='')
+
+    _lock: Lock = field(default_factory=Lock, init=False)
 
     next_status = {
         'firing': 'unknown',
@@ -44,9 +48,23 @@ class Incident:
     def __post_init__(self):
         self.uuid = gen_uuid(self.last_state.get('groupLabels'))
 
-    def set_thread(self, thread_id: str, public_url: str):
+    def lock(self):
+        return self._lock
+
+    def get_ts(self) -> str:
+        with self.lock():
+            return self.ts
+
+    def get_thread_id(self) -> str:
+        with self.lock():
+            return self.thread_id
+
+    def set_thread_start(self, thread_id: str, public_url: str):
         self.ts = thread_id
         self.link = self.generate_link(public_url)
+
+    def set_thread_id(self, thread_id: str):
+        self.thread_id = thread_id
 
     def generate_link(self, public_url) -> str:
         if self.config.application_type == 'slack':
@@ -120,7 +138,7 @@ class Incident:
             assigned_user=content.get('assigned_user', ''),
             version=content.get('version', INCIDENT_ACTUAL_VERSION)
         )
-        incident_.set_thread(content.get('ts'), config.application_url)
+        incident_.set_thread_start(content.get('ts'), config.application_url)
         return incident_
 
     def dump(self):

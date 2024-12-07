@@ -68,13 +68,6 @@ class TelegramApplication(Application):
         sleep(self.post_delay)
         return response.json().get('result', {}).get('message_id')
 
-    def create_thread(self, channel_id, body, header, status_icons, status):
-        topic_id = self._create_topic(channel_id, header, status_icons)
-        payload = self._create_thread_payload(channel_id, body, header, status_icons, status)
-        payload['message_thread_id'] = topic_id
-        message_id = self._send_create_thread(payload)
-        return f'{topic_id}/{message_id}'
-
     def _send_create_thread(self, payload):
         response = self.http.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
         sleep(self.post_delay)
@@ -133,22 +126,16 @@ class TelegramApplication(Application):
         incident_.dump()
         return jsonify({}), 200
 
-    def _create_topic(self, channel_id, header, status_icons):
-        payload = {
-            'chat_id': channel_id,
-            'name': header,
-            'icon_custom_emoji_id': status_icons
-        }
-        try:
-            response = self.http.post(
-                f'{self.url}/createForumTopic',
-                data=json.dumps(payload),
-                headers=self.headers
-            )
-            return response.json().get('result', {}).get('message_thread_id')
-        except requests.exceptions.RequestException as e:
-            logger.error(f'Failed to create topic: {e}')
-            raise e
+    @staticmethod
+    def handle_message_creation(incidents, message):
+        incident_ = incidents.get_by_ts(message['forward_from_message_id'])
+        if incident_ is None:
+            return jsonify({}), 200
+        with incident_.lock():
+            incident_.set_thread_id(message['message_id'])
+            incident_.dump()
+        return jsonify({}), 200
+
 
     def _create_thread_payload(self, channel_id, body, header, status_icons, status):
         return {
@@ -165,45 +152,28 @@ class TelegramApplication(Application):
             }
         }
 
+    def post_thread(self, channel_id, incident_, text):
+        payload = self._post_thread_payload(channel_id, incident_.get_thread_id(), text)
+        response = requests.post(self.post_message_url, headers=self.headers, data=json.dumps(payload))
+        sleep(self.post_delay)
+        return response.status_code
+
     def _post_thread_payload(self, channel_id, id_, text):
-        topic_id, message_id = id_.split('/')
+        thread_channel_id = self.channels.get(channel_id)['thread_channel_id']
         return {
-            'chat_id': channel_id,
+            'chat_id': thread_channel_id,
             'text': text,
-            'message_thread_id': topic_id,
+            'reply_parameters': {
+                'message_id': id_
+            },
             'parse_mode': 'HTML'
         }
 
-    def update_thread(self, channel_id, id_, status, body, header, status_icons, chain_enabled=True,
-                      status_enabled=True):
-        self._update_topic(channel_id, id_, header, status_icons)
-        payload = self.update_thread_payload(channel_id, id_, body, header, status_icons, status, chain_enabled,
-                                             status_enabled)
-        self._update_thread(id_, payload)
-
-    def _update_topic(self, channel_id, id_, header, status_icons):
-        topic_id, message_id = id_.split('/')
-        payload = {
-            'chat_id': channel_id,
-            'name': header,
-            'icon_custom_emoji_id': status_icons,
-            'message_thread_id': topic_id
-        }
-        try:
-            self.http.post(
-                f'{self.url}/editForumTopic',
-                data=json.dumps(payload),
-                headers=self.headers
-            )
-        except requests.exceptions.RequestException as e:
-            logger.error(f'Failed to update topic: {e}')
-
     def update_thread_payload(self, channel_id, id_, body, header, status_icons, status, chain_enabled,
                               status_enabled):
-        topic_id, message_id = id_.split('/')
         return {
             'chat_id': channel_id,
-            'message_id': message_id,
+            'message_id': id_,
             'text': f'{self._format_tg_icon(status_icons)} {header}\n{body}',
             'parse_mode': 'HTML',
             'reply_markup': {

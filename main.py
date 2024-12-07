@@ -70,6 +70,8 @@ def route_app_buttons():
         payload = json.loads(request.form['payload'])
     else:
         payload = request.json
+    if messenger.type == 'telegram' and 'message' in payload and payload['message']['from']['id'] == 777000:
+        return messenger.handle_message_creation(incidents, payload.get('message', {}))
     return messenger.buttons_handler(payload, incidents, queue, route)
 
 

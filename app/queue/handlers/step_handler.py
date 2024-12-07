@@ -50,7 +50,7 @@ class StepHandler(BaseHandler):
             text = text_template.form_notification(fields)
             header = f"{self.app.format_text_italic(self.app.header_template.form_message(incident.last_state, incident))}"
             message = f"{header}" + '\n' + f'{text}'
-            self.app.post_thread(incident.channel_id, incident.ts, message)
+            self.app.post_thread(incident.channel_id, incident, message)
         else:
             r_code = self.app.notify(incident, step['type'], step['identifier'])
             incident.chain_update(identifier, done=True, result=r_code)

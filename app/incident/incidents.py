@@ -16,7 +16,7 @@ class Incidents:
         return self.by_uuid.get(uuid_)
 
     def get_by_ts(self, ts: str) -> Union[Incident, None]:
-        return next((incident for incident in self.by_uuid.values() if incident.ts == ts), None)
+        return next((incident for incident in self.by_uuid.values() if incident.get_ts() == ts), None)
 
     def add(self, incident: Incident):
         self.by_uuid[incident.uuid] = incident

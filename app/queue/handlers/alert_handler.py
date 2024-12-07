@@ -129,7 +129,7 @@ class AlertHandler(BaseHandler):
             message = text
         else:
             message = header + '\n' + text
-        self.app.post_thread(incident_.channel_id, incident_.ts, message)
+        self.app.post_thread(incident_.channel_id, incident_, message)
         if new_alerts_f:
             logger.info(f"Incident {uuid_} updated with new alerts firing")
         elif new_alerts_r:
@@ -151,8 +151,9 @@ class AlertHandler(BaseHandler):
         body = self.app.body_template.form_message(alert_state, incident_)
         header = self.app.header_template.form_message(alert_state, incident_)
         status_icons = self.app.status_icons_template.form_message(alert_state, incident_)
-        thread_id = self.app.create_thread(
-            incident_.channel_id, body, header, status_icons, status=alert_state['status']
-        )
-        incident_.set_thread(thread_id, self.app.public_url)
+        with incident_.lock():
+            thread_id = self.app.create_thread(
+                incident_.channel_id, body, header, status_icons, status=alert_state['status']
+            )
+            incident_.set_thread_start(thread_id, self.app.public_url)
         return thread_id

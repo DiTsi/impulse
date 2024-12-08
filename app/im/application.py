@@ -100,10 +100,7 @@ class Application(ABC):
         if updated_status:
             logger.info(f'Incident {uuid_} updated with new status \'{incident_status}\'')
             # post to thread
-            if status_enabled and (
-                (incident_status != 'closed' and self.type != 'telegram') or
-                (incident_status == 'unknown' and self.type == 'telegram')
-            ):
+            if status_enabled and incident_status != 'closed':
                 header = self.format_text_italic(self.header_template.form_message(incident.last_state, incident))
 
                 text_template = JinjaTemplate(update_status)

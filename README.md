@@ -26,12 +26,12 @@ See [https://docs.impulse.bot](https://docs.impulse.bot)
     ```
 3. Get docker-compose.yml and config
     ```bash
-    wget -O docker-compose.yml https://raw.githubusercontent.com/DiTsi/impulse/main/examples/docker-compose.yml
-    wget -O config/impulse.yml https://raw.githubusercontent.com/DiTsi/impulse/main/examples/impulse.slack.yml
+    wget -O docker-compose.yml https://raw.githubusercontent.com/eslupmi/impulse/main/examples/docker-compose.yml
+    wget -O config/impulse.yml https://raw.githubusercontent.com/eslupmi/impulse/main/examples/impulse.slack.yml
     ```
 4. Modify `config/impulse.yml` with actual data
 
-5. Replace `<release_tag>` in `docker-compose.yml` with latest tag from [here](https://github.com/DiTsi/impulse/releases) and set environment variables `SLACK_BOT_USER_OAUTH_TOKEN` and `SLACK_VERIFICATION_TOKEN`
+5. Replace `<release_tag>` in `docker-compose.yml` with latest tag from [here](https://github.com/eslupmi/impulse/releases) and set environment variables `SLACK_BOT_USER_OAUTH_TOKEN` and `SLACK_VERIFICATION_TOKEN`
 
 6. Run
     ```bash

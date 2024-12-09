@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.0
+Changes:
+- Added schedule chain ([docs](https://docs.impulse.bot/latest/config_file/#schedule-chain))
+
 ## v2.0.0
 Upgrade instructions:
 - Modify `application.users`. Define them by IDs instead of their names ([docs](https://docs.impulse.bot/latest/config_file/#users))

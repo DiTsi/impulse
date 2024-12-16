@@ -1,6 +1,6 @@
 # IMPulse
 
-![](https://docs.impulse.bot/latest/media/slack_tile.png)
+![](https://docs.impulse.bot/latest/media/preview.png)
 
 Software for managing incidents in messengers based on [Alertmanager's](https://prometheus.io/docs/alerting/latest/alertmanager/) alerts
 
